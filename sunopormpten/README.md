@@ -270,15 +270,26 @@ Constellations set me free
 I am stardust, I am light
 I am stardust in the night
 
+[Fingerstyle Guitar Solo]
+
+[Resonant Verse]
+I dissolve into starlight
+I am stardust in flight
+I dissolve into starlight
+I become infinite night
+
 [Build]
 . ! . . !
 . . ! . !
+
+[Soaring Guitar Solo]
 
 [Epic Chorus]
 Stars are falling through my mind
 I dissolve into starlight
 Stars are calling through time
 I become infinite light
+
 
 [Fading Outro]
 Into cosmic design...
