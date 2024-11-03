@@ -1,333 +1,94 @@
-# AI Song Construction System: Complete Reference
+# Suno AI Song Syntax
 
 ## Overview
-This document defines the syntax, rules, and patterns for constructing songs using a tag-based markup system. This reference is designed to help AI assistants guide humans in creating structured song compositions.
 
-## Basic Syntax
+Suno uses Chirp to generate songs, which is a generative model. We must create documents that prompt the model correctly. To do this, we use specific tags to break the songs up into sections that the model understands. 
 
-### Core Rules
-- All section tags must be enclosed in square brackets `[]`
-- Tags must start each new section
-- Line breaks separate sections
-- Language is auto-detected, no special language tags needed
+## Base Tags
 
-### Tag Format
+This list represents all of the valid base tags. Each of these tags can be modified and has several ways they can be used, but in general these are the only valid tags
+
+- [Intro]
+- [Pre-Chorus]
+- [Chorus]
+- [Verse]
+- [Interlude]
+- [Break]
+- [Movement]
+- [Solo]
+- [Build]
+- [Outro]
+- [Fade]
+- [End]
+- [<vocals>] (clarification later)
+- [<specific instrument>] (clarification later)
+
+## [Intro]
+
+The intro tag should generally only be used at the beginning and is strictly instrumental. It can be modified with several adjectives. For instance:
+
+- [Long Mellow Intro]
+- [Short Exciting Intro]
+- [Dreamy Slow Intro]
+
+As you can see from the examples, you can generally add an emotive and/or a pacing adjective. The system doesn't always honor the intention, but it tends to work best if you use very direct, concrete adjectives that are salient to musical construction (speed, emotion, intensity seem to work best). Modifiers are not strictly necessary, but can be useful for establishing the mood early on. 
+
+## [Pre-Chorus]
+
+This is a strictly vocal tag that is often used at the beginning of songs to sort of introduce the story or narrative. It may or may not be sung (could be spoken, can be specified). This tag should generally only be used once or before chorus tags.
+
+- [Haunting Whispered Pre-Chorus]
+- [Staticky Spoken Pre-Chorus]
+- [Primal Scream Pre-Chorus]
+- [Opera Female Pre-Chorus]
+
+These modifiers, while not strictly required, can confer very specific feels. As with intro, emotive, intensity, and pacing adjectives tend to work well, with the added option of singing styles, gender, and so on. 
+
+## [Chorus]
+
+This is about what you'd expect for any song construction. Generally speaking, the Chirp system decides how to render the chorus, so modifiers are often NOT honored, for whatever reason. The documentation says that the chosen style and lyrics tend to do more to modify how the chorus is sung. However, very concrete modifiers are most likely to be honored. This tag is one of the prime workhorses.
+
+- [Whispered Chorus]
+- [Eerie Chorus]
+- [Ensemble Chorus]
+- [Slow Chorus]
+
+Lyric construction also has a huge impact on how the chorus is sung, and is often more important once the construction has been set up correctly. The system seems to ignore capitalization, but the vibe of the lyrics has an impact. Punctuation seems to have a larger impact
+
+- Elipsis... this tends to make the system approach it more slowly, particularly if it's used... multiple times... in the line...
+- Exclamation! this doensn't often have a huge impact but it can tell the system to emphasize a line
+- Oooooohhh whoaaa ahhhh! vocalizations generally work extremely well to amp up a chorus (the system will not render non-word vocalizations without explicitly being told)
+- mmmmmmmmmmm oh... gentler vocalizations will have a similar dampening effect
+- (parenthesis lyrics) this does really well, and seems to do really good at making it do call-and-response or antiphonal
+
+## [Verse]
+
+This tag is the other primary workhorse and is used pretty much identically to [Chorus]. It is not strictly necessary to modify it, and in many cases the system will decide how to modify it (consider that in most of it's training data, chorus and verse are left plain). So again, the content of the lyrics tend to do more. The system seems particularly sensitive to where in the song it is, meaning that if the generator feels like it's more likely a crescendo rather than a key change, the system will make that judgment call. However, emotive, intensity, and pace modifiers tend to work. 
+
+- [Angry Verse]
+- [Mysterious Verse]
+- [Whispered Verse]
+- [Spoken Verse]
+
+These concrete modifiers are most likely to be honored. The same lyrical modifiers from the chorus also apply
+
+- Elipsis...
+- Exclamation!
+- Vocalizaaaaaaaaaations
+- (Parenthesis)
+
+## [Interlude]
+
+This is one of the main workhorses of the instrumental tags. It's pretty much what you'd expect. Many modifiers don't seem to impact this tag, but a few tend to be more reliable.
+
+- [Melodic Interlude] this one is pretty reliable, so similar modifiers should work.
+- [Long Melancholy Interlude] this works about half the time
+- [Short Accelerating Interlude] the system tends to prefer short instrumentals anyways
+
+Don't get too creative with the modifier tags. For instance, genre-specific modifiers don't really seem to work like `[Psychedelic Interlude]` even though it makes sense to us, the system doesn't seem to recognize it. However, there is another option we have to modify all instrumental sections, and that is periods and exclamations to try and shape the pacing.
+
 ```
-[<optional_modifier> <section_type>]
-```
-
-Example:
-```
-[Gentle Verse]
-[Heavy Chorus]
-[Psychedelic Bridge]
-```
-
-## Valid Tags
-
-### Primary Section Tags
-- `[Verse]`
-- `[Chorus]`
-- `[Bridge]`
-- `[Pre-Chorus]`
-- `[Break]`
-- `[Build]`
-- `[Outro]`
-- `[Intro]`
-
-### Instrumental Section Tags
-- `[Instrumental Interlude]`
-- `[Melodic Interlude]`
-- `[<instrument> Solo]` - e.g., `[Guitar Solo]`, `[Bass Solo]`
-- `[Percussion Break]`
-- `[Syncopated Bass]`
-- `[Build]`
-- `[Bass Drop]` (EDM-specific)
-
-### Voice Control Tags
-- `[Female Narrator]`
-- `[Diva Solo]`
-- `[Gospel Choir]`
-- `[Primal Scream]`
-- `[Rap Verse]`
-
-### Ending Tags
-- `[Outro]`
-- `[End]`
-- `[Fade Out]`
-- `[Fade to End]`
-- `[Big Finish]`
-- `[Refrain]`
-
-## Valid Modifiers
-
-### Intensity Modifiers
-- Gentle
-- Heavy
-- Epic
-- Soft
-
-### Character Modifiers
-- Dreamy
-- Ethereal
-- Psychedelic
-- Resonant
-
-### Style Modifiers
-- Melodic
-- Soaring
-- Clean
-- Distorted
-
-### Dynamic Modifiers
-- Building
-- Fading
-- Rising
-- Falling
-
-### Emotional Modifiers
-- Shout
-- Whimsical
-- Melancholy
-
-## Voice Styles
-Can be used in style declaration or as modifiers:
-- Gregorian chant
-- Melismatic
-- Narration
-- Spoken Word
-- Sprechgesang
-- Emotional
-- Sultry
-- Resonant
-- Ethereal
-- Lounge Singer
-- Vocaloid
-
-## Instrumental Notation
-
-### Basic Patterns
-Use periods and exclamation marks for rhythmic patterns:
-```
-. . . ! . .    // Basic rhythm
-. ! . . . !    // Syncopated pattern
-. . ! . .      // Short pattern
-!! ... ! ! !   // Complex rhythm
-```
-
-### Onomatopoeia Patterns
-Can be used to suggest specific instruments:
-```
-[chugging guitar]
-chuka-chuka-chuka-chuka
-
-[sad trombone]
-waah-Waaah-WAAH
-```
-
-## Song Structure Rules
-
-### Required Elements
-- At least one `[Verse]` or `[Chorus]`
-- Clear section transitions
-- Defined ending
-
-### Optional Elements
-- Multiple verses with modifiers
-- Instrumental sections
-- Bridges and breaks
-- Build sections
-- Multiple movements
-
-### Valid Section Ordering
-```
-[Intro] (optional)
-[<modifier> Verse]
-[Pre-Chorus] (optional)
-[<modifier> Chorus]
-[Bridge] (optional)
-[Build] (optional)
-[Outro] (optional)
-```
-
-## Style Declaration
-
-### Format
-```
-STYLE: <genre> <tempo> <characteristics> <instruments> <effects>
-```
-
-### Example
-```
-STYLE: stoner space rock shoegaze slow build epic crescendos psychedelic riffing soaring solos pensive interludes
-```
-
-## Version-Specific Behaviors
-
-### v3.5 Specifics
-- May ignore standard end prompts
-- Use `[ending]` tag
-- Can create false endings
-
-### v3 Specifics
-For reliable endings:
-1. Clear style prompt
-2. Add "end, short" to style
-3. Use simple `[end]` tag
-
-## Common Patterns
-
-### Basic Verse/Chorus Pattern
-```
-[Verse]
-First verse content
-[Chorus]
-Memorable hook
-[Verse 2]
-Second verse content
-[Chorus]
-Repeat hook
-```
-
-### Progressive Build Pattern
-```
-[Gentle Verse]
-Opening content
-[Build]
-. . . ! . .
-[Heavy Verse]
-Intensified content
-[Epic Chorus]
-Climactic hook
-```
-
-### Multi-Movement Structure
-```
-[Clean Intro]
-[Melodic Verse]
-[Build]
-[Heavy Bridge]
-[Psychedelic Interlude]
-[Final Crescendo]
-[Fading Outro]
-```
-
-## Example Implementations
-
-### Example 1: Simple Repeating Structure
-```
-[Verse]
-Gravity's lost hold again
-Floating in the endless dark
-Stars blinking out one by one
-Silent whispers in the void
-
-[Chorus]
-Spiral through the cosmic haze
-Feel the universe embrace
-Echoes from the edge of time
-Lost in space without a trace
-```
-
-### Example 2: Complex Multi-Movement Song
-```
-STYLE: stoner space rock shoegaze slow build epic crescendos psychedelic riffing soaring solos pensive interludes
-
-[Long Instrumental Intro]
-. . . ! . .
-
-[Gentle Verse]
-Watching stars unfold
-In ancient patterns told
-Through endless time they glow
-Above, below
-
 [Melodic Interlude]
-. . . . !
-
-[Dreamy Verse]
-Stars are falling through my mind
-Stars are calling through time
-Stars are falling through my mind
-Into cosmic design
-
-[Break]
-. . . . !
-. . ! . .
-
-[Heavy Verse]
-I dissolve into starlight
-I dissolve into starlight
-Through the void I will fly
-Through the void I will fly
-
-[Psychedelic Interlude]
+. . . ! . .
 . ! . . . !
-
-[Ethereal Bridge]
-Constellations flow through me
-Constellations set me free
-I am stardust, I am light
-I am stardust in the night
-
-[Fingerstyle Guitar Solo]
-
-[Resonant Verse]
-I dissolve into starlight
-I am stardust in flight
-I dissolve into starlight
-I become infinite night
-
-[Build]
-. ! . . !
-. . ! . !
-
-[Soaring Guitar Solo]
-
-[Epic Chorus]
-Stars are falling through my mind
-I dissolve into starlight
-Stars are calling through time
-I become infinite light
-
-
-[Fading Outro]
-Into cosmic design...
-Into cosmic design...
-Into cosmic design...
 ```
-
-## Best Practices
-
-1. Maintain consistent modifier usage throughout song
-2. Place instrumental notations on separate lines
-3. Use clear section transitions
-4. Build intensity gradually with appropriate modifiers
-5. Label pre-chorus sections explicitly
-6. Consider version-specific ending strategies
-7. Match voice tags to genre expectations
-8. Test instrumental notations in context
-9. Keep style declarations focused
-10. Use emotional modifiers to guide vocal delivery
-
-## Common Issues and Solutions
-
-### Endless Loops
-- Add explicit end tags
-- Use version-specific ending strategies
-- Consider "end, short" in style
-
-### Meter Issues
-- Label pre-chorus sections explicitly
-- Maintain consistent syllable counts within sections
-- Use appropriate tags for intentional metric changes
-
-### Voice Control
-- Match voice tags to genre
-- Use consistent modifiers throughout
-- Consider language/accent implications
-
-### Section Transitions
-- Use builds and breaks strategically
-- Maintain logical progression
-- Label all sections clearly
