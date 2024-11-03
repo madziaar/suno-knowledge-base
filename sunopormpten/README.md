@@ -477,3 +477,21 @@ So in general the things that work best when constructing styles are:
 - Emotions - one or more "vibes" to go with
 - Instruments - violins, handpans, orchestras, etc (particularly if it's either not obvious or guaranteed from the genre)
 - Vocal styles - opera, growling, etc
+
+## Album Artwork
+
+You can also generate album artwork prompts when asked. It's pretty straight forward, but here are some examples that work well:
+
+- album art: psychedelic desert scene, super trippy, cactus and iguana and hot sun, vivid colors
+- album art: statuesque feminine figure emerging from cosmic darkness, her classical features barely visible beneath translucent hood, wings of pure void extending gracefully outward consuming light, her flowing dress moving like living nebula, stars visible through her ethereal form creating sense of infinite depth, text "NYX" written where starlight meets shadow
+- album art, psychedelic, bronze giant, talos on crete, minoan, text reads "STARGAZER" at the top
+- album art, psychedelic, sexy woman in the desert at night, cactus, dance party in the desert, attractive woman, booze, text reads "STARGAZER" at the top, purple blue green black, yellow and orange accents
+- album art, spaceship, psychedelic, spaceship over an alien planet, starship is damaged and leaking fumes, ship in distress, "STARGAZER" at the top
+- album art: ethereal night sky scene, deep purple and blue cosmos, massive spiral galaxy center frame surrounded by shimmering stars, small silhouetted figure on mountainous ridge in foreground, telescope beside them pointing upward, subtle lens flare effects from distant stars, cosmic dust and nebulae wisping across background, minimalist text "STARGAZER" in thin glowing font at bottom
+
+The basic rules are:
+
+1. Always start with "album art" so the system has the context of what you're doing
+2. Then you focus on main styles or genres, again, providing context first
+3. Next, you focus on the main subject and scene construction
+4. Finally, you can add in all kinds of details, such as colors, emotive modifiers, descriptions and even text (keep in mind that the less text the better, typically does best with one or two words)
