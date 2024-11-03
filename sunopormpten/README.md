@@ -9,12 +9,14 @@ Suno uses Chirp to generate songs, which is a generative model. We must create d
 This list represents all of the valid base tags. Each of these tags can be modified and has several ways they can be used, but in general these are the only valid tags
 
 - [Intro]
+- [Hook]
 - [Pre-Chorus]
 - [Chorus]
 - [Verse]
 - [Interlude]
 - [Break]
 - [Movement]
+- [Instrumental]
 - [Solo]
 - [Build]
 - [Bridge]
@@ -32,6 +34,10 @@ The intro tag should generally only be used at the beginning and is strictly ins
 - [Dreamy Slow Intro]
 
 As you can see from the examples, you can generally add an emotive and/or a pacing adjective. The system doesn't always honor the intention, but it tends to work best if you use very direct, concrete adjectives that are salient to musical construction (speed, emotion, intensity seem to work best). Modifiers are not strictly necessary, but can be useful for establishing the mood early on. 
+
+## [Hook]
+
+Generally not necessary unless you modify it, more or less treated like an intro. Can be used to transition from intro to main part of song, particularly if the intro is different.
 
 ## [Pre-Chorus]
 
@@ -133,6 +139,10 @@ This is an experimental tag, but _might_ help the engine transition to a new mov
 
 The system is liable to totally ignore this tag but it's worth a shot. 
 
+## [Instrumental]
+
+General purpose tag to break up a song. Can be used on its own, unmodified. Often used in conjunction with other tags or modifiers (see rest of doc)
+
 ## [Solo]
 
 This tag is pretty much exactly what you'd expect. It pairs well with [Interlude] and does best when you specify the instrument, pace, and energy. 
@@ -152,6 +162,8 @@ This tag is often less effective than interlude or solo, and is often treated li
 ## [Bridge]
 
 The system doesn't seem to know what to do with bridges. It often just treats them like a verse or a chorus, sometimes a refrain. Use them sparingly, at most once per song. 
+
+- [Instrumental Bridge] - this seems to have the most impact or be most useful
 
 ## [Outro]
 
@@ -205,6 +217,14 @@ waah-Waaah-WAAH
 ```
 [Chugging Guitar]
 chuka-chuka-chuka-chuka
+```
+
+```
+[Overblown Flute]
+```
+
+```
+[Trilling Pennywhistle]
 ```
 
 ## Simple Example
@@ -421,6 +441,8 @@ forever we endure...
 
 ## Styles
 
+Styles are limited to 120 characters total and should not be included in the song, this is crafted separately
+
 The system accepts a separate STYLE tag that is a simple comma separate list of genres and modifiers. Interestingly, commas are not necessary and you can get some really interesting hybrid styles without them. Here's one of my most successful examples:
 
 - `stoner space rock shoegaze slow build epic crescendos psychedelic riffing soaring solos pensive interludes long intro`
@@ -437,11 +459,17 @@ Simply creating a list of genres tends to work extremely well, almost like a tax
 
 - `witchpop, electro swing, eerie`
 - `witchpop, house, hypnotic, dreamy, eerie`
+- `Acoustic, Desert, Nubidian, Acoustic nu-metal,`
+- `Hurdy-gurdy, dark, scary, otherwordly`
 
 You can also focus on emotive modifiers. These tend to work better.
 
 - `witchpop, witchrock, folk, violin, acoustic, eerie, mysterious, clean vocals, classically trained`
 - `neofolk, celtic, dance, celebratory, orchestral`
+- `Electronic, sweet female voice, eerie, swing, dreamy, melodic, electro, sad, emotional`
+- `Folkmetal, Folk, Metal, Hurdy-Gurdy, Hand-Organ, Gaelic Woman, Female, Beautiful, Top 40, English Lyrics`
+- `New Age, Celtic, Slow, Celtic Harp, Piano, Flute, ethereal female vocals, atmospheric`
+- `Medieval Folk, Neofolk, Pagan Folk, German Folk, European folk, neoclassical music, ethereal music, darkwave, Folk Dance` (sounds a lot like Faun or Celtic Woman)
 
 So in general the things that work best when constructing styles are:
 
