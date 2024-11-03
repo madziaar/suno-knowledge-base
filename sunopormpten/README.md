@@ -17,8 +17,8 @@ This list represents all of the valid base tags. Each of these tags can be modif
 - [Movement]
 - [Solo]
 - [Build]
+- [Bridge]
 - [Outro]
-- [Fade]
 - [End]
 - [<vocals>] (clarification later)
 - [<specific instrument>] (clarification later)
@@ -69,6 +69,7 @@ This tag is the other primary workhorse and is used pretty much identically to [
 - [Mysterious Verse]
 - [Whispered Verse]
 - [Spoken Verse]
+- [Opera Verse]
 
 These concrete modifiers are most likely to be honored. The same lyrical modifiers from the chorus also apply
 
@@ -76,6 +77,15 @@ These concrete modifiers are most likely to be honored. The same lyrical modifie
 - Exclamation!
 - Vocalizaaaaaaaaaations
 - (Parenthesis)
+
+For example:
+
+```
+I am the void between stars
+(Beyond the veil of forms...)
+I am the death of light
+(Where your deepest terrors remain...)
+```
 
 ## [Interlude]
 
@@ -92,3 +102,350 @@ Don't get too creative with the modifier tags. For instance, genre-specific modi
 . . . ! . .
 . ! . . . !
 ```
+
+```
+[Intense Interlude]
+!! . ! !! !
+!! !! ! !!
+```
+
+And so on. You can arrange the . and ! in any way you like to convey the rhythm and such. 
+
+## [Break]
+
+Break is strictly instrumental often defaults to one measure or phrase, and can be used quite frequently. Almost no modifiers work here, and it has the most impact on the song when wedged between verses and choruses. What does tend to work is specifying the instrument to lead during the break:
+
+- [Violin Break]
+- [Drum Break]
+- [Scream Break]
+- [Lead Guitar Break]
+- [Bass Guitar Break]
+
+So basically you can use it like a small solo. The rhythem modifiers are generally totally ignored here. 
+
+## [Movement]
+
+This is an experimental tag, but _might_ help the engine transition to a new movement. 
+
+- [Begin Psychedelic Movement]
+- [Transition to Faster Harder Movement]
+- [Long Orchestral Movement]
+
+The system is liable to totally ignore this tag but it's worth a shot. 
+
+## [Solo]
+
+This tag is pretty much exactly what you'd expect. It pairs well with [Interlude] and does best when you specify the instrument, pace, and energy. 
+
+- [Soaring Lead Guitar Solo]
+- [Fast and Intense Drum Solo]
+- [Dancing Fiddle Solo]
+- [Playful Flute Solo]
+- [Finger Style Guitar Solo]
+
+As you can see, this kind of pattern tends to do best with the solo. It all generally comes back to instrument, pace, emotion/energy. One thing to note is that chaining [Interlude] and [Solo] is often the best way to change the movement or overall tone of a song. The exclamation and period modifiers sometimes work on solos, but the system often just goes with the vibe. 
+
+## [Build]
+
+This tag is often less effective than interlude or solo, and is often treated like a break. Period and exlcamation rhythms seem to have relatively little effect, though it seems to have a decent effect when sandwiched between verse and chorus (e.g. to build to a soaring chorus) but that can be redundant. This should only be used when it really makes sense for the song, and probably only once. In most cases, a break, solo, or interlude should be used, that's how specific this use case is. 
+
+## [Bridge]
+
+The system doesn't seem to know what to do with bridges. It often just treats them like a verse or a chorus, sometimes a refrain. Use them sparingly, at most once per song. 
+
+## [Outro]
+
+This tag seems to work if it's either instrumental or vocal, and can be treated pretty flexibly. It's primary purpose is to tell the system to start preparing for the end of the song and should be used exactly once. 
+
+- [Long Fading Outro]
+- [Urgent Loud Outro]
+- [Mournful Outro]
+
+Like many such tags, emotion + pace seems to work well. This tag should only be used once near the end to cue the generator to start winding the song down. 
+
+## [End]
+
+As you'd expect, this generally tells the system to end the song.
+
+- [Fade to End]
+- [Lingering End]
+- [End Resolves to Whispers]
+
+You can play with this tag some, but generally it just serves as a standalone tag. Some of the same modifiers here can work for the outro tag as well. 
+
+## Vocal Tags
+
+Generally speaking, the style of the music (not specified in this document) will dictate the voice, which is generated automatically, however, in songs where the vocals change significantly the song will honor it. 
+
+- [Spoken Word Narration]
+- [Telephone Call]
+- [Female Opera Singer]
+- [Swanky Crooning Male]
+- [Ethereal Female Whisper]
+
+These tags can be used in lieu of verse or chorus tags and there can be a lot of flexibility, as these sorts of tags appear in the training data and significantly modify how the song is delivered. 
+
+```
+[Spoken Word Narration]
+*static* ...final log... coordinates unknown...
+...oxygen critical... systems failing...
+...tell earth we made it... we saw such beautiful things...
+...orion spur expedition... signing off... *static*
+```
+
+## Instrument Tags
+
+You can also do somewhat the same with specific instruments. This can serve in lieu of solo or as part of a solo
+
+```
+[Sad Trombone]
+waah-Waaah-WAAH
+```
+
+```
+[Chugging Guitar]
+chuka-chuka-chuka-chuka
+```
+
+## Simple Example
+
+This is a pretty minimalist example which worked really well. The system will fill in a lot of gaps, so you can see you really don't need much. Less is often more, particularly if the STYLE is well defined. 
+
+```
+[Verse]
+Sun beats down hard dry road
+Dust devils dance shadows long
+Heat waves twist in gold
+Mirages fade now gone
+
+[Chorus]
+Lost in the wasteland void
+Echoes of time destroy
+Lost in the desert sand
+Seeking the promised land
+
+[Verse 2]
+Cactus stands alone silent guard
+Hawks circling overhead far
+Bleached bones in the arid yard
+Searching for a falling star
+
+[Bridge]
+Time drips slow never ends
+Mind’s eye bends and bends
+Vultures fly high in the sky
+Dreams of rain make me cry
+
+[Chorus]
+Lost in the wasteland void
+Echoes of time destroy
+Lost in the desert sand
+Seeking the promised land
+
+[Verse 3]
+Night falls cool winds rise
+Stars blaze across the skies
+Desert whispers truth and lies
+In the silence spirit flies
+```
+
+## Intermediate Example
+
+Below is an example of the above song but with a bit more control over the flow. 
+
+```
+[Long Instrumental Intro]
+
+[Verse]
+Sun beats down hard dry road
+Dust devils dance shadows long
+Heat waves twist in gold
+Mirages fade now gone
+
+[Chorus]
+Lost in the wasteland void
+Echoes of time destroy
+Lost in the desert sand
+Seeking the promised land
+
+[Lead Guitar Solo]
+
+[Verse 2]
+Cactus stands alone silent guard
+Hawks circling overhead far
+Bleached bones in the arid yard
+Searching for a falling star
+
+[Bridge]
+Time drips slow never ends
+Mind’s eye bends and bends
+Vultures fly high in the sky
+Dreams of rain make me cry
+
+[Build]
+
+[Ensemble Chorus]
+Lost in the wasteland void
+Echoes of time destroy
+Lost in the desert sand
+Seeking the promised land
+
+[Melancholy Outro]
+
+[Verse 3]
+Night falls cool winds rise
+Stars blaze across the skies
+Desert whispers truth and lies
+In the silence spirit flies
+
+[Fade to End]
+```
+
+## Complex Example
+
+Below is one of the most sophisticated songs that worked well, including multiple movements. 
+
+```
+[intro]
+. . . ! . .
+. . ! . . .
+
+[build]
+. ! . . ! .
+! . ! . ! !
+! ! . ! ! !
+
+[verse]
+engines burning bright and strong
+breaking free from earthly bonds
+through the atmosphere we climb
+leaving all we knew behind
+
+[break]
+
+[chorus]
+beyond the orion spur
+where no one's gone before
+beyond the orion spur
+ten thousand worlds explore
+
+[break]
+. . . ! . .
+. ! . . ! .
+
+[ verse]
+hyperdrive ignition flows
+new stars glowing as we go
+ancient light guides us here
+through the void without fear
+
+[interlude]
+. ! . . . !
+. . . ! . .
+
+[verse]
+cosmic winds carry us far
+past the light of dying stars
+through the gates of space and time
+leaving known space far behind
+
+[solo]
+! . . ! . .
+! . ! . ! !
+
+[bridge]
+warning lights begin to flash
+systems failing coming crash
+alien world draws us near
+atmosphere of cosmic fear
+
+[break]
+! ! . . ! !
+! . ! ! . !
+
+[verse]
+toxic clouds below our wings
+alien horrors this world brings
+must escape this deadly sphere
+but our engines disappear
+
+[break]
+. . . ! . .
+. . . . ! .
+
+[chorus]
+drifting through the starlit deep
+further than our maps can reach
+signals fading into night
+earth has vanished from our sight
+
+[solo]
+. . ! . . .
+. . . ! . .
+
+[verse]
+oxygen running so low
+our final moment to know
+that we flew too far too fast
+beyond where our fate was cast
+
+[break]
+. . . ! . .
+. ! . . . .
+
+[chorus]
+beyond the orion spur...
+where no return is sure...
+beyond the orion spur...
+forever we endure...
+
+[spoken word narration]
+*static* ...final log... coordinates unknown...
+...oxygen critical... systems failing...
+...tell earth we made it... we saw such beautiful things...
+...orion spur expedition... signing off... *static*
+
+[beeping carrier signal]
+. . . !
+. . !
+. !
+.
+
+[slow fade]
+. . .
+. .
+.
+
+[fade to end]
+```
+
+## Styles
+
+The system accepts a separate STYLE tag that is a simple comma separate list of genres and modifiers. Interestingly, commas are not necessary and you can get some really interesting hybrid styles without them. Here's one of my most successful examples:
+
+- `stoner space rock shoegaze slow build epic crescendos psychedelic riffing soaring solos pensive interludes long intro`
+
+However, the system tends to work better with commas separating the distinct genres and modifiers:
+
+- `space rock, stoner rock, slow build, epic crescendos, psychedelic riffing, soaring solos, pensive interludes, shoegaze`
+
+It should be noted that both of these are slightly outside of best practices, as it includes modifiers for solos and interludes, which can be specified inside the song itself. 
+
+- `space rock, psychedelic rock, desert rock, stoner rock, shoegaze`
+
+Simply creating a list of genres tends to work extremely well, almost like a taxonomy. In this case, space rock provides the most influence, which each subsequent modifier having less and less influence. 
+
+- `witchpop, electro swing, eerie`
+- `witchpop, house, hypnotic, dreamy, eerie`
+
+You can also focus on emotive modifiers. These tend to work better.
+
+- `witchpop, witchrock, folk, violin, acoustic, eerie, mysterious, clean vocals, classically trained`
+- `neofolk, celtic, dance, celebratory, orchestral`
+
+So in general the things that work best when constructing styles are:
+
+- Genre(s) - one or more genres in sequence
+- Emotions - one or more "vibes" to go with
+- Instruments - violins, handpans, orchestras, etc (particularly if it's either not obvious or guaranteed from the genre)
+- Vocal styles - opera, growling, etc
