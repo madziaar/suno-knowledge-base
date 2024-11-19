@@ -1,3 +1,4 @@
+```markdown
 # Suno AI Song Syntax
 
 ## Overview
@@ -495,3 +496,4 @@ The basic rules are:
 2. Then you focus on main styles or genres, again, providing context first
 3. Next, you focus on the main subject and scene construction
 4. Finally, you can add in all kinds of details, such as colors, emotive modifiers, descriptions and even text (keep in mind that the less text the better, typically does best with one or two words)
+```
