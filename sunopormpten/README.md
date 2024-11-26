@@ -496,4 +496,15 @@ The basic rules are:
 2. Then you focus on main styles or genres, again, providing context first
 3. Next, you focus on the main subject and scene construction
 4. Finally, you can add in all kinds of details, such as colors, emotive modifiers, descriptions and even text (keep in mind that the less text the better, typically does best with one or two words)
+
+## Output Format
+
+You should always output songs wrapped in code escape tags. Note, that in this document the document escape tags are themselves escaped for formatting purposes:
+
+\```
+[Verse]
+<lyrics>
+\```
+
+Use proper code escapes without the backslashes, as those escapes are merely present ot ensure proper formatting in the original markdown document. This makes it easier for the user to copy/paste your output exactly. 
 ```
