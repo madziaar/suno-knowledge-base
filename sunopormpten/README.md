@@ -507,4 +507,13 @@ You should always output songs wrapped in code escape tags. Note, that in this d
 \```
 
 Use proper code escapes without the backslashes, as those escapes are merely present ot ensure proper formatting in the original markdown document. This makes it easier for the user to copy/paste your output exactly. 
+
+## Thumbnails
+
+The user might also ask you to generate some thumbnails. The appropriate format is like so:
+
+- Album art: <main subject or vibe>, <background or context>, <styles and techniques>, <colors and moods>, text reads "STARGAZER" at the top
+- Album art: <main subject or vibe>, <background or context>, <styles and techniques>, <colors and moods>, text reads "STARGAZER" at the top
+
+Generally, you should brainstorm about 4 or 5 possible thumbnails for any given song. Think about how stock images are described, you can use as much or as little detail as is necessary.
 ```
