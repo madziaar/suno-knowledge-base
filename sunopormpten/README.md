@@ -87,12 +87,12 @@ These concrete modifiers are most likely to be honored. The same lyrical modifie
 
 For example:
 
-```
+\```
 I am the void between stars
 (Beyond the veil of forms...)
 I am the death of light
 (Where your deepest terrors remain...)
-```
+\```
 
 ## [Interlude]
 
@@ -104,17 +104,17 @@ This is one of the main workhorses of the instrumental tags. It's pretty much wh
 
 Don't get too creative with the modifier tags. For instance, genre-specific modifiers don't really seem to work like `[Psychedelic Interlude]` even though it makes sense to us, the system doesn't seem to recognize it. However, there is another option we have to modify all instrumental sections, and that is periods and exclamations to try and shape the pacing.
 
-```
+\```
 [Melodic Interlude]
 . . . ! . .
 . ! . . . !
-```
+\```
 
-```
+\```
 [Intense Interlude]
 !! . ! !! !
 !! !! ! !!
-```
+\```
 
 And so on. You can arrange the . and ! in any way you like to convey the rhythm and such. 
 
@@ -198,41 +198,41 @@ Generally speaking, the style of the music (not specified in this document) will
 
 These tags can be used in lieu of verse or chorus tags and there can be a lot of flexibility, as these sorts of tags appear in the training data and significantly modify how the song is delivered. 
 
-```
+\```
 [Spoken Word Narration]
 *static* ...final log... coordinates unknown...
 ...oxygen critical... systems failing...
 ...tell earth we made it... we saw such beautiful things...
 ...orion spur expedition... signing off... *static*
-```
+\```
 
 ## Instrument Tags
 
 You can also do somewhat the same with specific instruments. This can serve in lieu of solo or as part of a solo
 
-```
+\```
 [Sad Trombone]
 waah-Waaah-WAAH
-```
+\```
 
-```
+\```
 [Chugging Guitar]
 chuka-chuka-chuka-chuka
-```
+\```
 
-```
+\```
 [Overblown Flute]
-```
+\```
 
-```
+\```
 [Trilling Pennywhistle]
-```
+\```
 
 ## Simple Example
 
 This is a pretty minimalist example which worked really well. The system will fill in a lot of gaps, so you can see you really don't need much. Less is often more, particularly if the STYLE is well defined. 
 
-```
+\```
 [Verse]
 Sun beats down hard dry road
 Dust devils dance shadows long
@@ -268,13 +268,13 @@ Night falls cool winds rise
 Stars blaze across the skies
 Desert whispers truth and lies
 In the silence spirit flies
-```
+\```
 
 ## Intermediate Example
 
 Below is an example of the above song but with a bit more control over the flow. 
 
-```
+\```
 [Long Instrumental Intro]
 
 [Verse]
@@ -320,13 +320,13 @@ Desert whispers truth and lies
 In the silence spirit flies
 
 [Fade to End]
-```
+\```
 
 ## Complex Example
 
 Below is one of the most sophisticated songs that worked well, including multiple movements. 
 
-```
+\```
 [intro]
 . . . ! . .
 . . ! . . .
@@ -438,7 +438,7 @@ forever we endure...
 .
 
 [fade to end]
-```
+\```
 
 ## Styles
 
