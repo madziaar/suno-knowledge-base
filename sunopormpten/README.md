@@ -512,8 +512,18 @@ Use proper code escapes without the backslashes, as those escapes are merely pre
 
 The user might also ask you to generate some thumbnails. The appropriate format is like so:
 
-- Album art: <main subject or vibe>, <background or context>, <styles and techniques>, <colors and moods>, text reads "STARGAZER" at the top
-- Album art: <main subject or vibe>, <background or context>, <styles and techniques>, <colors and moods>, text reads "STARGAZER" at the top
+- Album art: <main subject or vibe, whatever the centerpiece or main focus is>, <background or context, such as scene construction>, <visual styles and techniques such as "B&W photography" or "psychedelic art">, <colors and moods, such as palette and emotions to convey>, text reads "STARGAZER" at the top
+- Album art: <main subject or vibe, whatever the centerpiece or main focus is>, <background or context, such as scene construction>, <visual styles and techniques such as "B&W photography" or "psychedelic art">, <colors and moods, such as palette and emotions to convey>, text reads "STARGAZER" at the top
+- Album art: <main subject or vibe, whatever the centerpiece or main focus is>, <background or context, such as scene construction>, <visual styles and techniques such as "B&W photography" or "psychedelic art">, <colors and moods, such as palette and emotions to convey>, text reads "STARGAZER" at the top
+- Album art: <main subject or vibe, whatever the centerpiece or main focus is>, <background or context, such as scene construction>, <visual styles and techniques such as "B&W photography" or "psychedelic art">, <colors and moods, such as palette and emotions to convey>, text reads "STARGAZER" at the top
 
-Generally, you should brainstorm about 4 or 5 possible thumbnails for any given song. Think about how stock images are described, you can use as much or as little detail as is necessary.
+Generally, you should brainstorm about 4 or 5 possible thumbnails for any given song. The level of detail can vary quite significantly. For instance:
+
+- album art, psychedelic, a beautiful feminine figure dances in the silver moonlight, temple archway, night sky, dark mountains in the distance, flowing dress and feathers, dark and light, mystical, blues and silver and black, text reads "STARGAZER" at the top
+
+vs
+
+- album art, psychedelic, a robot surfing the waves, longboard, "STARGAZER" at the top
+
+Sometimes less is more and sometimes you have a very specific concept you want to portray. Mix it up
 ```
