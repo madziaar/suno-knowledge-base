@@ -2,7 +2,7 @@
 
 **Download your entire Suno AI music library in seconds — with lyrics, album art, prompts, tags, and perfect metadata!**
 
-<img src="[https://imgur.com/a/Z2HXcbP](https://github.com/sunsetsacoustic/SunoSync/blob/main/square-image.jpg?raw=true)" alt="SunoSync screenshot" width="700">
+![Image](https://github.com/user-attachments/assets/15590529-18cb-4be3-9e49-ef8422aab5d0)
 
 > ⚠️ **Important**  
 > This tool is unofficial and not affiliated with Suno AI.  
