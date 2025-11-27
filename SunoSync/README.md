@@ -4,10 +4,6 @@
 
 ![Image](https://github.com/user-attachments/assets/15590529-18cb-4be3-9e49-ef8422aab5d0)
 
-> ⚠️ **Important**  
-> This tool is unofficial and not affiliated with Suno AI.  
-> Use **only** for personal backup of songs **you created yourself**.  
-> Downloading and redistributing Suno songs may violate their Terms of Service and can result in account suspension (especially for Pro/Premier users).
 
 ## Features
 
