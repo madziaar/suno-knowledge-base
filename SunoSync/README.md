@@ -40,11 +40,15 @@ python suno_api_gui.py
 Legal & Responsible Use
 
 Only download songs you personally generated
+
 Never re-upload or share the downloaded .mp3 files
+
 Keep your auth token private
+
 The developer is not responsible for account bans resulting from misuse
 
 License
+
 This project is licensed under the MIT License – see the LICENSE file for details.
 Support the Project
 Love SunoSync? Buy me a coffee ☕
