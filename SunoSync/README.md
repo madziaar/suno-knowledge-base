@@ -1,4 +1,5 @@
 # SunoSync 🎵
+Link to EXE: https://justinmurray99.gumroad.com/l/rrxty
 
 **Download your entire Suno AI music library in seconds — with lyrics, album art, prompts, tags, and perfect metadata!**
 
