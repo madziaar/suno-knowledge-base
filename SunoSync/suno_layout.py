@@ -195,11 +195,11 @@ def create_token_dialog(app):
     app.log("Opening Suno in your default browser...", "info")
     webbrowser.open("https://suno.com")
     
-    dialog = tk.Toplevel(app.root)
+    dialog = tk.Toplevel(app.winfo_toplevel())
     dialog.title("Get Token")
     dialog.geometry("600x450")
     dialog.configure(bg=app.bg_dark)
-    dialog.transient(app.root)
+    dialog.transient(app.winfo_toplevel())
     dialog.grab_set()
     
     tk.Label(dialog, text="INSTRUCTIONS", font=("Segoe UI", 14, "bold"),
@@ -265,4 +265,4 @@ def create_token_dialog(app):
                               width=200, height=45, corner_radius=8)
     submit_btn.pack(pady=15)
     
-    app.root.wait_window(dialog)
+    app.winfo_toplevel().wait_window(dialog)

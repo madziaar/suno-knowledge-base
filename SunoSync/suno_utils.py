@@ -58,6 +58,117 @@ def build_uuid_cache(directory):
     return uuid_cache
 
 
+def read_song_metadata(filepath):
+    """
+    Reads metadata from MP3/WAV file for library display.
+    
+    Returns: {
+        'title': str,
+        'artist': str,
+        'duration': int (seconds),
+        'date': str,
+        'filepath': str,
+        'filesize': int (bytes)
+    }
+    """
+    result = {
+        'title': os.path.basename(filepath),
+        'artist': 'Unknown Artist',
+        'duration': 0,
+        'date': '',
+        'filepath': filepath,
+        'filesize': 0,
+        'lyrics': ''
+    }
+    
+    try:
+        # Get file stats
+        stat = os.stat(filepath)
+        result['filesize'] = stat.st_size
+        result['date'] = time.strftime('%Y-%m-%d', time.localtime(stat.st_mtime))
+        
+        # Read audio metadata
+        ext = os.path.splitext(filepath)[1].lower()
+        audio = None
+        
+        if ext == '.wav':
+            audio = WAVE(filepath)
+        elif ext == '.mp3':
+            audio = MP3(filepath, ID3=ID3)
+        
+        if audio:
+            # Duration
+            if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
+                result['duration'] = int(audio.info.length)
+            
+            # Tags
+            if hasattr(audio, 'tags') and audio.tags:
+                # Title
+                if 'TIT2' in audio.tags:
+                    result['title'] = str(audio.tags['TIT2'].text[0])
+                
+                # Artist  
+                if 'TPE1' in audio.tags:
+                    result['artist'] = str(audio.tags['TPE1'].text[0])
+                
+                # Lyrics (USLT)
+                for key in audio.tags.keys():
+                    if key.startswith('USLT'):
+                        result['lyrics'] = str(audio.tags[key].text)
+                        break
+                
+                # Fallback to filename if no title tag
+                if result['title'] == os.path.basename(filepath) and 'TIT2' not in audio.tags:
+                    # Try to parse filename (remove extension and clean up)
+                    name = os.path.splitext(os.path.basename(filepath))[0]
+                    result['title'] = name.replace('_', ' ')
+    
+    except Exception as e:
+        # On any error, fallback to filename
+        pass
+    
+    return result
+
+
+def save_lyrics_to_file(filepath, lyrics):
+    """Update lyrics in the audio file."""
+    try:
+        ext = os.path.splitext(filepath)[1].lower()
+        audio = None
+        
+        if ext == '.wav':
+            audio = WAVE(filepath)
+            if audio.tags is None:
+                audio.add_tags()
+        elif ext == '.mp3':
+            audio = MP3(filepath, ID3=ID3)
+            if audio.tags is None:
+                audio.add_tags()
+        
+        if audio:
+            # Remove existing USLT frames
+            to_delete = [key for key in audio.tags.keys() if key.startswith('USLT')]
+            for key in to_delete:
+                del audio.tags[key]
+            
+            # Add new USLT frame
+            # encoding=3 is UTF-8, desc='' is standard for main lyrics
+            audio.tags.add(USLT(encoding=3, lang='eng', desc='', text=lyrics))
+            
+            if ext == '.mp3':
+                # v2.3 is most compatible with Windows/Players
+                audio.save(v2_version=3)
+            else:
+                audio.save()
+                
+            return True, "Saved successfully"
+            
+    except Exception as e:
+        print(f"Error saving lyrics to {filepath}: {e}")
+        return False, str(e)
+    return False, "Unknown error or invalid file type"
+
+
 FILENAME_BAD_CHARS = r'[<>:"/\\|?*\x00-\x1F]'
 
 

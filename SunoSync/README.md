@@ -1,214 +1,104 @@
-# SunoSync 🎵
+# SunoSync V2
 
-**Download your entire Suno AI music library in seconds — with lyrics, album art, prompts, tags, and perfect metadata!**
+**Your World, Your Music. Seamlessly Synced.**
 
-[![Download EXE](https://img.shields.io/badge/Download-EXE-brightgreen)](https://justinmurray99.gumroad.com/l/rrxty)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+SunoSync V2 is the ultimate desktop manager for your Suno AI music generation. It combines a powerful bulk downloader, a feature-rich music library, and a built-in audio player into one seamless application.
 
-![SunoSync Screenshot](https://github.com/user-attachments/assets/15590529-18cb-4be3-9e49-ef8422aab5d0)
+![SunoSync Splash](resources/splash.png)
 
-## ✨ Features
+## 🌟 Key Features
 
-- ⚡ **Lightning-fast concurrent downloads** - Downloads 10-30 songs simultaneously
-- 🎯 **Smart resume** - Never downloads the same song twice (tracks by UUID)
-- 🎨 **Full metadata embedding** - Title, artist, genre, year, lyrics, album art, and more
-- 🎵 **WAV support** - Optional high-fidelity WAV downloads when available
-- 📁 **Organize by month** - Automatically sorts downloads into YYYY-MM folders
-- ⏱️ **Rate limiting** - Configurable delay between downloads to avoid API limits
-- 🔄 **Automatic retries** - Handles network errors gracefully
-- 💾 **Persistent settings** - Your token and preferences are saved automatically
-- 🎨 **Modern UI** - Beautiful dark-themed interface with real-time progress tracking
+### 📥 Smart Downloader
+*   **Bulk Downloading:** Download all your Suno songs in one click.
+*   **Smart Sync:** Only downloads new songs, skipping what you already have.
+*   **Format Choice:** Choose between **MP3** (smaller size) or **WAV** (lossless quality).
+*   **Organization:** Automatically organizes downloads into folders by **Year-Month** (e.g., `2025-11`).
+*   **Metadata Embedding:** Automatically embeds Title, Artist, and **Lyrics** directly into the audio file tags.
+*   **Lyrics Files:** Option to save lyrics as separate `.txt` files.
 
-## 🚀 Quick Start
+### 📚 Music Library
+*   **Visual Browser:** Browse your entire collection in a clean, sortable list.
+*   **Search:** Instantly filter songs by Title or Artist.
+*   **Sorting:** Sort by Date, Duration, Size, Title, or Artist.
+*   **Context Menu:** Right-click to Play, Open Folder, or Delete songs.
+*   **Auto-Refresh:** Library automatically updates when new downloads finish.
 
-### Option 1: Download Pre-built EXE (Recommended)
+### 🎵 Built-in Player
+*   **Seamless Playback:** Play songs directly within the app without opening external players.
+*   **Controls:** Play/Pause, Stop, Seek Bar, and Volume Control.
+*   **Now Playing:** Displays current song title and artist.
+*   **Format Support:** Plays both MP3 and WAV files.
 
-**[Get the ready-to-use Windows executable →](https://justinmurray99.gumroad.com/l/rrxty)**
+### ✍️ Lyrics Editor (New in v2.0!)
+*   **View & Edit:** Right-click any song to view the embedded lyrics.
+*   **Edit Mode:** Fix typos or add your own verses directly in the app.
+*   **Verification:** Automatically verifies that your changes are saved to the file on disk.
 
-No installation required - just download and run!
+### 🎨 Modern UI & Polish
+*   **Dark Mode:** Sleek, modern dark interface that's easy on the eyes.
+*   **Splash Screen:** Professional launch experience.
+*   **Window State:** Remembers your window size and position between sessions.
+*   **Changelog:** Stay updated with a "What's New" popup on major updates.
 
-### Option 2: Run from Source
+## 🚀 Getting Started
 
-#### Prerequisites
+1.  **Download:** Get the latest `SunoSyncV2.exe`.
+2.  **Install VLC:** Ensure you have [VLC Media Player](https://www.videolan.org/) installed (required for audio playback).
+3.  **Run:** Double-click `SunoSyncV2.exe`.
+4.  **Get Token:**
+    *   Click "Get Token" in the Downloader tab.
+    *   Log in to Suno.com.
+    *   Open Developer Tools (F12) -> Application -> Cookies.
+    *   Copy the value of the `__client` cookie.
+5.  **Download:** Paste your token and click **Start Download**.
 
-- Python 3.8 or higher
-- pip (Python package manager)
+## ☕ Support
 
-#### Installation Steps
+Created by **@InternetThot**
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/SunoSync.git
-cd SunoSync
+If you love SunoSync, consider buying me a coffee to support future updates!
+👉 [buymeacoffee.com/audioalchemy](https://buymeacoffee.com/audioalchemy)
 
-# 2. Create a virtual environment (recommended)
-python -m venv venv
-
-# 3. Activate the virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Run the application
-python suno_api_gui.py
-```
-
-## 📖 Usage Guide
-
-### Getting Your Suno API Token
-
-1. Open the app and click **"Get Token (Login)"**
-2. Log in to [suno.com](https://suno.com) in the browser window that opens
-3. Press `F12` to open Developer Tools
-4. Go to the **Console** tab
-5. Copy and paste this code:
-   ```javascript
-   window.Clerk.session.getToken().then(t => prompt('Copy this token:', t))
-   ```
-6. Copy the token from the popup
-7. Paste it into the app
-
-### Downloading Your Library
-
-1. **Set your download folder** - Click "Browse" to choose where files should be saved
-2. **Configure options**:
-   - **Embed Metadata & Art**: Adds ID3 tags and album art to files (recommended)
-   - **Download WAV when available**: Prefers WAV format for higher quality
-   - **Organize by Month**: Creates subfolders like `2024-11`, `2025-01`, etc.
-   - **Delay between downloads**: Add a delay (e.g., 0.5s) to avoid rate limits
-3. **Set page range** (optional):
-   - **Start from Page**: Resume from a specific page
-   - **Max Pages**: Limit how many pages to download (0 = all pages)
-4. Click **"START DOWNLOAD"** and wait for your library to download!
-
-### File Organization
-
-- **MP3 files** are saved with full metadata embedded
-- **WAV files** (if enabled) are saved when the API provides them
-- **Lyrics** are saved as `.txt` files alongside audio files
-- Files are automatically renamed if duplicates exist (e.g., `song v2.mp3`)
+---
+*SunoSync is an unofficial tool and is not affiliated with Suno AI.*
 
 ## 🛠️ Building from Source
 
-If you want to build your own executable:
+### Prerequisites
+*   **Python 3.10+**
+*   **Git**
+*   **VLC Media Player** (Required for audio playback)
 
-### Requirements
+### Installation
 
-- Python 3.8+
-- PyInstaller: `pip install pyinstaller`
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/sunsetsacoustic/SunoSync.git
+    cd SunoSync
+    ```
 
-### Build Steps
+2.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-pip install pyinstaller
+3.  **Run the application:**
+    ```bash
+    python main.py
+    ```
 
-# 2. Build the executable
-pyinstaller SunoApi.spec --clean
+### Compiling to Executable
 
-# 3. Find your executable in dist/SunoApiDownloader.exe
-```
+To build the standalone `.exe` file:
 
-## 📁 Project Structure
+1.  **Install PyInstaller:**
+    ```bash
+    pip install pyinstaller
+    ```
 
-```
-SunoSync/
-├── suno_api_gui.py      # Main GUI application
-├── suno_downloader.py    # Download logic and API interaction
-├── suno_utils.py         # Utility functions (metadata, file handling)
-├── suno_widgets.py       # Custom Tkinter widgets
-├── suno_layout.py        # Layout builders and dialogs
-├── SunoApi.spec          # PyInstaller build configuration
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
-```
+2.  **Build:**
+    ```bash
+    pyinstaller --name="SunoSyncV2" --onefile --windowed --icon="resources/icon.ico" --add-data "resources;resources" main.py
+    ```
 
-## ⚙️ Configuration
-
-Settings are automatically saved to `config.json` in the application directory:
-
-- **Token**: Your Suno API bearer token
-- **Download Path**: Where files are saved
-- **Embed Metadata**: Whether to add ID3 tags
-- **Prefer WAV**: Whether to download WAV when available
-- **Organize by Month**: Whether to create monthly subfolders
-- **Download Delay**: Rate limiting delay in seconds
-- **Max Pages**: Maximum pages to download (0 = all)
-- **Start Page**: Which page to start from
-- **Log Font Size**: Activity log text size
-
-## 🔒 Privacy & Security
-
-- Your API token is stored locally in `config.json` (never shared)
-- All downloads happen directly between your computer and Suno's servers
-- No data is sent to third parties
-- The app only accesses your own Suno library
-
-## ⚠️ Legal & Responsible Use
-
-**Important Guidelines:**
-
-- ✅ Only download songs **you personally generated** on Suno
-- ✅ Keep your auth token **private** - never share it
-- ❌ **Never re-upload** or share downloaded files publicly
-- ❌ **Don't use** for bulk downloading other users' content
-- ⚠️ The developer is **not responsible** for account bans resulting from misuse
-
-Respect Suno's Terms of Service and use this tool responsibly.
-
-## 🐛 Troubleshooting
-
-### "Token missing" error
-- Make sure you've pasted your token correctly
-- Get a fresh token if it's expired
-
-### Downloads failing
-- Check your internet connection
-- Try increasing the "Delay between downloads" setting
-- Some songs may not be available if they were deleted
-
-### WAV files not downloading
-- WAV conversion can take up to 2 minutes per song
-- The app will automatically fall back to MP3 if WAV times out
-- Make sure "Download WAV when available" is enabled
-
-### App won't start
-- Make sure you have Python 3.8+ installed
-- Try reinstalling dependencies: `pip install -r requirements.txt --force-reinstall`
-- Check that all required files are present
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Support
-
-- **Buy the EXE**: [Get the pre-built Windows executable](https://justinmurray99.gumroad.com/l/rrxty)
-- **Report Issues**: Open an issue on GitHub
-- **Feature Requests**: Submit a feature request issue
-
-## ⭐ Acknowledgments
-
-- Built with ❤️ for the Suno AI community
-- Uses [mutagen](https://github.com/quodlibet/mutagen) for metadata embedding
-- Modern UI built with Tkinter and custom widgets
-
----
-
-**Made with ❤️ for the Suno AI community — 2024**
+3.  The executable will be in the `dist/` folder.
