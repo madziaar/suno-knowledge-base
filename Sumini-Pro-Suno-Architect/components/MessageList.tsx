@@ -31,7 +31,8 @@ const SongCard: React.FC<{ song: ParsedSong; onRemix: (song: ParsedSong, type: '
   const { playClick, playSuccess } = useUiSound();
 
   const tagsString = song.tags.map(t => (t.startsWith('#') ? t : `#${t}`)).join(' ');
-  const fullStylePrompt = `${song.style}\n${tagsString}`;
+  // Updated to include song.voice in the copied string
+  const fullStylePrompt = `${song.style}\n${song.voice}\n${tagsString}`;
 
   const handleDownload = useCallback(() => {
     playSuccess();
