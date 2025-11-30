@@ -80,9 +80,9 @@ const SongCard: React.FC<{ song: ParsedSong; onRemix: (song: ParsedSong, type: '
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2 group/title">
                 <h3 className="text-lg font-bold text-zinc-100 tracking-tight leading-tight group-hover:text-white transition-colors">{song.title}</h3>
-                <CopyButton text={song.title} className="opacity-0 group-hover/title:opacity-100 transition-opacity" />
+                <CopyButton text={song.title} className="text-zinc-500 hover:text-indigo-400" />
               </div>
-              <p className="text-[11px] text-indigo-400 mt-0.5 font-mono uppercase tracking-wide opacity-80">{song.voice}</p>
+              <p className="text-[11px] text-indigo-400 mt-0.5 font-mono uppercase tracking-wide opacity-80 whitespace-pre-wrap">{song.voice}</p>
             </div>
             <button onClick={handleDownload} className="text-zinc-600 hover:text-zinc-200 transition-colors p-2 hover:bg-white/5 rounded-lg shrink-0" title="Download .txt">
                <Download size={16} />

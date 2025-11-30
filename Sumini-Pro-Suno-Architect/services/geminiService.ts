@@ -63,11 +63,10 @@ The **Style** field is for the AUDIO ENGINE, not the human.
 
 ────────────────────────────────────────
 🎤 VOCAL PROFILING
-Define the voice strictly:
-- "Male, Gritty Rock Tenor"
-- "Female, Ethereal Soprano, Heavy Reverb"
-- "Robot, Vocoder, Monotone"
-- "Choir, Gospel Texture"
+Define the voice strictly in the "## Voice:" section.
+- Single: "Male, Gritty Rock Tenor"
+- Multi: "Member A: Smooth Tenor. Member B: Deep Bass Rapper."
+- Effects: "Robot, Vocoder, Monotone, Choir"
 
 ────────────────────────────────────────
 ✍️ LYRICAL ARCHITECTURE
@@ -80,7 +79,8 @@ Define the voice strictly:
 
 ## Title: <Song Name>
 
-## Voice: <Gender + Texture + Effects>
+## Voice:
+<Full vocal description. For groups, list all members here.>
 
 ## Tags:
 <#BPM, #Key, #Genre, #SubGenre, #Vibe, #Instruments>
@@ -168,7 +168,7 @@ export const generateContentResponse = async (
     [GeneratorMode.KPOP_RANDOM]:
       "Create a top-tier K-Pop track with strong English hooks.",
     [GeneratorMode.KPOP_3_VOICES]:
-      "Create a K-Pop trio track. Label lines [Member A], [Member B], [Member C].",
+      "Create a K-Pop trio track. In the '## Voice' section, explicitly list distinct vocal styles for [Member A], [Member B], and [Member C]. Label lines in lyrics.",
     [GeneratorMode.TRENDING]: (() => {
       useSearch = true;
       return "Search for current viral trends (2024-2025). Write a hit song referencing the trend.";
@@ -251,9 +251,13 @@ export const generateContentResponse = async (
 /** Parser */
 export const parseSongFromText = (text: string) => {
   const title = text.match(/## Title:\s*(.+)/)?.[1]?.trim();
-  const voice = text.match(/## Voice:\s*(.+)/)?.[1]?.trim() ?? "Not specified";
+  // Robust multi-line capture for Voice
+  const voice = text.match(/## Voice:\s*([\s\S]*?)(?=## Tags:)/)?.[1]?.trim() ?? "Not specified";
+  // Robust multi-line capture for Tags
   const rawTags = text.match(/## Tags:\s*([\s\S]*?)(?=## Style:)/)?.[1]?.trim();
+  // Robust multi-line capture for Style
   const style = text.match(/## Style:\s*([\s\S]*?)(?=## Lyrics:)/)?.[1]?.trim();
+  // Remaining content is Lyrics
   const lyrics = text.match(/## Lyrics:\s*([\s\S]*)/)?.[1]?.trim();
 
   if (!title || !style || !lyrics) return null;
