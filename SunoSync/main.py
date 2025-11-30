@@ -14,6 +14,8 @@ if getattr(sys, 'frozen', False):
 else:
     base_path = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(base_path, "config.json")
+CACHE_FILE = os.path.join(base_path, "library_cache.json")
+TAGS_FILE = os.path.join(base_path, "tags.json")
 
 
 def resource_path(relative_path):
@@ -66,15 +68,20 @@ class SunoSyncApp(tk.Tk):
         
         # Tab 2: Library
         self.config_manager = ConfigManager(CONFIG_FILE)
-        self.library = LibraryTab(self.notebook, config_manager=self.config_manager)
+        # Tab 2: Library
+        self.config_manager = ConfigManager(CONFIG_FILE)
+        self.library = LibraryTab(self.notebook, config_manager=self.config_manager, cache_file=CACHE_FILE, tags_file=TAGS_FILE)
         self.notebook.add(self.library, text="  Library  ")
         
         # Player widget (bottom, fixed)
         self.player = PlayerWidget(main_frame)
+        self.player.set_tags_file(TAGS_FILE)
         self.player.pack(fill="x", side="bottom")
         
         # Connect Library to Player
         self.library.bind("<<PlaySong>>", self.on_play_song)
+        self.player.bind("<<TagsUpdated>>", lambda e: self.library.reload_tags())
+        self.player.bind("<<TrackChanged>>", self.on_track_changed)
         
         # Connect Downloader to Library (refresh on download complete)
         self.downloader.downloader.signals.download_complete.connect(self.on_download_complete)
@@ -209,10 +216,14 @@ class SunoSyncApp(tk.Tk):
     
     def on_play_song(self, event):
         """Handle play song event from library."""
-        # Get selected filepath from library
-        filepath = self.library.get_selected_filepath()
-        if filepath:
-            self.player.play_file(filepath)
+        # Get playlist and index from library
+        if hasattr(self.library, 'current_playlist') and hasattr(self.library, 'current_index'):
+            self.player.set_playlist(self.library.current_playlist, self.library.current_index)
+
+    def on_track_changed(self, event):
+        """Handle track change from player."""
+        if self.player.current_file:
+            self.library.select_song(self.player.current_file)
 
 
 if __name__ == "__main__":

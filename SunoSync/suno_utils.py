@@ -137,6 +137,9 @@ def read_song_metadata(filepath):
                     # Try to parse filename (remove extension and clean up)
                     name = os.path.splitext(os.path.basename(filepath))[0]
                     result['title'] = name.replace('_', ' ')
+        
+        # Get UUID
+        result['id'] = get_uuid_from_file(filepath)
     
     except Exception as e:
         # On any error, fallback to filename

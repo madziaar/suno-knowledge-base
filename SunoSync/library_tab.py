@@ -1,6 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
+import json
+import threading
+import queue
+import time
 from suno_utils import read_song_metadata, save_lyrics_to_file, open_file
 from theme_manager import ThemeManager
 
@@ -8,13 +12,23 @@ from theme_manager import ThemeManager
 class LibraryTab(tk.Frame):
     """Library tab for browsing and playing downloaded songs."""
     
-    def __init__(self, parent, config_manager, **kwargs):
+    def __init__(self, parent, config_manager, cache_file=None, tags_file=None, **kwargs):
         super().__init__(parent, **kwargs)
         
         self.config_manager = config_manager
+        self.cache_file = cache_file
+        self.tags_file = tags_file
         self.download_path = self.config_manager.get("path", "")
         self.all_songs = []  # Full song list
         self.filtered_songs = []  # Filtered by search
+        self.tags = {}
+        self._load_tags()
+        
+        # Caching & Threading
+        self.cache = {}
+        self.scan_queue = queue.Queue()
+        self.is_scanning = False
+        self._load_cache()
         
         # Apply theme
         theme = ThemeManager()
@@ -52,12 +66,12 @@ class LibraryTab(tk.Frame):
         search_entry.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 10), pady=8)
         
         # Refresh button
-        refresh_btn = tk.Button(toolbar, text="🔄 Refresh", command=self.refresh_library,
+        self.refresh_btn = tk.Button(toolbar, text="🔄 Refresh", command=self.refresh_library,
                                 bg=self.accent_purple, fg="white",
                                 font=("Segoe UI", 10, "bold"),
                                 relief="flat", cursor="hand2",
                                 padx=20, pady=8)
-        refresh_btn.pack(side=tk.RIGHT)
+        self.refresh_btn.pack(side=tk.RIGHT)
         
         # Open Folder button
         folder_btn = tk.Button(toolbar, text="📂 Open Folder", command=self.open_download_folder,
@@ -110,12 +124,13 @@ class LibraryTab(tk.Frame):
         
         # Treeview columns
         self.tree = ttk.Treeview(tree_frame, style="Library.Treeview",
-                                columns=("title", "artist", "duration", "date", "size"),
+                                columns=("tag", "title", "artist", "duration", "date", "size"),
                                 show="headings",
                                 yscrollcommand=v_scroll.set,
                                 xscrollcommand=h_scroll.set)
         
         # Column headings
+        self.tree.heading("tag", text="", command=lambda: self.sort_column("tag"))
         self.tree.heading("title", text="Title", command=lambda: self.sort_column("title"))
         self.tree.heading("artist", text="Artist", command=lambda: self.sort_column("artist"))
         self.tree.heading("duration", text="Duration", command=lambda: self.sort_column("duration"))
@@ -123,6 +138,7 @@ class LibraryTab(tk.Frame):
         self.tree.heading("size", text="Size", command=lambda: self.sort_column("size"))
         
         # Column widths
+        self.tree.column("tag", width=30, minwidth=30, anchor="center")
         self.tree.column("title", width=300, minwidth=150)
         self.tree.column("artist", width=200, minwidth=100)
         self.tree.column("duration", width=80, minwidth=60)
@@ -134,7 +150,6 @@ class LibraryTab(tk.Frame):
         v_scroll.config(command=self.tree.yview)
         h_scroll.config(command=self.tree.xview)
         
-        # Double-click to play (will be connected later)
         self.tree.bind("<Double-1>", self.on_double_click)
         
         # Right-click menu
@@ -146,9 +161,150 @@ class LibraryTab(tk.Frame):
         self.context_menu.add_command(label="Delete", command=self.delete_selected)
         
         self.tree.bind("<Button-3>", self.show_context_menu)
+
+    def _load_tags(self):
+        """Load tags from file."""
+        if self.tags_file and os.path.exists(self.tags_file):
+            try:
+                with open(self.tags_file, 'r', encoding='utf-8') as f:
+                    self.tags = json.load(f)
+            except:
+                self.tags = {}
     
+    def reload_tags(self):
+        """Reload tags and update UI."""
+        self._load_tags()
+        self.update_tree()
+
+    def _get_tag_icon(self, song):
+        """Get icon for song tag."""
+        uuid = song.get('id')
+        if not uuid:
+            uuid = song['filepath']
+            
+        tag = self.tags.get(uuid)
+        if tag == "keep": return "👍"
+        if tag == "trash": return "🗑️"
+        if tag == "star": return "⭐"
+        return ""
+
+    def _load_cache(self):
+        """Load metadata cache from file."""
+        if self.cache_file and os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'r', encoding='utf-8') as f:
+                    self.cache = json.load(f)
+            except Exception as e:
+                print(f"Error loading cache: {e}")
+                self.cache = {}
+
+    def _save_cache(self):
+        """Save metadata cache to file."""
+        if self.cache_file:
+            try:
+                with open(self.cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.cache, f)
+            except Exception as e:
+                print(f"Error saving cache: {e}")
+
+    def _scan_thread(self):
+        """Background thread to scan library."""
+        new_songs = []
+        cache_updated = False
+        
+        try:
+            for root, dirs, files in os.walk(self.download_path):
+                for file in files:
+                    if file.lower().endswith(('.mp3', '.wav')):
+                        filepath = os.path.join(root, file)
+                        mtime = os.path.getmtime(filepath)
+                        
+                        # Check cache
+                        cached_data = self.cache.get(filepath)
+                        if cached_data and cached_data.get('mtime') == mtime:
+                            song_data = cached_data
+                        else:
+                            # Parse file
+                            song_data = read_song_metadata(filepath)
+                            if song_data:
+                                song_data['mtime'] = mtime
+                                self.cache[filepath] = song_data
+                                cache_updated = True
+                        
+                        if song_data:
+                            new_songs.append(song_data)
+                            
+                            # Batch update UI every 20 songs
+                            if len(new_songs) >= 20:
+                                self.scan_queue.put(("batch", list(new_songs)))
+                                new_songs = []
+                                
+            # Final batch
+            if new_songs:
+                self.scan_queue.put(("batch", new_songs))
+                
+            self.scan_queue.put(("done", None))
+            
+            if cache_updated:
+                self._save_cache()
+                
+        except Exception as e:
+            print(f"Scan error: {e}")
+            self.scan_queue.put(("done", None))
+
+    def _process_scan_queue(self):
+        """Process updates from scan thread."""
+        try:
+            while True:
+                msg_type, data = self.scan_queue.get_nowait()
+                
+                if msg_type == "batch":
+                    self.all_songs.extend(data)
+                    # Sort and update tree (maybe optimize to not sort every batch?)
+                    # For now, just append to tree to be fast
+                    self._add_songs_to_tree(data)
+                    self.count_label.config(text=f"{len(self.all_songs)} songs")
+                    
+                elif msg_type == "done":
+                    self.is_scanning = False
+                    self.refresh_btn.config(state="normal", text="🔄 Refresh")
+                    # Final sort
+                    self.all_songs.sort(key=lambda x: x['date'], reverse=True)
+                    self.filtered_songs = self.all_songs.copy()
+                    self.update_tree()
+                    return # Stop processing
+                    
+        except queue.Empty:
+            pass
+            
+        if self.is_scanning:
+            self.after(100, self._process_scan_queue)
+
+    def _add_songs_to_tree(self, songs):
+        """Add a batch of songs to the treeview."""
+        for song in songs:
+            duration_str = self.format_duration(song['duration'])
+            size_str = self.format_size(song['filesize'])
+            tag_icon = self._get_tag_icon(song)
+            
+            self.tree.insert("", "end", values=(
+                tag_icon,
+                song['title'],
+                song['artist'],
+                duration_str,
+                song['date'],
+                size_str
+            ), tags=(song['filepath'],))
+
     def refresh_library(self):
         """Scan download folder and populate tree."""
+        if self.is_scanning:
+            return
+            
+        # Clear current
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
         self.all_songs = []
         
         # Update path from config
@@ -157,22 +313,14 @@ class LibraryTab(tk.Frame):
         if not self.download_path or not os.path.exists(self.download_path):
             # Silent return if not set, or maybe just show empty
             return
+            
+        # Start scanning
+        self.is_scanning = True
+        self.refresh_btn.config(state="disabled", text="Scanning...")
+        self.count_label.config(text="Scanning...")
         
-        # Scan folder recursively
-        for root, dirs, files in os.walk(self.download_path):
-            for file in files:
-                if file.lower().endswith(('.mp3', '.wav')):
-                    filepath = os.path.join(root, file)
-                    metadata = read_song_metadata(filepath)
-                    self.all_songs.append(metadata)
-        
-        # Sort by date (newest first)
-        self.all_songs.sort(key=lambda x: x['date'], reverse=True)
-        
-        # Update display
-        self.filtered_songs = self.all_songs.copy()
-        self.update_tree()
-        self.count_label.config(text=f"{len(self.all_songs)} songs")
+        threading.Thread(target=self._scan_thread, daemon=True).start()
+        self._process_scan_queue()
     
     def update_tree(self):
         """Update treeview with filtered songs."""
@@ -181,17 +329,7 @@ class LibraryTab(tk.Frame):
             self.tree.delete(item)
         
         # Add songs
-        for song in self.filtered_songs:
-            duration_str = self.format_duration(song['duration'])
-            size_str = self.format_size(song['filesize'])
-            
-            self.tree.insert("", "end", values=(
-                song['title'],
-                song['artist'],
-                duration_str,
-                song['date'],
-                size_str
-            ), tags=(song['filepath'],))
+        self._add_songs_to_tree(self.filtered_songs)
     
     def on_search(self, *args):
         """Filter songs by search query."""
@@ -244,9 +382,38 @@ class LibraryTab(tk.Frame):
         item = selection[0]
         filepath = self.tree.item(item)['tags'][0]
         
-        # Emit event for player (will be connected later)
-        self.event_generate("<<PlaySong>>", data=filepath)
+        # Find index in filtered_songs
+        index = -1
+        for i, song in enumerate(self.filtered_songs):
+            if song['filepath'] == filepath:
+                index = i
+                break
+        
+        if index != -1:
+            # Emit event with playlist data
+            # We can't pass complex data via event string, so we'll use a callback or direct method
+            # But since we are using bind, we need to pass data differently or change architecture
+            # Let's use a custom event with a reference, or just call a method on parent if possible
+            # Actually, main.py binds this. We can attach data to the widget temporarily
+            self.current_playlist = self.filtered_songs
+            self.current_index = index
+            self.event_generate("<<PlaySong>>")
     
+    def select_song(self, filepath):
+        """Select song in tree by filepath."""
+        if not filepath:
+            return
+            
+        # Find item with matching tag
+        # Since we don't have a direct map, we iterate. 
+        # For large libraries this might be slow, but acceptable for now.
+        for item in self.tree.get_children():
+            item_tags = self.tree.item(item, "tags")
+            if item_tags and item_tags[0] == filepath:
+                self.tree.selection_set(item)
+                self.tree.see(item)
+                return
+
     def get_selected_filepath(self):
         """Get filepath of selected song."""
         selection = self.tree.selection()
