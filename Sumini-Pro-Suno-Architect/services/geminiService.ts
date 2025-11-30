@@ -5,12 +5,9 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeneratorMode, LyricsLanguage, StudioSettings, AppSettings } from "../types";
 
 // Dynamic Client Factory
+// Strictly uses process.env.API_KEY as per environment requirements.
 const getClient = (): GoogleGenAI => {
-  const apiKey = localStorage.getItem("user_api_key") || process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("Missing API Key");
-  }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 /**

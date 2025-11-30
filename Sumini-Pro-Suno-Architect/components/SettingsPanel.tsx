@@ -4,7 +4,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useUiSound } from '../hooks/useUiSound';
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from '../services/geminiService';
-import { X, Server, Zap, Smartphone, Download, Upload, Trash2, Key, Eye, EyeOff, Check, Loader2, AlertCircle, Terminal, Code2, RotateCcw } from 'lucide-react';
+import { X, Server, Zap, Smartphone, Download, Upload, Trash2, Loader2, Terminal, Code2, RotateCcw } from 'lucide-react';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -55,39 +55,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
   // Connection State
   const [latency, setLatency] = useState<number | null>(null);
   const [connStatus, setConnStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
-  
-  // API Key State
-  const [apiKey, setApiKey] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [isKeySaved, setIsKeySaved] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const savedKey = localStorage.getItem('user_api_key');
-      if (savedKey) {
-        setApiKey(savedKey);
-        setIsKeySaved(true);
-      }
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const handleSaveKey = () => {
-    localStorage.setItem('user_api_key', apiKey.trim());
-    setIsKeySaved(true);
-    playSuccess();
-  };
 
   const handleTestConnection = async () => {
     setConnStatus('testing');
     const start = Date.now();
     try {
-      // Use the key from state or fallback to env
-      const keyToUse = apiKey.trim() || process.env.API_KEY;
-      if (!keyToUse) throw new Error("No Key");
-
-      const ai = new GoogleGenAI({ apiKey: keyToUse });
+      // Use env key directly
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: 'ping' });
       const duration = Date.now() - start;
       setLatency(duration);
@@ -150,40 +126,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar pb-safe">
           
-          {/* 1. API Configuration */}
-          <SettingSection title="API Configuration" icon={<Key size={16} />}>
-            <div className="space-y-3">
-               <div className="relative group">
-                 <input 
-                   type={showKey ? "text" : "password"}
-                   value={apiKey}
-                   onChange={(e) => { setApiKey(e.target.value); setIsKeySaved(false); }}
-                   placeholder="Enter Suno/Gemini API Key"
-                   className={`w-full bg-white/[0.03] border rounded-xl px-4 py-3 text-sm text-zinc-200 focus:outline-none transition-all placeholder:text-zinc-600 ${isKeySaved ? 'border-green-500/30 focus:border-green-500/50' : 'border-white/10 focus:border-indigo-500/50'}`}
-                 />
-                 <button 
-                   onClick={() => setShowKey(!showKey)}
-                   className="absolute right-12 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-2"
-                 >
-                   {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                 </button>
-                 <button 
-                   onClick={handleSaveKey}
-                   disabled={isKeySaved || !apiKey}
-                   className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${isKeySaved ? 'text-green-400 bg-green-500/10' : 'text-zinc-400 hover:text-indigo-400 hover:bg-white/10'}`}
-                   title="Save Key"
-                 >
-                   {isKeySaved ? <Check size={14} /> : <Upload size={14} />}
-                 </button>
-               </div>
-               
-               <p className="text-[10px] text-zinc-500 ml-1">
-                 Your key is stored locally in your browser. <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Get API Key</a>
-               </p>
-
-               <div className="p-4 bg-white/[0.03] rounded-xl border border-white/5 backdrop-blur-md mt-2">
+          {/* 1. Status */}
+          <SettingSection title="Status" icon={<Server size={16} />}>
+             <div className="p-4 bg-white/[0.03] rounded-xl border border-white/5 backdrop-blur-md">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">Connection Status</span>
+                  <span className="text-xs text-zinc-400">API Connection</span>
                   <span className={`text-xs font-bold ${connStatus === 'ok' ? 'text-green-400' : connStatus === 'error' ? 'text-red-400' : 'text-zinc-500'}`}>
                     {connStatus === 'idle' ? 'Ready' : connStatus === 'testing' ? 'Testing...' : connStatus === 'ok' ? `${latency}ms OK` : 'Error'}
                   </span>
@@ -196,8 +143,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
                   {connStatus === 'testing' ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                   Test Connection
                 </button>
-              </div>
-            </div>
+             </div>
           </SettingSection>
 
           {/* 2. Generation */}

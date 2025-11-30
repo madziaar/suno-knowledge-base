@@ -181,22 +181,16 @@ const App: React.FC = () => {
   const handleEnhance = async () => {
     if (!input.trim()) return;
     
-    // API Key Check
-    const apiKey = localStorage.getItem("user_api_key") || process.env.API_KEY;
-    if (!apiKey) {
-      setErrorToast("Please add your API Key in Settings.");
-      setIsSettingsOpen(true);
-      return;
-    }
-
     playClick();
     setIsEnhancing(true);
     try {
       const enhanced = await enhanceStyle(input);
       if (enhanced) setInput(enhanced);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setErrorToast("Enhancement failed. Check API Key.");
+      // Helpful error message for missing keys during enhance
+      const isKeyError = e.message?.includes('API key') || e.message?.includes('403') || e.toString().includes('API_KEY');
+      setErrorToast(isKeyError ? "Missing API Key. Check Env Vars." : "Enhancement failed. Try again.");
     } finally {
       setIsEnhancing(false);
     }
@@ -215,14 +209,6 @@ const App: React.FC = () => {
       }
 
       if (!text.trim() && mode === GeneratorMode.NORMAL) return;
-
-      // API Key Check
-      const apiKey = localStorage.getItem("user_api_key") || process.env.API_KEY;
-      if (!apiKey) {
-        setErrorToast("Please add your API Key in Settings.");
-        setIsSettingsOpen(true);
-        return;
-      }
 
       playSuccess();
 
@@ -276,12 +262,10 @@ const App: React.FC = () => {
           console.debug('Generation aborted');
         } else {
           console.error(err);
-          // Show friendlier error message if key is invalid
-          const msg = err.message?.includes('API key') 
-            ? "Invalid API Key. Please check Settings." 
-            : "Generation failed. Please try again.";
+          // Detect API Key error to guide user
+          const isKeyError = err.message?.includes('API key') || err.message?.includes('403') || err.toString().includes('API_KEY');
+          const msg = isKeyError ? "Failed: API Key missing. Check Vercel Env Vars." : "Generation failed. Please try again.";
           setErrorToast(msg);
-          if (msg.includes('Invalid API')) setIsSettingsOpen(true);
           setTimeout(() => setErrorToast(null), 5000);
         }
       } finally {
