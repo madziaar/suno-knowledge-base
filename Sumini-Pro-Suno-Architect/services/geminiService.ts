@@ -5,9 +5,21 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeneratorMode, LyricsLanguage, StudioSettings, AppSettings } from "../types";
 
 // Dynamic Client Factory
-// Uses process.env.API_KEY first, then falls back to user-provided key in localStorage.
+// Uses safe environment check to prevent "process is not defined" crash in browsers
 const getClient = (): GoogleGenAI => {
-  const apiKey = process.env.API_KEY || localStorage.getItem('sumini_api_key') || '';
+  let envKey = '';
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env) {
+      // @ts-ignore
+      envKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore reference errors if process is not defined
+  }
+  
+  const apiKey = envKey || localStorage.getItem('sumini_api_key') || '';
+  
   if (!apiKey) {
     console.warn("No API Key found in Env or LocalStorage.");
   }

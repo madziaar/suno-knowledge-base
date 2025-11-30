@@ -74,8 +74,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
     setConnStatus('testing');
     const start = Date.now();
     try {
-      // Use env key or local key
-      const keyToUse = process.env.API_KEY || apiKey;
+      // Safely access process.env
+      let envKey = '';
+      try {
+        // @ts-ignore
+        if (typeof process !== 'undefined' && process.env) {
+           // @ts-ignore
+           envKey = process.env.API_KEY || '';
+        }
+      } catch {}
+
+      const keyToUse = envKey || apiKey;
       if (!keyToUse) throw new Error("No key provided");
 
       const ai = new GoogleGenAI({ apiKey: keyToUse });
