@@ -31,8 +31,8 @@ const SongCard: React.FC<{ song: ParsedSong; onRemix: (song: ParsedSong, type: '
   const { playClick, playSuccess } = useUiSound();
 
   const tagsString = song.tags.map(t => (t.startsWith('#') ? t : `#${t}`)).join(' ');
-  // Updated to include song.voice in the copied string
-  const fullStylePrompt = `${song.style}\n${song.voice}\n${tagsString}`;
+  // Combine Style + Voice + Tags for the copy button
+  const fullStylePrompt = `${song.style}, ${song.voice}\n${tagsString}`;
 
   const handleDownload = useCallback(() => {
     playSuccess();
@@ -77,11 +77,14 @@ const SongCard: React.FC<{ song: ParsedSong; onRemix: (song: ParsedSong, type: '
 
         <div className="relative flex-1 min-w-0 pt-0.5">
           <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-bold text-zinc-100 tracking-tight leading-tight group-hover:text-white transition-colors">{song.title}</h3>
+            <div className="flex-1 mr-4">
+              <div className="flex items-center gap-2 group/title">
+                <h3 className="text-lg font-bold text-zinc-100 tracking-tight leading-tight group-hover:text-white transition-colors">{song.title}</h3>
+                <CopyButton text={song.title} className="opacity-0 group-hover/title:opacity-100 transition-opacity" />
+              </div>
               <p className="text-[11px] text-indigo-400 mt-0.5 font-mono uppercase tracking-wide opacity-80">{song.voice}</p>
             </div>
-            <button onClick={handleDownload} className="text-zinc-600 hover:text-zinc-200 transition-colors p-2 hover:bg-white/5 rounded-lg" title="Download .txt">
+            <button onClick={handleDownload} className="text-zinc-600 hover:text-zinc-200 transition-colors p-2 hover:bg-white/5 rounded-lg shrink-0" title="Download .txt">
                <Download size={16} />
             </button>
           </div>
@@ -118,7 +121,12 @@ const SongCard: React.FC<{ song: ParsedSong; onRemix: (song: ParsedSong, type: '
                       <span className="text-[9px] font-bold text-zinc-500 uppercase">Prompt String</span>
                       <CopyButton text={fullStylePrompt} label="Copy" />
                   </div>
-                  <p className="text-[13px] text-zinc-300 font-mono leading-relaxed selection:bg-indigo-500/30 relative z-10">{song.style}</p>
+                  <div className="relative z-10 font-mono leading-relaxed selection:bg-indigo-500/30">
+                    <span className="text-[13px] text-zinc-300">{song.style}</span>
+                    <span className="text-zinc-500">, </span>
+                    <span className="text-[13px] text-indigo-300/90">{song.voice}</span>
+                    <div className="text-[11px] text-zinc-500 mt-2">{tagsString}</div>
+                  </div>
              </div>
 
             <div className="pt-2">
