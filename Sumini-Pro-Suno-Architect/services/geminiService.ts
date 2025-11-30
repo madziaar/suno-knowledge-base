@@ -71,6 +71,7 @@ Define the voice strictly in the "## Voice:" section.
 ────────────────────────────────────────
 ✍️ LYRICAL ARCHITECTURE
 - **Metatags**: Use [Verse], [Chorus], [Bridge], [Drop], [Instrumental Break].
+- **Voice Switching**: IMPORTANT! When switching singers (e.g. Duets/Trios), use bracketed tags ONLY: [Verse 1: Member A] or [Member B]. NEVER write "Member A:" without brackets or the AI will sing the name.
 - **Flow**: Use (parentheses) for ad-libs and backing vocals.
 - **Rhythm**: Break lines to indicate flow.
 
@@ -168,7 +169,7 @@ export const generateContentResponse = async (
     [GeneratorMode.KPOP_RANDOM]:
       "Create a top-tier K-Pop track with strong English hooks.",
     [GeneratorMode.KPOP_3_VOICES]:
-      "Create a K-Pop trio track. In the '## Voice' section, explicitly list distinct vocal styles for [Member A], [Member B], and [Member C]. Label lines in lyrics.",
+      "Create a K-Pop trio track. In the '## Voice' section, explicitly list distinct vocal styles for [Member A], [Member B], and [Member C]. In '## Lyrics', STRICTLY use bracketed tags like [Member A], [Member B] to indicate singer changes. DO NOT include singer names as plain text.",
     [GeneratorMode.TRENDING]: (() => {
       useSearch = true;
       return "Search for current viral trends (2024-2025). Write a hit song referencing the trend.";
