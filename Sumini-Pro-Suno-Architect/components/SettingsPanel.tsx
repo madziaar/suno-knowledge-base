@@ -4,7 +4,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useUiSound } from '../hooks/useUiSound';
 import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from '../services/geminiService';
-import { X, Server, Zap, Smartphone, Download, Upload, Trash2, Loader2, Terminal, Code2, RotateCcw } from 'lucide-react';
+import { X, Server, Zap, Smartphone, Download, Upload, Trash2, Loader2, Terminal, Code2, RotateCcw, Key } from 'lucide-react';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -55,6 +55,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
   // Connection State
   const [latency, setLatency] = useState<number | null>(null);
   const [connStatus, setConnStatus] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle');
+  const [apiKey, setApiKey] = useState(() => {
+     if (typeof window !== 'undefined') {
+       return localStorage.getItem('sumini_api_key') || '';
+     }
+     return '';
+  });
+
+  const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setApiKey(val);
+    localStorage.setItem('sumini_api_key', val);
+  };
 
   if (!isOpen) return null;
 
@@ -62,8 +74,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
     setConnStatus('testing');
     const start = Date.now();
     try {
-      // Use env key directly
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // Use env key or local key
+      const keyToUse = process.env.API_KEY || apiKey;
+      if (!keyToUse) throw new Error("No key provided");
+
+      const ai = new GoogleGenAI({ apiKey: keyToUse });
       await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: 'ping' });
       const duration = Date.now() - start;
       setLatency(duration);
@@ -126,11 +141,31 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar pb-safe">
           
-          {/* 1. Status */}
-          <SettingSection title="Status" icon={<Server size={16} />}>
-             <div className="p-4 bg-white/[0.03] rounded-xl border border-white/5 backdrop-blur-md">
+          {/* 1. Status / Connection */}
+          <SettingSection title="Status & Access" icon={<Server size={16} />}>
+             <div className="p-4 bg-white/[0.03] rounded-xl border border-white/5 backdrop-blur-md space-y-4">
+                
+                {/* API Key Input */}
+                <div>
+                   <label className="flex items-center gap-2 text-xs font-medium text-zinc-400 mb-2">
+                     <Key size={12} /> Gemini API Key
+                   </label>
+                   <input 
+                     type="password" 
+                     placeholder="Enter your API Key..." 
+                     value={apiKey}
+                     onChange={handleKeyChange}
+                     className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all font-mono"
+                   />
+                   <p className="text-[10px] text-zinc-600 mt-1.5 leading-tight">
+                     Leave empty if defined in Environment Variables. Stored locally in your browser.
+                   </p>
+                </div>
+
+                <div className="h-px bg-white/5 w-full" />
+
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-zinc-400">API Connection</span>
+                  <span className="text-xs text-zinc-400">Connection Status</span>
                   <span className={`text-xs font-bold ${connStatus === 'ok' ? 'text-green-400' : connStatus === 'error' ? 'text-red-400' : 'text-zinc-500'}`}>
                     {connStatus === 'idle' ? 'Ready' : connStatus === 'testing' ? 'Testing...' : connStatus === 'ok' ? `${latency}ms OK` : 'Error'}
                   </span>
@@ -138,7 +173,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose, i
                 <button 
                   onClick={handleTestConnection}
                   disabled={connStatus === 'testing'}
-                  className="mt-3 w-full py-2 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-xs font-medium text-zinc-300 rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-xs font-medium text-zinc-300 rounded-lg transition-all flex items-center justify-center gap-2 active:scale-95"
                 >
                   {connStatus === 'testing' ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
                   Test Connection

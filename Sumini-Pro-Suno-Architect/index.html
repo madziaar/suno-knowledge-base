@@ -8,6 +8,11 @@
     <!-- Fix Favicon 404 -->
     <link rel="icon" href="data:,">
 
+    <!-- CRITICAL: Polyfill process for browser environments to prevent crash -->
+    <script>
+      window.process = window.process || { env: { API_KEY: '' } };
+    </script>
+
     <!-- Tailwind Core -->
     <script src="https://cdn.tailwindcss.com"></script>
 

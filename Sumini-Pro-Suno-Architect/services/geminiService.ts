@@ -5,9 +5,13 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeneratorMode, LyricsLanguage, StudioSettings, AppSettings } from "../types";
 
 // Dynamic Client Factory
-// Strictly uses process.env.API_KEY as per environment requirements.
+// Uses process.env.API_KEY first, then falls back to user-provided key in localStorage.
 const getClient = (): GoogleGenAI => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY || localStorage.getItem('sumini_api_key') || '';
+  if (!apiKey) {
+    console.warn("No API Key found in Env or LocalStorage.");
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
 /**
@@ -120,7 +124,7 @@ export const enhanceStyle = async (draft: string) => {
     return result.text?.trim() ?? null;
   } catch (err) {
     console.error("Enhance failed", err);
-    return null;
+    throw err; // Propagate to App.tsx for handling
   }
 };
 
