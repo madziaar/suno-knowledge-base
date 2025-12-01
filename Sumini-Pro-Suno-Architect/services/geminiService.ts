@@ -53,7 +53,6 @@ Every output must start with a precision-engineered header block.
 The **Style** field is for the AUDIO ENGINE, not the human.
 - **DO NOT** use emotion words (sad, happy) alone. Use Sonic Descriptors.
 - **USE**: "Analog warmth", "Tape saturation", "Wide stereo width", "Dry vocals", "Plate reverb".
-- **Reference**: "Style of 80s Synthpop", "Style of Modern Trap".
 
 **Vibe Keywords:**
 - *Dark*: "Bitcrushed, Lo-fi, Minor key, Distorted 808s"
