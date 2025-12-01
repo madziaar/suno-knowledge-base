@@ -1,113 +1,97 @@
 // Enhanced Suno-Optimized Prompt Engine (Refined SYSTEM_INSTRUCTION & prompt logic)
-// v8.1 - Architect Edition - Production Ready
+// Cleaned, stronger guidance, tighter structure, higher consistency.
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { GeneratorMode, LyricsLanguage, StudioSettings, AppSettings } from "../types";
 
-// ─────────────────────────────────────────────────────────────
-// 1. DYNAMIC CLIENT FACTORY (Safe for Browser & Node)
-// ─────────────────────────────────────────────────────────────
+// Dynamic Client Factory
+// Uses safe environment check to prevent "process is not defined" crash in browsers
 const getClient = (): GoogleGenAI => {
   let envKey = '';
-  
-  // Try retrieving key from modern frontend bundlers (Vite/Next.js)
-  // @ts-ignore
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
+  try {
     // @ts-ignore
-    envKey = import.meta.env.VITE_API_KEY || import.meta.env.NEXT_PUBLIC_API_KEY;
-  }
-
-  // Fallback to Node process if available
-  if (!envKey) {
-    try {
+    if (typeof process !== 'undefined' && process.env) {
       // @ts-ignore
-      if (typeof process !== 'undefined' && process.env) {
-        // @ts-ignore
-        envKey = process.env.API_KEY;
-      }
-    } catch (e) { /* Ignore process error */ }
+      envKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    // Ignore reference errors if process is not defined
   }
   
   const apiKey = envKey || localStorage.getItem('sumini_api_key') || '';
   
   if (!apiKey) {
-    console.warn("⚠️ No API Key found. Ensure it is set in .env or LocalStorage.");
+    console.warn("No API Key found in Env or LocalStorage.");
   }
   return new GoogleGenAI({ apiKey });
 };
 
-// ─────────────────────────────────────────────────────────────
-// 2. SYSTEM INSTRUCTION (v8 Architect Edition)
-// ─────────────────────────────────────────────────────────────
+/**
+ * ULTRA-REFINED **SYSTEM INSTRUCTION**
+ * v7 — Optimized for "Pro Suno Architect" with Enhanced Auto-Tagging
+ */
 export const SYSTEM_INSTRUCTION = `
-You are **SUMINI v8**, the premier AI Music Architect.
-Your Directive: Construct high-fidelity musical blueprints optimized for Suno v4.5's generation engine.
-You generally speak in the language requested for the lyrics, but technical tags remain in English.
+You are **SUMINI v7**, the elite AI Music Architect designed specifically for Suno v4.5.
+Your goal: Generate high-fidelity, production-ready music blueprints that maximize audio quality and structural coherence.
 
 ────────────────────────────────────────
-🎛️ AUDIO DNA (STYLE ENGINEERING)
-The "Style" field is the instruction set for the DSP (Digital Signal Processing).
-**RULE:** Order tags by hierarchy: [Genre] > [Sub-Genre] > [Vibe] > [Tempo] > [Instrumentation].
+🔥 CORE ENGINE: STRUCTURAL METADATA
+Every output must start with a precision-engineered header block.
 
-1. **Sonic Descriptors (Not Emotions):**
-   - ❌ Avoid: "Sad song", "Angry lyrics".
-   - ✅ Use: "Minor key, melancholic cello", "Aggressive distortion, fast attack".
-   
-2. **Production Keywords:**
-   - "Wide Stereo", "Heavy Sidechain", "Dry Vocals", "Lo-fi Texture", "Analog Warmth", "High Fidelity".
+1. **BPM & KEY**: You MUST assign a specific BPM and Musical Key suitable for the genre.
+   - Example: Deep House → #124 BPM, #A Minor
+   - Example: Phonk → #170 BPM, #C# Minor
 
-3. **BPM & Key Strategy:**
-   - Always integrate BPM into the style tags implicitly (e.g., "Upbeat 128bpm").
-   - Example Mahraganat: "Egyptian Shaabi, Autotune, Heavy Bass, 100bpm, Street Vibe".
+2. **STRUCTURE**: Adhere to the requested structure logic exactly.
+   - **Pop**: [Intro] [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Chorus] [Bridge] [Chorus] [Outro]
+   - **EDM**: [Intro] [Build] [Drop] [Breakdown] [Build] [Drop 2] [Outro]
+   - **Mahraganat**: [Intro] [Chant] [Verse A] [Drop] [Verse B] [Chant] [Outro]
+   - **Linear**: [Intro] [Texture A] [Evolution] [Texture B] [Finale]
 
 ────────────────────────────────────────
-🏗️ SONG STRUCTURE LOGIC
-Design the structure based on the Genre flow.
+🎛 STYLE PROMPT ENGINEERING (AUDIO DNA)
+The **Style** field is for the AUDIO ENGINE, not the human.
+- **DO NOT** use emotion words (sad, happy) alone. Use Sonic Descriptors.
+- **USE**: "Analog warmth", "Tape saturation", "Wide stereo width", "Dry vocals", "Plate reverb".
+- **Reference**: "Style of 80s Synthpop", "Style of Modern Trap".
 
-- **Pop/Rock:** [Intro] → [Verse 1] → [Pre-Chorus] → [Chorus] → [Verse 2] → [Chorus] → [Bridge] → [Guitar Solo] → [Chorus] → [Outro]
-- **EDM/Club:** [Intro] → [Build-up] → [Drop] → [Bass Break] → [Build-up] → [Drop 2] → [Outro]
-- **Rap/Trap:** [Intro] → [Hook] → [Verse 1] → [Hook] → [Verse 2] → [Outro]
-- **Mahraganat:** [Intro] → [Power Chant] → [Verse A] → [Drop/Instrumental] → [Verse B] → [Chant] → [Fade Out]
-
-────────────────────────────────────────
-🎤 VOCAL ARCHITECTURE (CRITICAL)
-- **Multi-Voice:** Use bracketed tags inside lyrics to switch singers.
-  - Correct: "[Verse 1: Male Rapper]"
-  - Correct: "[Chorus: Female Choir]"
-  - ⛔ WRONG: "Member A: Hello" (The AI will sing "Member A").
-- **Ad-libs:** Use parentheses \`(Yeah, Uh-huh)\` or specific tags \`[Whisper]\`, \`[Shout]\`.
+**Vibe Keywords:**
+- *Dark*: "Bitcrushed, Lo-fi, Minor key, Distorted 808s"
+- *Bright*: "Polished, Sparkling highs, Major key, Acoustic resonance"
+- *Chill*: "Laid-back groove, Minimalist, Ambient pads, Soft transients"
+- *Hype*: "Aggressive compression, Hard clipping, Wall of sound, Fast attack"
 
 ────────────────────────────────────────
-📦 FINAL OUTPUT FORMAT (STRICT BLOCKS)
+🎤 VOCAL PROFILING
+Define the voice strictly in the "## Voice:" section.
+- Single: "Male, Gritty Rock Tenor"
+- Multi: "Member A: Smooth Tenor. Member B: Deep Bass Rapper."
+- Effects: "Robot, Vocoder, Monotone, Choir"
 
-You must output precisely three blocks separated by dashed lines.
+────────────────────────────────────────
+✍️ LYRICAL ARCHITECTURE
+- **Metatags**: Use [Verse], [Chorus], [Bridge], [Drop], [Instrumental Break].
+- **Voice Switching**: IMPORTANT! When switching singers (e.g. Duets/Trios), use bracketed tags ONLY: [Verse 1: Member A] or [Member B]. NEVER write "Member A:" without brackets or the AI will sing the name.
+- **Flow**: Use (parentheses) for ad-libs and backing vocals.
+- **Rhythm**: Break lines to indicate flow.
 
---- BLOCK 1: META ---
-**Title:** <Creative Title>
-**BPM/Key:** <e.g. 124 BPM, C Minor>
-**Voice Description:** <Detailed voice prompt, e.g., "Gritty Male Vocals, Heavy Auto-tune">
+────────────────────────────────────────
+📦 OUTPUT FORMAT (STRICT)
 
---- BLOCK 2: STYLE PROMPT ---
-<Construct the optimized style string here. Comma separated.>
-*Example: Dark Trap, Phonk Drift, 150bpm, Distorted 808, Cowbell, High Fidelity*
+## Title: <Song Name>
 
---- BLOCK 3: LYRICS ---
-[Intro]
-<Ambient sounds or initial instrumental>
+## Voice:
+<Full vocal description. For groups, list all members here.>
 
-[Verse 1]
-<Lyrics here...>
+## Tags:
+<#BPM, #Key, #Genre, #SubGenre, #Vibe, #Instruments>
 
-[Chorus]
-<Lyrics here...>
+## Style:
+<Comma-separated technical audio tags. Genre, Vibe, Instruments, Mixing Style>
 
-[Outro]
-<Fade out logic>
+## Lyrics:
+<Lyrics with [Sections] and (Ad-libs)>
 `;
-
-// ─────────────────────────────────────────────────────────────
-// 3. HELPER FUNCTIONS
-// ─────────────────────────────────────────────────────────────
 
 /** Generate a Visual Prompt for Video AI (Runway/Pika) */
 export const generateVideoPrompt = async (songTitle: string, lyrics: string, style: string) => {
@@ -127,7 +111,7 @@ export const generateVideoPrompt = async (songTitle: string, lyrics: string, sty
     `;
 
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash", // Fast model is sufficient here
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
     return result.text?.trim() || null;
@@ -146,20 +130,18 @@ export const enhanceStyle = async (draft: string) => {
     Output ONLY the style string (Genre, Instruments, Vibe, BPM, Key). No labels.`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
     });
 
     return result.text?.trim() ?? null;
   } catch (err) {
     console.error("Enhance failed", err);
-    throw err;
+    throw err; // Propagate to App.tsx for handling
   }
 };
 
-// ─────────────────────────────────────────────────────────────
-// 4. MAIN GENERATOR
-// ─────────────────────────────────────────────────────────────
+/** Main Non-Streaming Generator */
 export const generateContentResponse = async (
   prompt: string,
   mode: GeneratorMode,
@@ -172,52 +154,66 @@ export const generateContentResponse = async (
   signal?: AbortSignal
 ): Promise<GenerateContentResponse> => {
   
+  // Initialize Dynamic Client
   const ai = getClient();
+
   let finalPrompt = prompt;
   let useSearch = false;
 
-  // --- A. Mode Logic ---
-  const modePrompts: Record<string, string> = {
+  // 1. Mode Logic
+  const modePrompts = {
     [GeneratorMode.RANDOM]:
       "Create a random commercially-strong hit in any coherent genre. Extremely catchy hooks.",
     [GeneratorMode.CRAZY]:
-      "Create an experimental hybrid song combining incompatible genres (e.g., Opera + Dubstep).",
+      "Create an experimental hybrid song combining incompatible genres.",
     [GeneratorMode.KPOP_RANDOM]:
       "Create a top-tier K-Pop track with strong English hooks.",
     [GeneratorMode.KPOP_3_VOICES]:
-      "Create a K-Pop trio track. In 'Voice Description', list 3 distinct styles. In 'Lyrics', STRICTLY use tags like [Member A], [Member B].",
+      "Create a K-Pop trio track. In the '## Voice' section, explicitly list distinct vocal styles for [Member A], [Member B], and [Member C]. In '## Lyrics', STRICTLY use bracketed tags like [Member A], [Member B] to indicate singer changes. DO NOT include singer names as plain text.",
     [GeneratorMode.TRENDING]: (() => {
       useSearch = true;
-      return "Search for current viral music trends (2024-2025). Write a hit song referencing the trend.";
+      return "Search for current viral trends (2024-2025). Write a hit song referencing the trend.";
     })(),
+    [GeneratorMode.THINKING]:
+      "Create a deeply complex, structurally intricate musical masterpiece with layered instrumentation and metaphorical lyrics.",
   };
 
-  if (modePrompts[mode]) finalPrompt = modePrompts[mode];
+  if (modePrompts[mode]) {
+    // For THINKING mode, if user provided a prompt, we use it. If not, we use the default prompt.
+    if (mode === GeneratorMode.THINKING && prompt.trim()) {
+      finalPrompt = prompt;
+    } else {
+      finalPrompt = modePrompts[mode];
+    }
+  }
 
-  // --- B. Pro Settings Injection ---
+  // 2. Pro Settings Injection (The "Engine")
   const { mood, vocal, structure } = settings;
-  const moodDesc = [];
   
   // Mood Translation
+  const moodDesc = [];
   if (mood.darkBright < 30) moodDesc.push("Dark, Moody, Minor Key");
   else if (mood.darkBright > 70) moodDesc.push("Bright, Uplifting, Major Key");
   
   if (mood.cleanGritty < 30) moodDesc.push("Clean, Polished, High-Fidelity");
   else if (mood.cleanGritty > 70) moodDesc.push("Gritty, Lo-fi, Distorted, Saturated");
 
-  if (mood.energy < 30) moodDesc.push("Chill, Laid-back, Ambient");
+  if (mood.energy < 30) moodDesc.push("Chill, Laid-back, Low Energy, Ambient");
   else if (mood.energy > 70) moodDesc.push("High Energy, Hype, Aggressive, Banger");
 
-  // Constraints
-  const vocalInstruction = (vocal.gender !== 'Any' || vocal.texture !== 'Any') 
-    ? `[CONSTRAINT: Voice must be ${vocal.texture !== 'Any' ? vocal.texture : ''} ${vocal.gender !== 'Any' ? vocal.gender : ''}]` 
-    : "";
+  // Vocal Translation
+  let vocalInstruction = "";
+  if (vocal.gender !== 'Any' || vocal.texture !== 'Any') {
+    vocalInstruction = `[CONSTRAINT: Voice must be ${vocal.texture !== 'Any' ? vocal.texture : ''} ${vocal.gender !== 'Any' ? vocal.gender : ''}]`;
+  }
 
-  const structureInstruction = structure !== 'Auto' 
-    ? `[CONSTRAINT: Use strict ${structure} structure template]` 
-    : "";
+  // Structure Translation
+  let structureInstruction = "";
+  if (structure !== 'Auto') {
+    structureInstruction = `[CONSTRAINT: Use strict ${structure} structure template]`;
+  }
 
-  // Language Logic
+  // Language
   const langConstraint =
     lyricsLanguage === LyricsLanguage.ARABIC
       ? "Write lyrics strictly in ARABIC (Egyptian/Gulf dialect). Style & Tags must remain ENGLISH."
@@ -225,83 +221,78 @@ export const generateContentResponse = async (
       ? "Write lyrics in mixed Arabic + English. Style & Tags remain ENGLISH."
       : "Write lyrics in English only.";
 
-  // --- C. Assemble Final Prompt ---
-  finalPrompt += `
-  
-  === STUDIO SETTINGS ===
+  // 3. Assemble Final Prompt
+  finalPrompt += `\n\n=== STUDIO SETTINGS ===
   Tone: ${moodDesc.join(", ") || "Balanced"}
   ${vocalInstruction}
   ${structureInstruction}
   Language: ${langConstraint}
-  ${hasIntro ? "Start with [Instrumental Intro]" : ""}
-  ${isRadioEdit ? "Keep length under 3:00 (Radio Edit)" : ""}
+  ${hasIntro ? "Include [Instrumental Intro]" : ""}
+  ${isRadioEdit ? "Keep under 3 mins (Radio Edit)" : ""}
   `;
 
-  // --- D. Model Selection & Session ---
-  // Using standard stable models. 'gemini-2.0-flash-exp' is great if you have access, otherwise 1.5-flash.
-  const preferredModel = appSettings.generation.modelPreference === 'quality' 
-    ? 'gemini-1.5-pro' 
-    : 'gemini-1.5-flash';
+  // Determine Model
+  // Default logic based on settings
+  let modelName = appSettings.generation.modelPreference === 'quality' 
+    ? 'gemini-3-pro-preview' 
+    : 'gemini-2.5-flash';
+  
+  // Override for THINKING mode
+  if (mode === GeneratorMode.THINKING) {
+    modelName = 'gemini-3-pro-preview';
+  }
 
+  // Chat session
   const createSession = (model: string, enableTools: boolean) => {
     const config: any = {
       systemInstruction: SYSTEM_INSTRUCTION,
-      temperature: appSettings.generation.temperature,
+      temperature: appSettings.generation.temperature, // Use user preference
     };
+    
+    // Configure Thinking for Deep Think mode
+    if (mode === GeneratorMode.THINKING) {
+      config.thinkingConfig = { thinkingBudget: 32768 };
+      // Explicitly ensuring no maxOutputTokens is set, as requested
+    }
+
     if (enableTools) config.tools = [{ googleSearch: {} }];
 
     return ai.chats.create({ model, config, history });
   };
 
   try {
-    const chat = createSession(preferredModel, useSearch);
+    const chat = createSession(modelName, useSearch);
     return await chat.sendMessage({ message: finalPrompt });
   } catch (err) {
     if (signal?.aborted) throw err;
-    console.warn("⚠️ API Error or Rate Limit. Falling back to Flash.", err);
-    // Fallback logic
-    const chat = createSession("gemini-1.5-flash", false);
+    console.warn("Fallback to flash", err);
+    // If Thinking mode failed, we can try fallback but without thinking config
+    // or just fallback to standard flash
+    const chat = createSession("gemini-2.5-flash", false);
     return await chat.sendMessage({ message: finalPrompt });
   }
 };
 
-// ─────────────────────────────────────────────────────────────
-// 5. PARSER (Robust Block Parsing)
-// ─────────────────────────────────────────────────────────────
+/** Parser */
 export const parseSongFromText = (text: string) => {
-  if (!text) return null;
+  const title = text.match(/## Title:\s*(.+)/)?.[1]?.trim();
+  // Robust multi-line capture for Voice
+  const voice = text.match(/## Voice:\s*([\s\S]*?)(?=## Tags:)/)?.[1]?.trim() ?? "Not specified";
+  // Robust multi-line capture for Tags
+  const rawTags = text.match(/## Tags:\s*([\s\S]*?)(?=## Style:)/)?.[1]?.trim();
+  // Robust multi-line capture for Style
+  const style = text.match(/## Style:\s*([\s\S]*?)(?=## Lyrics:)/)?.[1]?.trim();
+  // Remaining content is Lyrics
+  const lyrics = text.match(/## Lyrics:\s*([\s\S]*)/)?.[1]?.trim();
 
-  // Helper to extract content between markers
-  const extract = (startMarker: string, endMarker?: string): string => {
-    const parts = text.split(startMarker);
-    if (parts.length < 2) return "";
-    const content = parts[1];
-    return endMarker ? content.split(endMarker)[0].trim() : content.trim();
-  };
+  if (!title || !style || !lyrics) return null;
 
-  // 1. Parse META Block
-  const metaSection = extract("--- BLOCK 1: META ---", "--- BLOCK 2");
-  const title = metaSection.match(/\*\*Title:\*\*\s*(.+)/)?.[1]?.trim() || "Untitled";
-  const rawVoice = metaSection.match(/\*\*Voice Description:\*\*\s*(.+)/)?.[1]?.trim();
-  
-  // 2. Parse STYLE Block
-  const style = extract("--- BLOCK 2: STYLE PROMPT ---", "--- BLOCK 3");
-
-  // 3. Parse LYRICS Block
-  const lyrics = extract("--- BLOCK 3: LYRICS ---");
-
-  if (!style && !lyrics) return null;
-
-  // Generate Tags array from Style string
-  const tags = style
-    ? style.split(",").map((t) => t.trim()).filter((t) => t.length > 0)
+  const tags = rawTags
+    ? rawTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
 
-  return { 
-    title, 
-    voice: rawVoice || "Not specified", 
-    style: style || "", 
-    tags, 
-    lyrics 
-  };
+  return { title, voice, style, tags, lyrics };
 };

@@ -24,7 +24,8 @@ import {
   Music2,
   Users,
   Menu,
-  AlertCircle
+  AlertCircle,
+  BrainCircuit
 } from 'lucide-react';
 
 /* ----------------------- Custom UI Components ----------------------- */
@@ -230,6 +231,7 @@ const App: React.FC = () => {
       else if (mode === GeneratorMode.CRAZY) displayContent = "⚡ Going Crazy Mode...";
       else if (mode === GeneratorMode.KPOP_RANDOM) displayContent = "✨ Generating K-Pop Hit...";
       else if (mode === GeneratorMode.KPOP_3_VOICES) displayContent = "👥 Generating Trio Track...";
+      else if (mode === GeneratorMode.THINKING) displayContent = `🧠 [Deep Think] ${text || "Complex Masterpiece"}`;
       else if (mode !== GeneratorMode.NORMAL) displayContent = `[${mode}] ${text}`;
       
       const userMsg: Message = { id: Date.now().toString(), role: 'user', content: displayContent };
@@ -412,7 +414,8 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-5 pl-1">
                    <Sparkles size={10}/> Creative Modes
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                   <ModeButton icon={<BrainCircuit size={16} />} label="Deep Think" onClick={() => handleSend(input, GeneratorMode.THINKING)} colorClass="group-hover:text-cyan-400" />
                    <ModeButton icon={<Flame size={16} />} label="Trending" onClick={() => handleSend('', GeneratorMode.TRENDING)} colorClass="group-hover:text-orange-400" />
                    <ModeButton icon={<Dice5 size={16} />} label="Hit Me" onClick={() => handleSend('', GeneratorMode.RANDOM)} colorClass="group-hover:text-green-400" />
                    <ModeButton icon={<Zap size={16} />} label="Crazy" onClick={() => handleSend('', GeneratorMode.CRAZY)} colorClass="group-hover:text-purple-400" />

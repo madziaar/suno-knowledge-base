@@ -71,6 +71,7 @@ export enum GeneratorMode {
   KPOP_RANDOM = 'KPOP_RANDOM',
   KPOP_3_VOICES = 'KPOP_3_VOICES',
   TRENDING = 'TRENDING',
+  THINKING = 'THINKING',
 }
 
 /** ------------------ SUPPORTED LANGUAGES ------------------ */
