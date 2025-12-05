@@ -47,6 +47,28 @@ This document tracks technical issues and their resolutions for SunoSync V2.
 **Status**: Verified working in isolation  
 **Notes**: Issues were likely related to playlist failures, not the player itself
 
+### 7. Workspace/Playlist Pagination Bug ✅
+**Problem**: When searching workspaces or playlists, only the first page was being fetched, so users only saw some of their workspaces/playlists  
+**Root Cause**: `fetch_workspaces()` and `fetch_playlists()` only fetched page 1 without pagination  
+**Location**: `suno_downloader.py` lines 607-647  
+**Fix**: Implemented pagination loops in both functions that:
+- Start at page 1 and increment
+- Accumulate all items from all pages
+- Stop when a page returns empty results or 404
+**Status**: ✅ Fixed
+
+### 8. Focus/Grab Issue After Popup Dialogs ✅
+**Problem**: After closing popup dialogs (Get Token, Filters, Workspace Browser), users couldn't click anything in the main window. Had to click another window and back to regain control.  
+**Root Cause**: Dialogs using `grab_set()` weren't properly releasing the grab or returning focus to the parent window when closed  
+**Location**: 
+- `suno_widgets.py` - `FilterPopup` and `WorkspaceBrowser` classes
+- `suno_layout.py` - `create_token_dialog()` function  
+**Fix**: Added proper cleanup methods that:
+- Call `grab_release()` before destroying dialogs
+- Call `parent.focus_set()` to return focus to main window
+- Handle both programmatic close (buttons) and window close (X button) via `WM_DELETE_WINDOW` protocol
+**Status**: ✅ Fixed
+
 ## Current State
 
 - ✅ App launches successfully

@@ -222,6 +222,16 @@ def create_token_dialog(app):
     dialog.transient(app.winfo_toplevel())
     dialog.grab_set()
     
+    parent_window = app.winfo_toplevel()
+    
+    def close_dialog():
+        """Properly close dialog and return focus to parent."""
+        dialog.grab_release()
+        parent_window.focus_set()
+        dialog.destroy()
+    
+    dialog.protocol("WM_DELETE_WINDOW", close_dialog)
+    
     tk.Label(dialog, text="INSTRUCTIONS", font=("Segoe UI", 14, "bold"),
             bg=app.bg_dark, fg=app.fg_primary).pack(pady=15)
     
@@ -275,7 +285,7 @@ def create_token_dialog(app):
             app.token_var.set(t)
             app.log("Token set successfully!", "success")
             app.save_config()
-            dialog.destroy()
+            close_dialog()
         else:
             messagebox.showwarning("Input Required", "Please paste the token.")
     

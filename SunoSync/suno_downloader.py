@@ -605,46 +605,78 @@ class SunoDownloader:
         self.signals.download_complete.emit(success)
 
     def fetch_workspaces(self, token):
-        """Fetch list of workspaces (projects) using the correct endpoint."""
+        """Fetch list of workspaces (projects) using the correct endpoint with pagination."""
         headers = {"Authorization": f"Bearer {token}"}
         
         # Endpoint provided by user: 
         # https://studio-api.prod.suno.com/api/project/me?page=1&sort=created_at&show_trashed=false
         
-        url = f"{GEN_API_BASE}/api/project/me?page=1&sort=created_at&show_trashed=false"
+        all_projects = []
+        page_num = 1
         
-        try:
-            r = requests.get(url, headers=headers, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                # User confirmed structure: {"projects": [...]}
-                projects = data.get("projects", [])
-                return projects
-            else:
-                self._log(f"Failed to fetch projects: {r.status_code} {r.text}", "error")
-        except Exception as e:
-            self._log(f"Error fetching projects: {e}", "error")
+        while True:
+            url = f"{GEN_API_BASE}/api/project/me?page={page_num}&sort=created_at&show_trashed=false"
             
-        return []
+            try:
+                r = requests.get(url, headers=headers, timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    # User confirmed structure: {"projects": [...]}
+                    projects = data.get("projects", [])
+                    
+                    # If no projects on this page, we've reached the end
+                    if not projects:
+                        break
+                    
+                    all_projects.extend(projects)
+                    page_num += 1
+                elif r.status_code == 404:
+                    # No more pages
+                    break
+                else:
+                    self._log(f"Failed to fetch projects page {page_num}: {r.status_code} {r.text}", "error")
+                    break
+            except Exception as e:
+                self._log(f"Error fetching projects page {page_num}: {e}", "error")
+                break
+        
+        return all_projects
 
     def fetch_playlists(self, token):
-        """Fetch list of playlists."""
+        """Fetch list of playlists with pagination."""
         headers = {"Authorization": f"Bearer {token}"}
         # Endpoint: /api/playlist/me?page=1&show_trashed=false&show_sharelist=false
-        url = f"{GEN_API_BASE}/api/playlist/me?page=1&show_trashed=false&show_sharelist=false"
         
-        try:
-            r = requests.get(url, headers=headers, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                # Structure: {"playlists": [...]}
-                return data.get("playlists", [])
-            else:
-                self._log(f"Failed to fetch playlists: {r.status_code} {r.text}", "error")
-        except Exception as e:
-            self._log(f"Error fetching playlists: {e}", "error")
+        all_playlists = []
+        page_num = 1
+        
+        while True:
+            url = f"{GEN_API_BASE}/api/playlist/me?page={page_num}&show_trashed=false&show_sharelist=false"
             
-        return []
+            try:
+                r = requests.get(url, headers=headers, timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    # Structure: {"playlists": [...]}
+                    playlists = data.get("playlists", [])
+                    
+                    # If no playlists on this page, we've reached the end
+                    if not playlists:
+                        break
+                    
+                    all_playlists.extend(playlists)
+                    page_num += 1
+                elif r.status_code == 404:
+                    # No more pages
+                    break
+                else:
+                    self._log(f"Failed to fetch playlists page {page_num}: {r.status_code} {r.text}", "error")
+                    break
+            except Exception as e:
+                self._log(f"Error fetching playlists page {page_num}: {e}", "error")
+                break
+        
+        return all_playlists
 
     def download_single_song(self, clip, directory, headers, token, existing_uuids, rate_limiter):
         if self.is_stopped():

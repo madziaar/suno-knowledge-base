@@ -577,12 +577,16 @@ class FilterPopup(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         
+        self.parent = parent
         self.on_apply = on_apply
         self.bg_color = bg_color
         self.fg_color = fg_color
         self.accent_color = accent_color
         self.active_workspace_name = active_workspace_name
         self.clear_workspace_flag = False
+        
+        # Handle window close properly
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         
         # Header
         header = tk.Frame(self, bg=bg_color)
@@ -697,13 +701,20 @@ class FilterPopup(tk.Toplevel):
         self.clear_workspace_flag = True
         self.ws_label.config(text="✓ Cleared", fg="#10b981")
 
+    def _on_close(self):
+        """Handle window close - release grab and return focus to parent."""
+        self.grab_release()
+        if self.parent:
+            self.parent.focus_set()
+        self.destroy()
+    
     def _apply(self):
         result = {key: var.get() for key, var in self.vars.items()}
         result["type"] = self.type_var.get()
         if self.clear_workspace_flag:
             result["clear_workspace"] = True
         self.on_apply(result)
-        self.destroy()
+        self._on_close()
 
 
 class WorkspaceBrowser(tk.Toplevel):
@@ -715,9 +726,13 @@ class WorkspaceBrowser(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         
+        self.parent = parent
         self.on_select = on_select
         self.bg_color = bg_color
         self.fg_color = fg_color
+        
+        # Handle window close properly
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
         
         # Header
         header = tk.Frame(self, bg=bg_color)
@@ -729,17 +744,41 @@ class WorkspaceBrowser(tk.Toplevel):
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         scroll_frame = tk.Frame(canvas, bg=bg_color)
         
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas_window = canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
         canvas.pack(side="left", fill="both", expand=True, padx=(16, 0))
         scrollbar.pack(side="right", fill="y")
         
-        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas.find_withtag("all")[0], width=e.width))
+        # Proper scroll region update
+        def update_scrollregion(event=None):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        # Update canvas window width when canvas resizes
+        def update_canvas_width(event):
+            canvas_width = event.width
+            canvas.itemconfig(canvas_window, width=canvas_width)
+        
+        scroll_frame.bind("<Configure>", update_scrollregion)
+        canvas.bind("<Configure>", update_canvas_width)
+        
+        # Add mousewheel scrolling support
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        
+        # Bind mousewheel to canvas and scroll_frame
+        canvas.bind("<MouseWheel>", on_mousewheel)
+        scroll_frame.bind("<MouseWheel>", on_mousewheel)
+        
+        # Also bind to the window itself for better scrolling
+        self.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
         
         for ws in workspaces:
             self._create_item(scroll_frame, ws)
+        
+        # Update scroll region after items are added
+        self.update_idletasks()
+        update_scrollregion()
 
     def _create_item(self, parent, ws):
         # ws = {id, name, created_at, updated_at, num_tracks}
@@ -751,7 +790,7 @@ class WorkspaceBrowser(tk.Toplevel):
         def on_leave(e): frame.config(bg=self.bg_color)
         def on_click(e):
             self.on_select(ws)
-            self.destroy()
+            self._on_close()
             
         frame.bind("<Enter>", on_enter)
         frame.bind("<Leave>", on_leave)
@@ -776,6 +815,13 @@ class WorkspaceBrowser(tk.Toplevel):
                         font=("Segoe UI", 9), bg=self.bg_color, fg="#808080", anchor="w")
         meta.pack(fill="x")
         meta.bind("<Button-1>", on_click)
+    
+    def _on_close(self):
+        """Handle window close - release grab and return focus to parent."""
+        self.grab_release()
+        if self.parent:
+            self.parent.focus_set()
+        self.destroy()
 
 
 class NeonProgressBar(tk.Canvas):
