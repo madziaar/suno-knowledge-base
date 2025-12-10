@@ -1,0 +1,77 @@
+warning: in the working copy of 'suno_widgets.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/suno_widgets.py b/suno_widgets.py[m
+[1mindex c8419f0..7811497 100644[m
+[1m--- a/suno_widgets.py[m
+[1m+++ b/suno_widgets.py[m
+[36m@@ -584,6 +584,7 @@[m [mclass FilterPopup(tk.Toplevel):[m
+         self.accent_color = accent_color[m
+         self.active_workspace_name = active_workspace_name[m
+         self.clear_workspace_flag = False[m
+[32m+[m[32m        self._is_alive = True  # Flag to track if popup is still alive[m
+         [m
+         # Handle window close properly[m
+         self.protocol("WM_DELETE_WINDOW", self._on_close)[m
+[36m@@ -605,6 +606,7 @@[m [mclass FilterPopup(tk.Toplevel):[m
+         [m
+         # Content (scrollable area)[m
+         canvas = tk.Canvas(self, bg=bg_color, highlightthickness=0)[m
+[32m+[m[32m        self.canvas = canvas  # Store reference for cleanup[m
+         scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)[m
+         scrollable_content = tk.Frame(canvas, bg=bg_color)[m
+         [m
+[36m@@ -621,7 +623,17 @@[m [mclass FilterPopup(tk.Toplevel):[m
+         [m
+         # Bind mousewheel to canvas[m
+         def _on_mousewheel(event):[m
+[31m-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")[m
+[32m+[m[32m            # Check if popup is still alive before trying to scroll[m
+[32m+[m[32m            if not self._is_alive:[m
+[32m+[m[32m                return[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                # Check if widget still exists before trying to scroll[m
+[32m+[m[32m                if canvas.winfo_exists():[m
+[32m+[m[32m                    canvas.yview_scroll(int(-1*(event.delta/120)), "units")[m
+[32m+[m[32m            except tk.TclError:[m
+[32m+[m[32m                # Widget was destroyed, mark as not alive[m
+[32m+[m[32m                self._is_alive = False[m
+[32m+[m[32m        self._mousewheel_handler = _on_mousewheel[m
+         canvas.bind_all("<MouseWheel>", _on_mousewheel)[m
+         [m
+         content = scrollable_content[m
+[36m@@ -703,6 +715,8 @@[m [mclass FilterPopup(tk.Toplevel):[m
+ [m
+     def _on_close(self):[m
+         """Handle window close - release grab and return focus to parent."""[m
+[32m+[m[32m        # Mark popup as not alive to prevent mousewheel handler from running[m
+[32m+[m[32m        self._is_alive = False[m
+         self.grab_release()[m
+         if self.parent:[m
+             self.parent.focus_set()[m
+[36m@@ -764,14 +778,25 @@[m [mclass WorkspaceBrowser(tk.Toplevel):[m
+         [m
+         # Add mousewheel scrolling support[m
+         def on_mousewheel(event):[m
+[31m-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                # Check if widget still exists before trying to scroll[m
+[32m+[m[32m                if canvas.winfo_exists():[m
+[32m+[m[32m                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")[m
+[32m+[m[32m            except tk.TclError:[m
+[32m+[m[32m                pass[m
+         [m
+         # Bind mousewheel to canvas and scroll_frame[m
+         canvas.bind("<MouseWheel>", on_mousewheel)[m
+         scroll_frame.bind("<MouseWheel>", on_mousewheel)[m
+         [m
+         # Also bind to the window itself for better scrolling[m
+[31m-        self.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))[m
+[32m+[m[32m        def window_mousewheel(event):[m
+[32m+[m[32m            try:[m
+[32m+[m[32m                if canvas.winfo_exists():[m
+[32m+[m[32m                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")[m
+[32m+[m[32m            except tk.TclError:[m
+[32m+[m[32m                pass[m
+[32m+[m[32m        self.bind("<MouseWheel>", window_mousewheel)[m
+         [m
+         for ws in workspaces:[m
+             self._create_item(scroll_frame, ws)[m

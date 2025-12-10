@@ -584,6 +584,7 @@ class FilterPopup(tk.Toplevel):
         self.accent_color = accent_color
         self.active_workspace_name = active_workspace_name
         self.clear_workspace_flag = False
+        self._is_alive = True  # Flag to track if popup is still alive
         
         # Handle window close properly
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -605,6 +606,7 @@ class FilterPopup(tk.Toplevel):
         
         # Content (scrollable area)
         canvas = tk.Canvas(self, bg=bg_color, highlightthickness=0)
+        self.canvas = canvas  # Store reference for cleanup
         scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
         scrollable_content = tk.Frame(canvas, bg=bg_color)
         
@@ -621,7 +623,17 @@ class FilterPopup(tk.Toplevel):
         
         # Bind mousewheel to canvas
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            # Check if popup is still alive before trying to scroll
+            if not self._is_alive:
+                return
+            try:
+                # Check if widget still exists before trying to scroll
+                if canvas.winfo_exists():
+                    canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except tk.TclError:
+                # Widget was destroyed, mark as not alive
+                self._is_alive = False
+        self._mousewheel_handler = _on_mousewheel
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
         content = scrollable_content
@@ -703,6 +715,8 @@ class FilterPopup(tk.Toplevel):
 
     def _on_close(self):
         """Handle window close - release grab and return focus to parent."""
+        # Mark popup as not alive to prevent mousewheel handler from running
+        self._is_alive = False
         self.grab_release()
         if self.parent:
             self.parent.focus_set()
@@ -764,14 +778,25 @@ class WorkspaceBrowser(tk.Toplevel):
         
         # Add mousewheel scrolling support
         def on_mousewheel(event):
-            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            try:
+                # Check if widget still exists before trying to scroll
+                if canvas.winfo_exists():
+                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                pass
         
         # Bind mousewheel to canvas and scroll_frame
         canvas.bind("<MouseWheel>", on_mousewheel)
         scroll_frame.bind("<MouseWheel>", on_mousewheel)
         
         # Also bind to the window itself for better scrolling
-        self.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"))
+        def window_mousewheel(event):
+            try:
+                if canvas.winfo_exists():
+                    canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except tk.TclError:
+                pass
+        self.bind("<MouseWheel>", window_mousewheel)
         
         for ws in workspaces:
             self._create_item(scroll_frame, ws)
