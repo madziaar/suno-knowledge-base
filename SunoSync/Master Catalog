@@ -1,0 +1,45 @@
+🎨 1. Visuals & UI Polish (The "Trust" Factor)
+
+Modern Dashboard Layout: Sidebar navigation instead of tabs; persistent bottom player bar.
+
+Data Grid Library: Professional spreadsheet-style view with columns for Genre, BPM, and Duration.
+
+Smart Metadata Parsing: Automatically extracts "Genre" and "BPM" from the messy prompt text so columns aren't empty.
+
+UUID Cleanup: displaying "Untitled Track" or the prompt text instead of ugly file IDs (e.g., 4948a...).
+
+Album Art Integration: Displays high-res art in the player bar and "Now Playing" screens.
+
+Lyrics Panel: A slide-out sidebar to read lyrics while listening.
+Tooltips: Hover over long text (like prompts) to read the full content.
+
+🛠️ 2. The "Pro" Workflow (Power User Features)
+
+Producer’s Dashboard: A "Stats" tab showing Total Songs, Playtime, Storage Used, and Top Genres.
+
+Prompt Vault: A dedicated text bank to save, tag, and reuse your best prompt "recipes."
+
+Drag-and-Drop Export: Drag a song directly from the app window into a folder, video editor, or DAW.
+
+Batch Actions: Select 50 songs $\rightarrow$ Right Click $\rightarrow$ "Add to Playlist" or "Delete."
+
+Mini-Player (Focus Mode): Shrink the app to a tiny "Always on Top" bar for background listening.
+
+📱 3. The "Killer" Features (Marketing Hooks)
+Mobile Bridge (Wi-Fi): A "Scan to Play" QR code that instantly streams your library to your phone’s browser (no app install required).
+
+Suno On-Air (Social Radio): One-click "Go Live" button that creates a public link (via Ngrok) so friends can tune into your station.
+
+Global Media Keys: Play/Pause/Skip works even when the app is minimized.
+Discord Rich Presence: Shows "Listening to [Song] on SunoSync" on your Discord profile.
+
+💰 4. Business & Launch Safety
+
+
+Freemium Model: "Free Tier" limited to 50 downloads/day; "Pro Tier" is unlimited + Radio features.
+
+Crash Shield: A custom "Whoops" popup that catches errors and sends them to Sentry.io so users don't just rage-quit.
+
+Auto-Updater: Checks version.json on startup to notify users of new updates.
+
+

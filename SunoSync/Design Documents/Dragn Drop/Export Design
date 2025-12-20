@@ -1,0 +1,88 @@
+The "Pro" Solution: We will implement Multi-Select (Shift+Click) and "Copy as File" (Ctrl+C).
+
+Why: This allows users to select 50 songs, hit Ctrl+C, and then Paste them directly into a Folder, Premiere Pro, or FL Studio. It mimics Drag-and-Drop behavior natively without breaking the app.
+
+Here is the 2-step plan to add this "Power User" functionality.
+
+Step 1: Enable Batch Selection (Shift/Ctrl Click)
+We need to rewrite the click logic in library_tab.py to handle multiple rows.
+
+The Prompt:
+
+Copy and paste this:
+
+"I need to add Multi-Select (Batch Actions) to my Library. Please modify library_tab.py.
+
+1. Selection State:
+
+Update LibraryRow: Add a set_selected(bool) method.
+
+Style: If selected, change background to the Theme's 'Hover Color' (or Blue). If deselected, revert to transparent/gray.
+
+2. The Controller (LibraryTab):
+
+Add self.selected_rows = [].
+
+Click Logic:
+
+Click: Deselect all others, select this one.
+
+Ctrl+Click: Toggle selection of this row; keep others.
+
+Shift+Click: Select all rows between the last selected row and this one.
+
+3. Context Menu Update:
+
+Update the Right-Click menu to act on All Selected Rows.
+
+Batch Delete: 'Delete 5 selected items?'
+
+Batch Playlist: 'Add 5 items to Playlist...'
+
+4. Keyboard Shortcuts:
+
+Bind Ctrl+A to 'Select All'.
+
+Bind Escape to 'Deselect All'."
+
+Step 2: "Copy to DAW" (The Export Feature)
+Now that we can select 50 songs, we need to move them. We will use the Windows Clipboard (CF_HDROP) so the user can Paste them anywhere.
+
+The Prompt:
+
+Copy and paste this:
+
+"I need to implement Batch Export via the Clipboard.
+
+1. Install Dependency:
+
+I will install pywin32 (pip install pywin32). Please import win32clipboard and win32con.
+
+2. The 'Copy Files' Function:
+
+Create a function copy_selection_to_clipboard() in library_tab.py.
+
+Logic:
+
+Get the file paths of all self.selected_rows.
+
+Use win32clipboard to open the clipboard.
+
+Set the clipboard data format to CF_HDROP (this is the Windows standard for 'File Drop').
+
+This allows me to Paste the songs directly into Windows Explorer, FL Studio, or Premiere.
+
+3. Triggers:
+
+Bind Ctrl+C to trigger this function.
+
+Add 'Copy Files' to the Right-Click Context Menu.
+
+Show a small 'Copied 5 files to clipboard' toast notification."
+
+Why this is better than "Drag and Drop"
+Reliability: Dragging out of Tkinter is buggy and often crashes. Copy/Paste works 100% of the time.
+
+Speed: It is faster to Ctrl+A -> Ctrl+C -> Alt+Tab -> Ctrl+V than to drag 2,000 pixels across screens.
+
+Compatibility: Every DAW supports "Paste Audio Files."

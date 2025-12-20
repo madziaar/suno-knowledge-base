@@ -1,0 +1,125 @@
+This is the final sprint. These three features turn your application from a "fun project" into a stable, commercial software product.
+
+Here are the implementation prompts for the Crash Shield, Auto-Updater, and Freemium Model.
+
+1. The Crash Shield (Sentry.io)
+This is priority #1. You cannot launch a paid product that vanishes silently when it errors.
+
+Prerequisite: You need to pip install sentry-sdk.
+
+Copy and paste this prompt:
+
+"I need to implement a Crash Shield using Sentry.io to catch errors and show a friendly popup.
+
+1. Setup (main.py):
+
+Import sentry_sdk.
+
+Initialize it at the very start of the app: sentry_sdk.init(dsn='YOUR_DSN_HERE', traces_sample_rate=1.0)
+
+Add a placeholder DSN string for now.
+
+2. The Crash Popup (bug_reporter.py):
+
+Create a function show_crash_popup(exception).
+
+It should open a Red Theme CTkToplevel window.
+
+Title: 'Whoops! SunoSync Crashed'.
+
+Body: 'We encountered an error. A report has been automatically sent to the developer.'
+
+Details: A scrolling textbox showing the traceback (readonly).
+
+Buttons: 'Restart App' and 'Close'.
+
+3. Global Exception Hook:
+
+In main.py, create a function handle_exception(exc_type, exc_value, exc_traceback).
+
+Logic:
+
+Log the error to Sentry: sentry_sdk.capture_exception(exc_value).
+
+Launch the show_crash_popup (must use .after if called from a thread to ensure it runs on the main GUI thread).
+
+Bind this to sys.excepthook."
+
+2. The Auto-Updater
+This ensures you can fix bugs after launch without losing users.
+
+Copy and paste this prompt:
+
+"I need to add an Auto-Update Checker. Please create a new file updater.py.
+
+1. The Version Check:
+
+Define a constant CURRENT_VERSION = '1.0.0'.
+
+Create a function check_for_updates().
+
+Logic: Fetch a raw JSON file from my GitHub (e.g., https://raw.githubusercontent.com/User/Repo/main/version.json).
+
+JSON Structure: {'latest_version': '1.0.1', 'download_url': '...'}.
+
+Compare latest_version with CURRENT_VERSION.
+
+2. The UI Notification:
+
+If an update is found, return the data to main.py.
+
+In suno_layout.py, add a 'Update Available' Bar at the very top of the window (Green background).
+
+Text: 'New version v1.0.1 available!'.
+
+Button: 'Download' (opens the URL in the default browser).
+
+3. Threading:
+
+Run this check in a background thread on startup so it doesn't freeze the app launch."
+
+3. The Freemium Model (The Paywall)
+Now we lock the doors. We need to track daily usage and block features if the user isn't "Pro."
+
+Copy and paste this prompt:
+
+"I need to implement the Freemium Limits. Please modify config_manager.py and downloader_tab.py.
+
+1. Usage Tracking (config_manager.py):
+
+Add tracking for daily_downloads (int) and last_download_date (string).
+
+Create a method check_limit():
+
+If last_download_date != today, reset daily_downloads to 0.
+
+If is_pro_user() is True, return True (Allowed).
+
+If daily_downloads < 50, return True.
+
+Else, return False (Limit Reached).
+
+Create a method increment_count(): Increases daily_downloads by 1.
+
+2. Enforcing the Limit (downloader_tab.py):
+
+inside the download loop, before downloading a song:
+
+Call config.check_limit().
+
+If False, stop the loop and show a popup: 'Daily Limit Reached (50/50). Upgrade to Pro for unlimited access.'
+
+If True, download and call config.increment_count().
+
+3. Locking the Radio:
+
+In radio_tab.py, check is_pro_user() when the 'Go Live' button is clicked.
+
+If False, show a popup: 'Suno On-Air is a Pro feature.'"
+
+Final To-Do List
+Run Prompt 1: Get your DSN from Sentry.io (it's free).
+
+Run Prompt 2: Create a dummy version.json in your GitHub repo to test the update bar.
+
+Run Prompt 3: Set the limit to something small (like 2 songs) to test if the blocker works, then set it back to 50.

@@ -1,0 +1,78 @@
+The "Mini-Player" Logic
+The Trigger: A button in the Title Bar or Player Bar (e.g., a "Picture-in-Picture" icon).
+
+The Transformation:
+
+Save the current window size (e.g., 1100x700).
+
+Hide sidebar_frame and main_view_frame.
+
+Shrink window to 600x100.
+
+Turn on attributes('-topmost', True).
+
+The Restoration:
+
+Unhide the frames.
+
+Restore original size.
+
+Turn off "Always on Top".
+
+The Prompt to Build It
+Copy and paste this:
+
+"I need to implement a 'Focus Mode' (Mini-Player). Please modify suno_layout.py.
+
+1. Add the Toggle Button:
+
+Add a small ctk.CTkButton to the Player Bar (bottom right, next to volume).
+
+Use a 'Picture-in-Picture' icon (or text '⤢').
+
+Command: self.toggle_mini_mode.
+
+2. Implement toggle_mini_mode:
+
+Create a state variable self.is_mini_mode = False.
+
+If entering Mini Mode:
+
+Save self.last_geometry = self.geometry().
+
+Call self.sidebar_frame.grid_remove() to hide the sidebar.
+
+Call self.pages_frame.grid_remove() (or whatever holds the tabs) to hide the library/downloader.
+
+Resize the window: self.geometry("600x120").
+
+Set self.attributes("-topmost", True) to keep it floating above other apps.
+
+Change the toggle button icon/text to 'Expand' (⤡).
+
+3. If exiting Mini Mode:
+
+Call .grid() on the sidebar and pages frame to show them again.
+
+Restore self.geometry(self.last_geometry).
+
+Set self.attributes("-topmost", False).
+
+Reset the button icon.
+
+4. Window Behavior:
+
+Ensure the window is resizable in Mini Mode so I can stretch it if needed."
+
+Visual Idea for Ads
+When you record your demo video:
+
+Show yourself scrolling through a huge list of songs.
+
+Click "Play."
+
+Click "Focus Mode."
+
+The app "snaps" shut into a sleek bar.
+
+Drag that bar over a Word Document or VS Code window to show it floating while you work.

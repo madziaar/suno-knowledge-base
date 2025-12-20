@@ -1,233 +1,369 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-from PIL import Image, ImageTk
 import os
-import json
 import sys
-from library_tab import LibraryTab
-from player_widget import PlayerWidget
-from downloader_tab import DownloaderTab
+import threading
+import json
+import ctypes
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+
+from suno_widgets import WorkspaceBrowser
 from config_manager import ConfigManager
+from suno_downloader import SunoDownloader
+from sidebar import Sidebar
+from library_tab import LibraryTab
+from downloader_tab import DownloaderTab
+from settings_tab import SettingsTab
+from player_widget import PlayerWidget
+from theme_manager import ThemeManager
+from mobile_server import MobileServer
+from media_keys import MediaKeyHandler
+from bug_reporter import show_crash_popup
 
-sys.setrecursionlimit(5000) # Workaround for Tkinter recursion issue
+import sentry_sdk
 
+# Initialize Sentry
+# NOTE: User must replace 'YOUR_DSN_HERE' with their actual DSN
+SENTRY_DSN = "YOUR_DSN_HERE"
+
+if SENTRY_DSN and SENTRY_DSN != "YOUR_DSN_HERE":
+    try:
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            traces_sample_rate=1.0,
+            profiles_sample_rate=1.0,
+        )
+    except Exception as e:
+        print(f"Sentry init failed: {e}")
+else:
+    print("Sentry not initialized (Placeholder DSN detected).")
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """Global exception handler to Log to Sentry and show UI popup."""
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    print("Uncaught exception:", exc_value)
+    
+    # Send to Sentry
+    sentry_sdk.capture_exception(exc_value)
+    
+    # Show Popup (Ensure it runs on main thread if possible, though here we might be in a crash state)
+    # We just call it directly as a blocking call before exit.
+    show_crash_popup(exc_value)
+
+sys.excepthook = handle_exception
+
+# --- Constants ---
 if getattr(sys, 'frozen', False):
     base_path = os.path.dirname(sys.executable)
 else:
     base_path = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(base_path, "config.json")
+
+CONFIG_FILE = "config.json"
 CACHE_FILE = os.path.join(base_path, "library_cache.json")
 TAGS_FILE = os.path.join(base_path, "tags.json")
+CHANGELOG_FILE = os.path.join(base_path, "changelog.txt")
 
+# Set CTk Theme
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        # If not PyInstaller, use the directory of the script
         if getattr(sys, 'frozen', False):
             base_path = os.path.dirname(sys.executable)
         else:
             base_path = os.path.dirname(os.path.abspath(__file__))
-
     return os.path.join(base_path, relative_path)
 
+from updater import Updater
+import webbrowser
 
-class SunoSyncApp(tk.Tk):
+class SunoSyncApp(ctk.CTk):
     """Main application with Downloader, Library, and Player."""
     
     def __init__(self):
         super().__init__()
         
+        # Window Setup
         self.title("SunoSync")
         
-        # Set Icon
+        # 1. Set AppUserModelID (Separates icon in Taskbar)
         try:
-            icon_path = resource_path("resources/icon.ico")
-            if os.path.exists(icon_path):
-                self.iconbitmap(icon_path)
+            myappid = 'sunosync.app.v2' # arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception:
+            pass
+
+        # 2. Load Icons
+        try:
+            # Window Icon (Titlebar)
+            logo_icon_path = resource_path("assets/SunoSyncLogoIcon.png")
+            if os.path.exists(logo_icon_path):
+                # Use PIL for better PNG support
+                pil_logo = Image.open(logo_icon_path)
+                self.logo_img = ImageTk.PhotoImage(pil_logo)
+                self.wm_iconphoto(False, self.logo_img) 
+
+            # Taskbar Icon
+            taskbar_icon_path = resource_path("assets/TaskbarDesktopIcon.png")
+            if os.path.exists(taskbar_icon_path):
+                pil_taskbar = Image.open(taskbar_icon_path)
+                self.taskbar_img = ImageTk.PhotoImage(pil_taskbar)
+                self.wm_iconphoto(True, self.taskbar_img)
         except Exception as e:
             print(f"Icon error: {e}")
 
-        # Load geometry
-        self.load_window_state()
-        
-        # Theme colors
-        self.bg_dark = "#1a1a1a"
-        self.configure(bg=self.bg_dark)
-        
-        # Ensure minimum window size
+        # 3. Center Window Logic
+        width = 1100
+        height = 750
         self.minsize(1000, 750)
         
-        # Hide window initially to show splash first
-        self.withdraw()
+        # Calculate Center
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        center_x = int((screen_width - width) / 2)
+        center_y = int((screen_height - height) / 2)
         
-        # Make window borderless (remove title bar)
-        self.overrideredirect(True)
+        default_geo = f"{width}x{height}+{center_x}+{center_y}"
+        self.geometry(default_geo)
+
+        self.config_manager = ConfigManager(CONFIG_FILE)
         
-        # Add window drag and close functionality
-        self._setup_window_drag()
+        # Initialize Managers and Theme
+        self.theme = ThemeManager() # Kept passing for tabs that still use it
+        self.theme.apply_treeview_style()
         
-        # Show window after a brief delay to allow initialization
-        self.after(100, self._show_window_with_splash)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        
+        # State
+        self.current_view = None
+        self.views = {}
+        
+        self.load_window_state()
+        self._setup_ui()
+        
+        # Show splash
+        self.after(100, self.show_splash)
+        
+        # Mobile Server
+        self.mobile_server = None
+
+        # Check for updates
+        Updater.check_for_updates(self.show_update_bar)
+
+    def show_update_bar(self, version, url):
+        """Display the update bar at the top of the app."""
+        # Use .after to ensure UI updates happen on main thread
+        self.after(0, lambda: self._create_update_bar(version, url))
+
+    def _create_update_bar(self, version, url):
+        self.update_bar = ctk.CTkFrame(self, fg_color="#22c55e", height=30, corner_radius=0)
+        self.update_bar.grid(row=0, column=0, columnspan=2, sticky="ew") # Placed at logic row 0?
+        
+        # NOTE: Our main layout is Row 0 for content. We might need to shift things down or verify layout.
+        # Ideally, we pack this at the top if using pack, but we use grid.
+        # Let's adjust grid: 
+        # Shift existing content (Row 0) to Row 1?
+        # Or just overlay?
+        # Better: use pack/place for notification? Or adjust weights.
+        
+        # Let's try inserting it as Row 0 and shifting everything else.
+        # Current Layout:
+        # Row 0: Content Area + Sidebar
+        # Row 1: Player
+        
+        # We will shift Row 1 to Row 2, Row 0 to Row 1, and put update bar at Row 0.
+        
+        # Unmap existing
+        self.sidebar.grid_forget()
+        self.content_area.grid_forget()
+        if hasattr(self, 'lyrics_panel'): self.lyrics_panel.grid_forget()
+        self.player.grid_forget()
+        
+        # Configure New Row 0
+        self.update_bar.grid(row=0, column=0, columnspan=3, sticky="ew")
+        
+        lbl = ctk.CTkLabel(self.update_bar, text=f"✨ New version v{version} available!", text_color="white", font=("Segoe UI", 12, "bold"))
+        lbl.pack(side="left", padx=20, pady=2)
+        
+        btn = ctk.CTkButton(self.update_bar, text="Download", width=80, height=20, fg_color="white", text_color="#22c55e", 
+                            hover_color="#f0fdf4", command=lambda: webbrowser.open(url))
+        btn.pack(side="right", padx=20, pady=2)
+        
+        # Re-grid others at +1 Row
+        self.sidebar.grid(row=1, column=0, sticky="nsew")
+        self.content_area.grid(row=1, column=1, sticky="nsew", padx=20, pady=20)
+        if hasattr(self, 'lyrics_panel') and self.lyrics_panel.is_visible:
+             self.lyrics_panel.grid(row=1, column=2, rowspan=2, sticky="ns")
+        
+        self.player.grid(row=2, column=0, columnspan=2, sticky="ew")
+        
+        self.grid_rowconfigure(0, weight=0) # Bar fixed
+        self.grid_rowconfigure(1, weight=1) # Main content expands
+        self.grid_rowconfigure(2, weight=0) # Player fixed
+
+    def _setup_ui(self):
+
+        """Configure the main layout."""
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
+        # Sidebar (Left)
+        # Note: Sidebar is now a CTkFrame
+        self.sidebar = Sidebar(self, self.show_view)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        
+        # Content Area (Right)
+        # We use a container frame for content
+        self.content_area = ctk.CTkFrame(self, fg_color="transparent")
+        self.content_area.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
+        
+        # Initialize Views
+        # IMPORTANT: These classes (DownloaderTab, LibraryTab, etc.) need to be instantiated.
+        # Currently they are still Tkinter classes. Mixing CTk parent with Tk child works but
+        # we aim to migrate them. For now, we pass 'self.content_area' which is a CTkFrame.
         
         try:
-            # Main layout using grid for better control
-            main_frame = tk.Frame(self, bg=self.bg_dark)
-            main_frame.pack(fill="both", expand=True)
-            main_frame.grid_rowconfigure(0, weight=1)  # Notebook row expands
-            main_frame.grid_rowconfigure(1, weight=0)  # Player row fixed
-            main_frame.grid_columnconfigure(0, weight=1)  # Single column
+            self.downloader = DownloaderTab(self.content_area, config_manager=self.config_manager)
+            self.views["downloader"] = self.downloader
             
-            # Shared Config Manager
-            self.config_manager = ConfigManager(CONFIG_FILE)
+            # For Library, we need the Player widget instance first?
+            # Creating Player Widget first (to pass to library)
+            # Player is at the bottom? The original had it at bottom.
+            # Updated layout: Persistent player bar at bottom row.
             
-            # Create tabs
-            self.notebook = ttk.Notebook(main_frame)
-            self.notebook.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
-            
-            # Tab 1: Downloader
-            self.downloader = DownloaderTab(self.notebook, config_manager=self.config_manager)
-            self.notebook.add(self.downloader, text="  Downloader  ")
-            
-            # Tab 2: Library
-            self.library = LibraryTab(self.notebook, config_manager=self.config_manager, cache_file=CACHE_FILE, tags_file=TAGS_FILE)
-            self.notebook.add(self.library, text="  Library  ")
-            
-            # Player widget (bottom, fixed height)
-            self.player = PlayerWidget(main_frame)
+            self.player = PlayerWidget(self, bg_color="#18181b")
+            self.player.grid(row=1, column=0, columnspan=2, sticky="ew")
             self.player.set_tags_file(TAGS_FILE)
-            self.player.set_library_tab(self.library)  # Give player access to library for tagging
-            self.library.player_widget = self.player  # Give library access to player for UI updates
+
+            self.library = LibraryTab(self.content_area, config_manager=self.config_manager, cache_file=CACHE_FILE, tags_file=TAGS_FILE)
+            self.library.player_widget = self.player
+            self.player.set_library_tab(self.library)
+            self.views["library"] = self.library
             
-            # Use grid to ensure player gets fixed height
-            self.player.grid(row=1, column=0, sticky="ew", padx=0, pady=0)
-            # Player widget has pack_propagate(False) and height=160 set internally
-            self.player.config(height=160)
+            # --- New Tabs ---
+            from dashboard_tab import DashboardTab
+            from prompt_vault import VaultTab
             
-            # Connect Library to Player
+            self.dashboard = DashboardTab(self.content_area, library_tab=self.library)
+            self.views["dashboard"] = self.dashboard
+            
+            self.vault = VaultTab(self.content_area)
+            self.views["vault"] = self.vault
+            
+            # Create Lyrics Panel (hidden by default)
+            from lyrics_panel import LyricsPanel
+            self.lyrics_panel = LyricsPanel(self)
+            self.lyrics_panel.grid(row=0, column=2, rowspan=2, sticky="ns")
+            self.lyrics_panel.grid_remove()  # Start hidden
+            self.lyrics_panel.is_visible = False
+            
+            # Connect lyrics panel to player
+            self.player.set_lyrics_panel(self.lyrics_panel)
+            
+            self.settings = SettingsTab(self.content_area, config_manager=self.config_manager)
+            self.views["settings"] = self.settings
+
+            # Connect Events
             self.library.bind("<<PlaySong>>", self.on_play_song)
             self.player.bind("<<TagsUpdated>>", lambda e: self.on_tags_updated(e))
             self.player.bind("<<TrackChanged>>", self.on_track_changed)
             
-            # Connect Downloader to Library (refresh on download complete)
-            self.downloader.downloader.signals.download_complete.connect(self.on_download_complete)
+            self.player.set_mini_mode_callback(self.toggle_mini_mode)
             
-            # Style notebook
-            style = ttk.Style()
-            style.theme_use("clam")
-            style.configure("TNotebook", background=self.bg_dark, borderwidth=0)
-            style.configure("TNotebook.Tab",
-                           background="#2d2d2d",
-                           foreground="#e0e0e0",
-                           padding=[20, 10],
-                           font=("Segoe UI", 10, "bold"))
-            style.map("TNotebook.Tab",
-                     background=[("selected", "#8b5cf6")],
-                     foreground=[("selected", "white")])
-                     
-            # Handle close
-            self.protocol("WM_DELETE_WINDOW", self.on_close)
-            
+            # Setup downloader signals
+            if hasattr(self.downloader, 'downloader') and hasattr(self.downloader.downloader, 'signals'):
+                 self.downloader.downloader.signals.download_complete.connect(self.on_download_complete)
+
+            # Media Keys
+            self.media_keys = MediaKeyHandler(self.player)
+            self.media_keys.start()
+
         except Exception as e:
-            # Show error dialog if initialization fails
-            import traceback
-            error_msg = f"Failed to initialize application:\n{e}\n\n{traceback.format_exc()}"
-            print(error_msg)
-            try:
-                messagebox.showerror("Initialization Error", error_msg)
-            except:
-                pass
-            raise
-    
-    def _show_window_with_splash(self):
-        """Show window and then display splash screen."""
-        # Show the window
-        self.deiconify()
-        self.update_idletasks()
-        self.lift()
-        self.focus_force()
-        
-        # Show splash screen after window is visible
-        self.after(50, self.show_splash)
-    
-    def show_splash(self):
-        """Show splash screen as an overlay frame."""
-        splash_path = resource_path("resources/splash.png")
-        if not os.path.exists(splash_path):
-            # If splash doesn't exist, just show the window
-            self.update_idletasks()
-            self.lift()
-            self.focus_force()
-            return
-            
-        # Create overlay frame that covers the entire window
-        splash_frame = tk.Frame(self, bg="black")
-        splash_frame.place(relx=0, rely=0, relwidth=1, relheight=1)
-        splash_frame.lift()  # Ensure it's on top
-        
-        try:
-            # Load and display the splash image
-            pil_img = Image.open(splash_path)
-            # Get window size for proper scaling
-            self.update_idletasks()
-            win_width = self.winfo_width()
-            win_height = self.winfo_height()
-            
-            # Scale image to fit window while maintaining aspect ratio
-            img_width, img_height = pil_img.size
-            scale = min(win_width / img_width, win_height / img_height) if win_width > 0 and win_height > 0 else 1.0
-            
-            # If window is too small, use a minimum size
-            if scale > 1.0 or win_width < 600:
-                new_width = max(600, int(img_width * scale))
-                new_height = max(400, int(img_height * scale))
-                pil_img = pil_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
-            img = ImageTk.PhotoImage(pil_img)
-            
-            # Center the image
-            lbl = tk.Label(splash_frame, image=img, bg="black")
-            lbl.image = img  # Keep a reference
-            lbl.place(relx=0.5, rely=0.5, anchor="center")
-            
-            # Version text in bottom right
-            version_label = tk.Label(splash_frame, text="v2.0", bg="black", fg="white", 
-                    font=("Segoe UI", 12, "bold"))
-            version_label.place(relx=0.95, rely=0.95, anchor="se")
-            
-            # Make sure window is visible
-            self.update_idletasks()
-            self.lift()
-            self.focus_force()
-            
-        except Exception as e:
-            print(f"Splash error: {e}")
+            print(f"Error initializing views: {e}")
             import traceback
             traceback.print_exc()
-            splash_frame.destroy()
-            # Still show the window even if splash fails
-            self.update_idletasks()
-            self.lift()
-            self.focus_force()
+            
+    def show_splash(self):
+        """Show splash screen."""
+        # Check for new splash first
+        splash_path = resource_path("assets/NewSplash.png")
+        if not os.path.exists(splash_path):
+            # Fallback
+            splash_path = resource_path("resources/splash.png")
+            
+        if not os.path.exists(splash_path):
+            self.show_view("downloader")
             return
+            
+        # Create a top-level covering the window
+        splash_window = ctk.CTkToplevel(self)
+        splash_window.overrideredirect(True)
+        
+        # Center splash using Screen Dimensions
+        # Match App Size
+        w, h = 1100, 750
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        
+        x = int((screen_width - w) / 2)
+        y = int((screen_height - h) / 2)
+        
+        splash_window.geometry(f"{w}x{h}+{x}+{y}")
+        splash_window.attributes("-topmost", True)
+        
+        try:
+             pil_img = Image.open(splash_path)
+             pil_img = pil_img.resize((w, h), Image.Resampling.LANCZOS)
+             img = ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=(w, h))
+             label = ctk.CTkLabel(splash_window, image=img, text="")
+             label.pack(fill="both", expand=True)
+        except Exception:
+             pass
 
         def end_splash():
-            try:
-                splash_frame.destroy()
-            except:
-                pass
-            # Ensure main window is visible after splash
-            self.update_idletasks()
-            self.lift()
-            self.focus_force()
+            splash_window.destroy()
+            self.deiconify()
+            self.show_view("dashboard")
             self.check_changelog()
             
-        # Show splash for 2 seconds
         self.after(2000, end_splash)
 
+    def show_view(self, view_name):
+        """Switch the central view."""
+        # if view_name == "settings":
+        #      # Original logic had a placeholder alert
+        #      messagebox.showinfo("Settings", "Settings are currently located in the Downloader tab.\nDedicated settings page coming soon.")
+        #      return
+        
+        if view_name == "mobile_sync":
+            self.show_mobile_qr()
+            return
+
+        if view_name == "radio":
+            self.show_radio()
+            return
+
+        if self.current_view:
+            self.current_view.pack_forget()
+        
+        if view_name in self.views:
+            view = self.views[view_name]
+            view.pack(fill="both", expand=True)
+            self.current_view = view
+            self.sidebar.set_active(view_name)
+            
+            # Refresh Dashboard/Vault on view switch
+            if view_name in ["dashboard", "vault"] and hasattr(view, 'refresh'):
+                view.refresh()
+    
     def check_changelog(self):
         """Show changelog on first launch of new version."""
         current_version = "2.0"
@@ -244,23 +380,12 @@ class SunoSyncApp(tk.Tk):
                 pass
         
         if last_version != current_version:
-            # Show Changelog
             messagebox.showinfo("What's New in v2.0", 
                 "🎉 Welcome to SunoSync v2.0! 🎉\n\n"
-                "✨ New Features:\n"
-                "• Sleek Borderless Design: Modern, professional windowless interface\n"
-                "• Enhanced Debug Log: Built-in debug viewer with save-to-file support\n"
-                "• Improved Stop Button: Now properly stops preload and download operations\n"
-                "• Better Error Handling: More detailed error messages and logging\n"
-                "• Fixed Player Sizing: Audio player now displays at proper height\n\n"
-                "🔧 Improvements:\n"
-                "• Preload functionality now works reliably\n"
-                "• Stop button allows restarting operations\n"
-                "• Better splash screen timing\n"
-                "• Improved UI layout and spacing\n\n"
-                "Enjoy your music!")
+                "• Redesigned UI with CustomTkinter\n"
+                "• Improved Stability\n"
+                "• Better Configuration Management")
             
-            # Save new version
             data["version"] = current_version
             try:
                 with open(state_file, "w") as f:
@@ -275,150 +400,221 @@ class SunoSyncApp(tk.Tk):
                     data = json.load(f)
                     geometry = data.get("geometry", "1100x750")
                     self.geometry(geometry)
-            else:
-                self.geometry("1100x750")
-                self.center_window()
-            
-            # Ensure window is on screen
-            self.update_idletasks()
-            # Check if window is off-screen and reset if needed
-            try:
-                x = self.winfo_x()
-                y = self.winfo_y()
-                width = self.winfo_width()
-                height = self.winfo_height()
-                screen_width = self.winfo_screenwidth()
-                screen_height = self.winfo_screenheight()
-                # If window is completely off-screen, center it
-                if (x + width < 0 or x > screen_width or 
-                    y + height < 0 or y > screen_height):
-                    self.geometry("1100x750")
-                    self.center_window()
-            except:
-                # If we can't check position, just center it
-                self.geometry("1100x750")
-                self.center_window()
         except:
-            self.geometry("1100x750")
-            self.center_window()
-    
-    def center_window(self):
-        """Center the window on the screen."""
-        self.update_idletasks()
-        width = self.winfo_width()
-        height = self.winfo_height()
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width - width) // 2
-        y = (screen_height - height) // 2
-        self.geometry(f"{width}x{height}+{x}+{y}")
-    
-    def _setup_window_drag(self):
-        """Setup window dragging and close button for borderless window."""
-        # Variables for dragging
-        self._drag_start_x = 0
-        self._drag_start_y = 0
-        
-        # Create a small close button in top-right corner
-        close_frame = tk.Frame(self, bg=self.bg_dark, height=30)
-        close_frame.pack(fill="x", side="top")
-        
-        close_btn = tk.Button(close_frame, text="✕", font=("Segoe UI", 14, "bold"), 
-                             bg=self.bg_dark, fg="#ffffff", 
-                             activebackground="#ff4444", activeforeground="#ffffff",
-                             relief="flat", borderwidth=0, width=3, height=1,
-                             command=self.on_close, cursor="hand2")
-        close_btn.pack(side="right", padx=10, pady=5)
-        
-        # Bind drag to the close_frame (title bar area)
-        close_frame.bind('<Button-1>', self._start_drag)
-        close_frame.bind('<B1-Motion>', self._on_drag)
-        
-        # Add title text in the title bar
-        title_label = tk.Label(close_frame, text="SunoSync", bg=self.bg_dark, 
-                              fg="#ffffff", font=("Segoe UI", 10))
-        title_label.pack(side="left", padx=15, pady=5)
-        title_label.bind('<Button-1>', self._start_drag)
-        title_label.bind('<B1-Motion>', self._on_drag)
-        
-    def _start_drag(self, event):
-        """Start dragging the window."""
-        self._drag_start_x = event.x_root
-        self._drag_start_y = event.y_root
-    
-    def _on_drag(self, event):
-        """Handle window dragging."""
-        x = self.winfo_x() + event.x_root - self._drag_start_x
-        y = self.winfo_y() + event.y_root - self._drag_start_y
-        self.geometry(f"+{x}+{y}")
-        self._drag_start_x = event.x_root
-        self._drag_start_y = event.y_root
-
+            pass
+            
     def on_close(self):
         try:
             with open("window_state.json", "w") as f:
                 json.dump({"geometry": self.geometry()}, f)
         except:
-            pass
+             pass
+             
+        if "downloader" in self.views:
+             # Assuming downloader has on_close/cleanup
+             try:
+                 if hasattr(self.views["downloader"], "on_close"):
+                    self.views["downloader"].on_close()
+             except:
+                pass
+                
+        if hasattr(self, 'media_keys'):
+            self.media_keys.stop()
+                
         self.destroy()
+        sys.exit()
 
     def on_download_complete(self, success):
-        """Refresh library when downloads complete."""
-        if success:
-            self.library.refresh_library()
+        # Delay refresh to prevent TclError when widgets are being created/destroyed
+        if success and self.library:
+            # Cancel any pending refresh
+            if hasattr(self, '_refresh_timer') and self._refresh_timer:
+                self.after_cancel(self._refresh_timer)
+            # Schedule refresh for 2 seconds later
+            self._refresh_timer = self.after(2000, self._delayed_library_refresh)
     
+    def _delayed_library_refresh(self):
+        if self.library and hasattr(self.library, 'refresh_library'):
+            try:
+                self.library.refresh_library()
+            except Exception as e:
+                print(f"Library refresh error: {e}")
+
     def on_play_song(self, event):
-        """Handle play song event from library."""
-        # Get playlist and index from library
         if hasattr(self.library, 'current_playlist') and hasattr(self.library, 'current_index'):
             self.player.set_playlist(self.library.current_playlist, self.library.current_index)
 
     def on_tags_updated(self, event):
-        """Handle tags updated event from player."""
-        try:
-            # Use after() to ensure we're in the main thread
-            if hasattr(self, 'library') and self.library:
-                # Use a longer delay to ensure any ongoing operations complete
-                self.after(200, self._safe_reload_tags)
-        except Exception as e:
-            print(f"Error in on_tags_updated: {e}")
-            import traceback
-            traceback.print_exc()
-    
+        self.after(200, self._safe_reload_tags)
+        
     def _safe_reload_tags(self):
-        """Safely reload tags in library."""
-        try:
-            if hasattr(self, 'library') and self.library and hasattr(self.library, 'reload_tags'):
-                self.library.reload_tags()
-        except Exception as e:
-            print(f"Error in _safe_reload_tags: {e}")
-            import traceback
-            traceback.print_exc()
-    
+        if self.library and hasattr(self.library, 'reload_tags'):
+            self.library.reload_tags()
+
     def on_track_changed(self, event):
-        """Handle track change from player."""
-        try:
-            if hasattr(self.player, 'current_file') and self.player.current_file:
-                # Use after() to ensure we're in the main thread and UI is ready
-                self.after(50, lambda: self._update_library_selection())
-        except Exception as e:
-            print(f"Error in on_track_changed: {e}")
-            import traceback
-            traceback.print_exc()
-    
+        self.after(50, lambda: self._update_library_selection())
+
     def _update_library_selection(self):
-        """Update library selection to match currently playing song."""
-        try:
-            if hasattr(self.player, 'current_file') and self.player.current_file:
-                # Normalize the filepath before selecting
+        if self.player and hasattr(self.player, 'current_file') and self.player.current_file:
+            try:
                 filepath = os.path.normpath(self.player.current_file)
                 self.library.select_song(filepath)
-        except Exception as e:
-            print(f"Error in _update_library_selection: {e}")
-            import traceback
-            traceback.print_exc()
+            except:
+                pass
 
+    
+    def toggle_mini_mode(self):
+        if not hasattr(self, 'is_mini_mode'): self.is_mini_mode = False
+        
+        if not self.is_mini_mode:
+            # Enter Mini Mode
+            self.is_mini_mode = True
+            self.last_geometry = self.geometry()
+            
+            # Hide Main Layout
+            self.sidebar.grid_remove()
+            self.content_area.grid_remove()
+            
+            # Check lyrics panel visibility safely
+            if hasattr(self, 'lyrics_panel') and self.lyrics_panel.winfo_viewable():
+                self.lyrics_panel.grid_remove()
+            
+            # Unlock resizing constraints
+            self.minsize(500, 80)
+            
+            # Move player to top and fill
+            self.player.grid(row=0, column=0, columnspan=3, sticky="nsew")
+            
+            # Adjust Row Weights (Row 0 gets all weight)
+            self.grid_rowconfigure(0, weight=1)
+            self.grid_rowconfigure(1, weight=0)
+            
+            # Frameless Mode
+            self.overrideredirect(True)
+            
+            # Resize Window to Compact Strip (Standard Banner Size)
+            self.geometry("600x80")
+            self.attributes("-topmost", True)
+            
+            self.player.set_mini_btn_icon(True)
+            self.update_idletasks()
+            
+        else:
+            # Exit Mini Mode
+            self.is_mini_mode = False
+            
+            # Restore Layout
+            self.overrideredirect(False)
+            
+            # Restore Player Position (Bottom)
+            self.player.grid(row=1, column=0, columnspan=2, sticky="ew")
+            
+            # Restore Row Weights (Content gets weight)
+            self.grid_rowconfigure(0, weight=1)
+            self.grid_rowconfigure(1, weight=0)
+            
+            # Restore Layout Frames
+            self.sidebar.grid()
+            self.content_area.grid()
+            
+            # Restore Lyrics if was visible
+            if hasattr(self, 'lyrics_panel') and hasattr(self.lyrics_panel, 'is_visible') and self.lyrics_panel.is_visible:
+                self.lyrics_panel.grid()
+                
+            # Restore Size constraints
+            self.minsize(1000, 750)
+            
+            # Restore Geometry
+            if hasattr(self, 'last_geometry'):
+                self.geometry(self.last_geometry)
+            self.attributes("-topmost", False)
+            
+            self.player.set_mini_btn_icon(False)
+
+    def show_mobile_qr(self):
+        """Show QR Code for mobile connection."""
+        # Always re-read path in case user changed it
+        current_path = self.config_manager.get("path", os.path.join(base_path, "Suno_Downloads"))
+        
+        if not self.mobile_server:
+            self.mobile_server = MobileServer(current_path)
+        else:
+            # Update path if changed
+            self.mobile_server.download_folder = current_path
+            
+        print(f"[Mobile] Starting server on path: {current_path}")
+            
+        url, qr_image = self.mobile_server.start_server()
+        
+        if not url:
+            messagebox.showerror("Error", "Could not start mobile server.")
+            return
+
+        # Create Popup
+        top = ctk.CTkToplevel(self)
+        top.title("Scan to Play")
+        top.geometry("400x500")
+        top.attributes("-topmost", True)
+        
+        # Center Content
+        frame = ctk.CTkFrame(top)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        ctk.CTkLabel(frame, text="Mobile Bridge", font=("Segoe UI", 20, "bold")).pack(pady=(10, 20))
+        
+        # Display QR
+        # Fix for qrcode returning a wrapper class
+        pil_image = qr_image
+        if not isinstance(qr_image, Image.Image):
+             # For some qrcode versions, make_image returns a wrapper
+             if hasattr(qr_image, "get_image"):
+                 pil_image = qr_image.get_image()
+             # Fallback: force convert if possible, or it might just be a type check failure
+             # but usually .convert("RGB") returns a pure PIL Image
+             try:
+                pil_image = pil_image.convert("RGB")
+             except:
+                pass
+
+        ctk_qr = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(250, 250))
+        label_qr = ctk.CTkLabel(frame, image=ctk_qr, text="")
+        label_qr.pack(pady=10)
+        
+        ctk.CTkLabel(frame, text="Scan with your phone camera", text_color="gray").pack(pady=5)
+        
+        # URL Link
+        link_label = ctk.CTkLabel(frame, text=url, font=("Consolas", 14, "underline"), text_color="#3b8ed0", cursor="hand2")
+        link_label.pack(pady=10)
+        link_label.bind("<Button-1>", lambda e: webbrowser.open(url))
+        
+        ctk.CTkLabel(frame, text="Keep this app open to stream music.", font=("Segoe UI", 12)).pack(side="bottom", pady=20)
+
+        def on_close():
+            if self.mobile_server:
+                self.mobile_server.stop_server()
+            top.destroy()
+            
+        top.protocol("WM_DELETE_WINDOW", on_close)
+
+
+    def show_radio(self):
+        """Open Radio Station Manager."""
+        from radio_window import RadioWindow
+        
+        # Check if already open (basic check)
+        if hasattr(self, 'radio_window') and self.radio_window.winfo_exists():
+            self.radio_window.lift()
+            self.radio_window.focus()
+            return
+            
+        self.radio_window = RadioWindow(self)
 
 if __name__ == "__main__":
+    # High DPI fix
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except:
+        pass
+        
     app = SunoSyncApp()
     app.mainloop()

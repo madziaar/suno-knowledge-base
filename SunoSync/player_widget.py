@@ -1,209 +1,171 @@
 import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
+import os
+import json
+import random
+import time
+from threading import Thread
+
+# Try VLC
 try:
     import vlc
     VLC_AVAILABLE = True
 except (ImportError, OSError):
     VLC_AVAILABLE = False
-import os
-from threading import Thread
-import time
-import json
-import random
-from suno_utils import open_file
 
+from discord_handler import DiscordRPC
 
-class PlayerWidget(tk.Frame):
+class PlayerWidget(ctk.CTkFrame):
     """Audio player widget with playback controls."""
     
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, **kwargs)
+    def __init__(self, parent, bg_color="#18181b", **kwargs):
+        super().__init__(parent, fg_color=bg_color, corner_radius=0, height=90, **kwargs)
         
-        # VLC instance
-        # VLC instance
+        # VLC Setup
+        self.instance = None
+        self.player = None
         if VLC_AVAILABLE:
             try:
-                self.instance = vlc.Instance('--no-xlib')  # Headless mode
+                self.instance = vlc.Instance('--no-xlib')
                 self.player = self.instance.media_player_new()
-            except Exception as e:
-                # VLC not available or failed to initialize
+            except Exception:
                 self.player = None
-        else:
-            self.player = None
         
-        # Player state
+        # Discord RPC
+        self.discord = DiscordRPC()
+
+        # State
         self.current_file = None
+        self.current_song_data = None  # Store full song metadata
         self.is_playing = False
         self.duration = 0
         self.playlist = []
         self.current_index = -1
         self.tags = {}
         self.tags_file = None
-        self.library_tab = None  # Reference to library tab for tag operations
-        
-        # Playback modes
+        self.library_tab = None
+        self.lyrics_panel = None  # Will be set by main app
         self.shuffle_mode = False
-        self.repeat_mode = 0  # 0: Off, 1: All, 2: One
+        self.repeat_mode = 0 # 0=Off, 1=All, 2=One
+        self.mini_mode_callback = None
         
-        # Theme colors
-        self.bg_dark = "#1a1a1a"
-        self.bg_card = "#2d2d2d"
-        self.fg_primary = "#e0e0e0"
-        self.fg_secondary = "#9ca3af"
-        self.accent_purple = "#8b5cf6"
+        # Album art cache
+        import tempfile
+        self.art_cache_dir = os.path.join(tempfile.gettempdir(), "sunosync_art")
+        os.makedirs(self.art_cache_dir, exist_ok=True)
+        self.current_art_image = None
         
-        self.configure(bg=self.bg_dark)
+        # UI
+        self._create_widgets()
         
-        # Prevent the widget from being resized by children
-        self.pack_propagate(False)
-        # Set a fixed height that won't shrink - make it taller to prevent squishing
-        self.config(height=160)  # Increased height for better visibility
-        
-        self.create_widgets()
-        self.start_update_loop()
-    
-    def create_widgets(self):
-        """Create player UI."""
-        # Main container - ensure it fills the player widget properly
-        container = tk.Frame(self, bg=self.bg_card)
-        container.pack(fill="both", expand=True, padx=10, pady=6)
-        # Don't use pack_propagate on container - let it fill naturally
-        
-        # --- Left: Song Info ---
-        info_frame = tk.Frame(container, bg=self.bg_card, width=250)
-        info_frame.pack(side=tk.LEFT, fill="y", padx=10)
-        
-        # Now playing label
-        self.now_playing_label = tk.Label(info_frame, text="No song playing",
-                                         bg=self.bg_card, fg=self.fg_primary,
-                                         font=("Segoe UI", 11, "bold"),
-                                         anchor="w")
-        self.now_playing_label.pack(fill="x", pady=(15, 0))
-        
-        if not self.player:
-            self.now_playing_label.config(text="⚠️ VLC Player not found", fg="#ef4444")
-            tk.Label(info_frame, text="Playback disabled", 
-                    bg=self.bg_card, fg=self.fg_secondary,
-                    font=("Segoe UI", 9)).pack(fill="x")
-        
-        # Artist label
-        self.artist_label = tk.Label(info_frame, text="",
-                                     bg=self.bg_card, fg=self.fg_secondary,
-                                     font=("Segoe UI", 9),
-                                     anchor="w")
-        self.artist_label.pack(fill="x")
+        # Update Loop
+        self._update_loop()
 
-        # --- Right: Volume ---
-        volume_frame = tk.Frame(container, bg=self.bg_card)
-        volume_frame.pack(side=tk.RIGHT, padx=10)
-        
-        tk.Label(volume_frame, text="🔊", bg=self.bg_card, fg=self.fg_primary,
-                font=("Segoe UI", 14)).pack(side=tk.LEFT, padx=(0, 5))
-        
-        self.volume_var = tk.IntVar(value=70)
-        self.volume_slider = ttk.Scale(volume_frame, from_=0, to=100,
-                                      orient="horizontal",
-                                      variable=self.volume_var,
-                                      command=self.on_volume_change,
-                                      length=100)
-        self.volume_slider.pack(side=tk.LEFT)
+    def destroy(self):
+        if hasattr(self, 'discord'):
+            self.discord.close()
+        super().destroy()
 
-        # --- Center: Controls & Seek ---
-        center_frame = tk.Frame(container, bg=self.bg_card)
-        center_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=10)
+    def _create_widgets(self):
+        # Layout: Top is seeker, Bottom is controls split 3 ways
+        self.grid_columnconfigure(1, weight=1) # Center expands
         
-        # Controls (Buttons)
-        controls_frame = tk.Frame(center_frame, bg=self.bg_card)
-        controls_frame.pack(side=tk.TOP, pady=(10, 5))
+        # Seeker
+        self.seek_var = ctk.DoubleVar(value=0)
+        self.seeker = ctk.CTkSlider(self, from_=0, to=100, variable=self.seek_var, 
+                                    command=self.on_seek, height=16, 
+                                    progress_color="#8b5cf6", button_color="#8b5cf6", button_hover_color="#7c3aed")
+        self.seeker.pack(fill="x", padx=0, pady=(0, 5))
         
-        btn_style = {
-            "bg": self.bg_dark,
-            "fg": self.fg_primary,
-            "font": ("Segoe UI", 16),
-            "relief": "flat",
-            "cursor": "hand2",
-            "width": 3,
-            "height": 1
-        }
+        # Main Bar
+        self.bar = ctk.CTkFrame(self, fg_color="transparent")
+        self.bar.pack(fill="both", expand=True, padx=20, pady=(0, 10))
         
-        # Shuffle button
-        self.shuffle_btn = tk.Button(controls_frame, text="🔀", **btn_style,
-                                    command=self.toggle_shuffle)
-        self.shuffle_btn.pack(side=tk.LEFT, padx=5)
-        self.shuffle_btn.config(fg=self.fg_secondary) # Default off
+        # Priority: Controls (1) and Right (2) get requested space. Info (0) gets remaining.
+        self.bar.grid_columnconfigure(0, weight=1)
+        self.bar.grid_columnconfigure(1, weight=0)
+        self.bar.grid_columnconfigure(2, weight=0)
+        
+        # Left: Info
+        self.info_frame = ctk.CTkFrame(self.bar, fg_color="transparent")
+        self.info_frame.grid(row=0, column=0, sticky="ew", padx=(0, 5))
+        
+        # Album Art (60x60)
+        self.album_art_label = ctk.CTkLabel(self.info_frame, text="", width=60, height=60, fg_color="#27272a")
+        self.album_art_label.pack(side="left", padx=(0, 10))
+        
+        # Text info
+        self.text_frame = ctk.CTkFrame(self.info_frame, fg_color="transparent")
+        self.text_frame.pack(side="left", fill="y")
+        
+        self.title_label = ctk.CTkLabel(self.text_frame, text="Ready", font=("Segoe UI", 14, "bold"), anchor="w")
+        self.title_label.pack(anchor="w")
+        
+        self.artist_label = ctk.CTkLabel(self.text_frame, text="Select a song", font=("Segoe UI", 12), text_color="gray", anchor="w")
+        self.artist_label.pack(anchor="w")
 
-        # Previous button
-        self.prev_btn = tk.Button(controls_frame, text="⏮", **btn_style,
-                                  command=self.previous_song)
-        self.prev_btn.pack(side=tk.LEFT, padx=5)
+        # Center: Controls
+        self.controls_frame = ctk.CTkFrame(self.bar, fg_color="transparent")
+        self.controls_frame.grid(row=0, column=1, padx=5)
         
-        # Play/Pause button (larger font)
-        play_style = btn_style.copy()
-        play_style["font"] = ("Segoe UI", 20)
-        self.play_btn = tk.Button(controls_frame, text="▶", **play_style,
-                                  command=self.toggle_playback)
-        self.play_btn.pack(side=tk.LEFT, padx=5)
+        # Buttons
+        self.shuffle_btn = ctk.CTkButton(self.controls_frame, text="🔀", width=30, fg_color="transparent", text_color="#a1a1aa", hover_color="#3f3f46", command=self.toggle_shuffle)
+        self.shuffle_btn.pack(side="left", padx=2)
         
-        # Stop button
-        self.stop_btn = tk.Button(controls_frame, text="⏹", **btn_style,
-                                  command=self.stop)
-        self.stop_btn.pack(side=tk.LEFT, padx=5)
+        self.prev_btn = ctk.CTkButton(self.controls_frame, text="⏮", width=35, fg_color="transparent", text_color="white", hover_color="#3f3f46", font=("Segoe UI", 18), command=self.previous_song)
+        self.prev_btn.pack(side="left", padx=2)
         
-        # Next button
-        self.next_btn = tk.Button(controls_frame, text="⏭", **btn_style,
-                                  command=self.next_song)
-        self.next_btn.pack(side=tk.LEFT, padx=5)
+        self.play_btn = ctk.CTkButton(self.controls_frame, text="▶", width=42, height=42, corner_radius=21, 
+                                      fg_color="#8b5cf6", text_color="white", hover_color="#7c3aed", 
+                                      font=("Segoe UI", 20), command=self.toggle_playback)
+        self.play_btn.pack(side="left", padx=8)
+        
+        self.next_btn = ctk.CTkButton(self.controls_frame, text="⏭", width=35, fg_color="transparent", text_color="white", hover_color="#3f3f46", font=("Segoe UI", 18), command=self.next_song)
+        self.next_btn.pack(side="left", padx=2)
+        
+        self.repeat_btn = ctk.CTkButton(self.controls_frame, text="🔁", width=30, fg_color="transparent", text_color="#a1a1aa", hover_color="#3f3f46", command=self.toggle_repeat)
+        self.repeat_btn.pack(side="left", padx=2)
 
-        # Repeat button
-        self.repeat_btn = tk.Button(controls_frame, text="🔁", **btn_style,
-                                   command=self.toggle_repeat)
-        self.repeat_btn.pack(side=tk.LEFT, padx=5)
-        self.repeat_btn.config(fg=self.fg_secondary) # Default off
+        # Right: Volume & Tags
+        self.right_frame = ctk.CTkFrame(self.bar, fg_color="transparent")
+        self.right_frame.grid(row=0, column=2, sticky="e")
         
-        # Tagging buttons
-        tag_frame = tk.Frame(controls_frame, bg=self.bg_card)
-        tag_frame.pack(side=tk.LEFT, padx=(20, 0))
-        
+        # Tags
         self.tag_btns = {}
         tags = [("👍", "keep", "#22c55e"), ("🗑️", "trash", "#ef4444"), ("⭐", "star", "#eab308")]
         
         for icon, tag, color in tags:
-            btn = tk.Button(tag_frame, text=icon, **btn_style,
-                           command=lambda t=tag: self.toggle_tag(t))
-            btn.pack(side=tk.LEFT, padx=2)
-            self.tag_btns[tag] = btn
-            self.tag_colors = {tag: color for _, tag, color in tags}
+            btn = ctk.CTkButton(self.right_frame, text=icon, width=30, fg_color="transparent", 
+                                command=lambda t=tag: self.toggle_tag(t))
+            btn.pack(side="left", padx=2)
+            self.tag_btns[tag] = (btn, color) # Store btn and color
             
-        # Seek bar frame
-        seek_frame = tk.Frame(center_frame, bg=self.bg_card)
-        seek_frame.pack(side=tk.TOP, fill="x", padx=20)
+        # Time
+        self.time_label = ctk.CTkLabel(self.right_frame, text="0:00 / 0:00", text_color="gray")
+        self.time_label.pack(side="left", padx=15)
         
-        # Current time
-        self.time_label = tk.Label(seek_frame, text="0:00",
-                                   bg=self.bg_card, fg=self.fg_secondary,
-                                   font=("Segoe UI", 8))
-        self.time_label.pack(side=tk.LEFT, padx=(0, 5))
+        # Mini Mode
+        self.mini_btn = ctk.CTkButton(self.right_frame, text="⤢", width=30, fg_color="transparent",
+                                     hover_color="#7c3aed", command=self.toggle_mini_mode)
+        self.mini_btn.pack(side="left", padx=(0, 5))
+
+        # Lyrics button
+        self.lyrics_btn = ctk.CTkButton(self.right_frame, text="🎤", width=30, fg_color="transparent",
+                                        hover_color="#7c3aed", command=self.toggle_lyrics)
+        self.lyrics_btn.pack(side="left", padx=5)
         
-        # Seek slider
-        self.seek_var = tk.IntVar(value=0)
-        self.seek_slider = ttk.Scale(seek_frame, from_=0, to=100,
-                                     orient="horizontal",
-                                     variable=self.seek_var,
-                                     command=self.on_seek)
-        self.seek_slider.pack(side=tk.LEFT, fill="x", expand=True)
+        # Volume
+        self.vol_icon = ctk.CTkLabel(self.right_frame, text="🔊")
+        self.vol_icon.pack(side="left")
+        self.volume_slider = ctk.CTkSlider(self.right_frame, from_=0, to=100, width=80, command=self.on_volume_change)
+        self.volume_slider.set(70)
+        self.volume_slider.pack(side="left", padx=5)
         
-        # Duration time
-        self.duration_label = tk.Label(seek_frame, text="0:00",
-                                       bg=self.bg_card, fg=self.fg_secondary,
-                                       font=("Segoe UI", 8))
-        self.duration_label.pack(side=tk.LEFT, padx=(5, 0))
-        
-        # Set initial volume
         if self.player:
             self.player.audio_set_volume(70)
 
+    # --- Logic ---
     def set_tags_file(self, filepath):
-        """Set path to tags JSON file and load it."""
         self.tags_file = filepath
         self._load_tags()
 
@@ -218,391 +180,374 @@ class PlayerWidget(tk.Frame):
     def _save_tags(self):
         if self.tags_file:
             try:
-                # Ensure directory exists
-                tags_dir = os.path.dirname(self.tags_file)
-                if tags_dir and not os.path.exists(tags_dir):
-                    os.makedirs(tags_dir, exist_ok=True)
-                
+                os.makedirs(os.path.dirname(self.tags_file), exist_ok=True)
                 with open(self.tags_file, 'w', encoding='utf-8') as f:
                     json.dump(self.tags, f, indent=2)
             except Exception as e:
-                print(f"Error saving tags to {self.tags_file}: {e}")
-                import traceback
-                traceback.print_exc()
-                raise  # Re-raise so toggle_tag can catch it
+                print(f"Error saving tags: {e}")
+
+    def set_library_tab(self, tab):
+        self.library_tab = tab
+    
+    def set_lyrics_panel(self, panel):
+        """Set the lyrics panel reference."""
+        self.lyrics_panel = panel
+    
+    def toggle_lyrics(self):
+        """Toggle lyrics panel visibility."""
+        if self.lyrics_panel:
+            self.lyrics_panel.toggle()
+
+    def set_mini_mode_callback(self, callback):
+        self.mini_mode_callback = callback
+        
+    def toggle_mini_mode(self):
+        if self.mini_mode_callback:
+            self.mini_mode_callback()
+            
+    def set_mini_btn_icon(self, is_mini):
+        self.mini_btn.configure(text="⤡" if is_mini else "⤢")
+        self.mini_is_active = is_mini
+        if is_mini:
+            self.enable_mini_layout()
+        else:
+            self.disable_mini_layout()
+
+    def enable_mini_layout(self):
+        # 1. Container Style (600x80)
+        self.configure(border_width=1, border_color="#333333")
+        
+        # Reset Packing to ensure order
+        self.bar.pack_forget()
+        self.seeker.pack_forget()
+        
+        # 2. Seeker (Bottom)
+        self.seeker.configure(height=4, button_length=0) 
+        self.seeker.pack(side="bottom", fill="x", padx=0, pady=0)
+        
+        # 3. Bar Frame (Top)
+        self.bar.pack(side="top", fill="both", expand=True, padx=0, pady=(0, 4))
+        
+        # 4. Grid Setup
+        self.bar.grid_columnconfigure(0, weight=1)
+        self.bar.grid_columnconfigure(1, weight=0)
+        self.bar.grid_columnconfigure(2, weight=0)
+        
+        # 5. Left Section (Col 0)
+        self.info_frame.grid_configure(row=0, column=0, sticky="ew", padx=15)
+        # Ensure text labels are visible
+        self.album_art_label.pack_forget() # Hide art
+        self.title_label.configure(font=("Segoe UI", 13, "bold"), text_color="white") 
+        self.artist_label.configure(font=("Segoe UI", 11), text_color="gray") 
+        
+        # 6. Center Section (Col 1)
+        self.controls_frame.grid_configure(row=0, column=1)
+        self.shuffle_btn.pack_forget()
+        self.repeat_btn.pack_forget()
+        
+        self.play_btn.configure(width=40, height=40, corner_radius=20, fg_color="#8b5cf6")
+        self.prev_btn.configure(width=30, height=30, fg_color="transparent")
+        self.next_btn.configure(width=30, height=30, fg_color="transparent")
+        
+        # 7. Right Section (Col 2)
+        self.right_frame.grid_configure(row=0, column=2, sticky="e", padx=10)
+        
+        # Clear Right Layout
+        for widget in self.right_frame.winfo_children():
+            widget.pack_forget()
+            
+        # Add Volume and Expand Only
+        self.mini_btn.pack(side="right", padx=(5, 0)) # Expand button
+        self.volume_slider.configure(width=80)
+        self.volume_slider.pack(side="right", padx=5) # Volume Slider
+        
+        # Bind Dragging
+        bind_list = [self, self.bar, self.info_frame, self.text_frame, self.controls_frame, self.right_frame, self.title_label, self.artist_label]
+        for widget in bind_list:
+            widget.bind("<Button-1>", self.start_move)
+            widget.bind("<B1-Motion>", self.do_move)
+
+    def disable_mini_layout(self):
+        self.configure(border_width=0)
+        
+        # Restore Weights
+        self.bar.grid_columnconfigure(0, weight=1)
+        self.bar.grid_columnconfigure(1, weight=0)
+        self.bar.grid_columnconfigure(2, weight=0)
+        
+        # Restore Seeker
+        self.seeker.pack_forget()
+        self.seeker.pack(side="top", fill="x", padx=0, pady=(0, 5))
+        self.seeker.configure(height=16) # Restore default? 
+        
+        # Restore Bar
+        self.bar.pack_configure(padx=20, pady=(0, 10))
+        
+        # Restore Left Info
+        self.info_frame.grid_configure(padx=(0, 5))
+        self.album_art_label.pack(side="left", padx=(0, 10), before=self.text_frame)
+        self.title_label.configure(font=("Segoe UI", 14, "bold"))
+        self.artist_label.configure(font=("Segoe UI", 12))
+        
+        # Restore Controls
+        self.play_btn.configure(width=42, height=42, corner_radius=21)
+        self.shuffle_btn.pack(side="left", padx=2, before=self.prev_btn)
+        self.repeat_btn.pack(side="left", padx=2, after=self.next_btn)
+        
+        # Restore Right Zone (Like, Trash, Loop, Star, Time, etc)
+        for widget in self.right_frame.winfo_children():
+            widget.pack_forget()
+        
+        # Re-pack Standard Order (side=left)
+        # Tags (Like/Trash/Star), Time, Mini, Lyrics, VolIcon, VolSlider
+        for tag, (btn, _) in self.tag_btns.items():
+             btn.pack(side="left", padx=2)
+        self.time_label.pack(side="left", padx=15)
+        self.mini_btn.pack(side="left", padx=(0, 5))
+        self.lyrics_btn.pack(side="left", padx=5)
+        self.vol_icon.pack(side="left")
+        self.volume_slider.configure(width=80)
+        self.volume_slider.pack(side="left", padx=5)
+        
+        # Unbind Dragging
+        bind_list = [self, self.bar, self.info_frame, self.text_frame, self.controls_frame, self.right_frame, self.title_label, self.artist_label]
+        for widget in bind_list:
+            widget.unbind("<Button-1>")
+            widget.unbind("<B1-Motion>")
+
+    def start_move(self, event):
+        self.x = event.x
+        self.y = event.y
+
+    def do_move(self, event):
+        try:
+            deltax = event.x - self.x
+            deltay = event.y - self.y
+            x = self.winfo_toplevel().winfo_x() + deltax
+            y = self.winfo_toplevel().winfo_y() + deltay
+            self.winfo_toplevel().geometry(f"+{x}+{y}")
+        except: pass
+            
+
 
     def set_playlist(self, songs, start_index=0):
-        """Set the current playlist and start playing."""
         self.playlist = songs
         self.current_index = start_index
         if 0 <= self.current_index < len(self.playlist):
             self.play_song_at_index(self.current_index)
 
     def play_song_at_index(self, index):
-        """Play song at specific playlist index."""
-        if not 0 <= index < len(self.playlist):
-            return
-            
+        if not 0 <= index < len(self.playlist): return
+        
         self.current_index = index
         song = self.playlist[index]
-        
-        # Normalize filepath before playing
+        self.current_song_data = song  # Store full metadata
         filepath = os.path.normpath(song['filepath'])
         
-        # Play the file
-        success = self.play_file(filepath)
-        
-        if success:
+        if self.play_file(filepath):
             self.update_tag_ui(song.get('id'))
             
-            # Emit track changed event after a small delay to ensure current_file is set
+            # Update album art
+            self.update_album_art(song)
+            
+            # Update lyrics panel if visible
+            if self.lyrics_panel and self.lyrics_panel.is_visible:
+                self.lyrics_panel.update_from_song(song)
+            
             self.after(100, lambda: self.event_generate("<<TrackChanged>>"))
 
-    def set_library_tab(self, library_tab):
-        """Set reference to library tab for tag operations."""
-        self.library_tab = library_tab
-    
-    def toggle_tag(self, tag):
-        """Toggle a tag for the current song (playing or selected in library)."""
-        # Try to get song from currently playing track
-        uuid = None
-        filepath = None
+    def update_album_art(self, song_data):
+        """Fetch and display album art for the current song."""
+        image_url = song_data.get('image_url')
+        song_id = song_data.get('id', 'unknown')
         
-        if self.current_index >= 0 and self.current_index < len(self.playlist):
-            # Song is playing
-            song = self.playlist[self.current_index]
-            uuid = song.get('id')
-            filepath = song.get('filepath')
-        elif hasattr(self, 'library_tab') and self.library_tab:
-            # Try to get from library selection
-            filepath = self.library_tab.get_selected_filepath()
-            if filepath:
-                # Normalize filepath for comparison
-                filepath = os.path.normpath(filepath)
-                # Find song in library to get UUID (normalize both for comparison)
-                song = next((s for s in self.library_tab.all_songs if os.path.normpath(s.get('filepath', '')) == filepath), None)
-                if song:
-                    uuid = song.get('id') or os.path.normpath(song.get('filepath', ''))
-                else:
-                    uuid = filepath
-        
-        if not uuid and not filepath:
-            # No song available
-            import tkinter.messagebox as messagebox
-            messagebox.showinfo("No Song Selected", "Please select a song from the library or play a song first.")
+        if not image_url:
+            # Show placeholder
+            self.album_art_label.configure(image=None, text="🎵", font=("Segoe UI", 24))
             return
         
-        if not uuid:
-            uuid = os.path.normpath(filepath) if filepath else None
-            
-        if not uuid:
-            return
-            
-        # Normalize UUID for consistent lookup
-        if os.path.sep in uuid:
-            uuid = os.path.normpath(uuid)
-            
-        current_tag = self.tags.get(uuid)
+        # Check cache first
+        cache_path = os.path.join(self.art_cache_dir, f"{song_id}.jpg")
         
-        if current_tag == tag:
-            # Untag
-            if uuid in self.tags:
-                del self.tags[uuid]
+        if os.path.exists(cache_path):
+            # Load from cache
+            self._display_album_art(cache_path)
         else:
-            # Set tag
-            self.tags[uuid] = tag
-        
-        try:
-            self._save_tags()
-            self.update_tag_ui(uuid)
-            
-            # Notify library to update UI (use after() with delay to ensure thread safety)
-            self.after(100, lambda: self.event_generate("<<TagsUpdated>>"))
-        except Exception as e:
-            import tkinter.messagebox as messagebox
-            import traceback
-            error_msg = f"Error saving tag: {e}\n\n{traceback.format_exc()}"
-            messagebox.showerror("Tag Error", error_msg)
-            print(f"TAG ERROR: {error_msg}")
+            # Download in background
+            Thread(target=self._download_album_art, args=(image_url, cache_path), daemon=True).start()
 
-    def update_tag_ui(self, uuid=None):
-        """Update tag buttons state."""
-        # If no UUID provided, try to get from current song or library selection
-        if not uuid:
-            if self.current_index >= 0 and self.current_index < len(self.playlist):
-                song = self.playlist[self.current_index]
-                uuid = song.get('id') or song.get('filepath')
-            elif hasattr(self, 'library_tab') and self.library_tab:
-                filepath = self.library_tab.get_selected_filepath()
-                if filepath:
-                    # Normalize filepath for comparison
-                    filepath = os.path.normpath(filepath)
-                    song = next((s for s in self.library_tab.all_songs if os.path.normpath(s.get('filepath', '')) == filepath), None)
-                    if song:
-                        uuid = song.get('id') or filepath
-                    else:
-                        uuid = filepath
-        
-        # Normalize UUID if it's a filepath
-        if uuid and os.path.sep in str(uuid):
-            uuid = os.path.normpath(uuid)
-        
-        current_tag = self.tags.get(uuid) if uuid else None
-        
-        # If we still don't have a tag, try with alternative path format
-        if not current_tag and uuid and os.path.sep in str(uuid):
-            uuid_alt = str(uuid).replace('\\', '/')
-            current_tag = self.tags.get(uuid_alt)
-            if current_tag:
-                # Update tags dict to use normalized path
-                self.tags[uuid] = current_tag
-                if uuid_alt in self.tags:
-                    del self.tags[uuid_alt]
-        
-        for tag, btn in self.tag_btns.items():
-            if tag == current_tag:
-                btn.config(bg=self.tag_colors[tag], fg="white")
-            else:
-                btn.config(bg=self.bg_dark, fg=self.fg_primary)
+    def _download_album_art(self, url, cache_path):
+        """Download album art to cache."""
+        try:
+            import requests
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                with open(cache_path, 'wb') as f:
+                    f.write(response.content)
+                # Display on main thread
+                self.after(0, lambda: self._display_album_art(cache_path))
+        except Exception as e:
+            print(f"Failed to download album art: {e}")
+
+    def _display_album_art(self, image_path):
+        """Display album art from file path."""
+        try:
+            from PIL import Image
+            img = Image.open(image_path)
+            img = img.resize((60, 60), Image.Resampling.LANCZOS)
+            
+            # Convert to CTkImage
+            ctk_image = ctk.CTkImage(light_image=img, dark_image=img, size=(60, 60))
+            self.current_art_image = ctk_image  # Keep reference
+            self.album_art_label.configure(image=ctk_image, text="")
+        except Exception as e:
+            print(f"Failed to display album art: {e}")
+            self.album_art_label.configure(image=None, text="🎵", font=("Segoe UI", 24))
 
     def play_file(self, filepath):
-        """Play a specific file."""
-        # Normalize filepath FIRST before any operations
-        filepath = os.path.normpath(filepath)
-        
-        if not VLC_AVAILABLE:
-            import tkinter.messagebox as messagebox
-            messagebox.showerror("VLC Not Available", "VLC is not installed or not available.\nPlease install python-vlc to use the audio player.")
+        if not VLC_AVAILABLE or not self.player:
             return False
-        
-        if not self.player or not self.instance:
-            import tkinter.messagebox as messagebox
-            messagebox.showerror("Player Error", "VLC player failed to initialize.")
-            return False
-        
+            
         if not os.path.exists(filepath):
-            import tkinter.messagebox as messagebox
-            messagebox.showerror("File Not Found", f"File does not exist:\n{filepath}")
             return False
-        
-        # Set current_file with normalized path
+            
         self.current_file = filepath
-
         try:
-            # Stop current playback if any
             if self.is_playing:
                 self.player.stop()
             
-            # Load media
             media = self.instance.media_new(filepath)
-            if not media:
-                import tkinter.messagebox as messagebox
-                messagebox.showerror("Media Error", f"Failed to load media from:\n{filepath}")
-                return False
-                
             self.player.set_media(media)
-            
-            # Start playback
-            result = self.player.play()
-            if result != 0:
-                import tkinter.messagebox as messagebox
-                messagebox.showerror("Playback Error", f"VLC play() returned error code: {result}\nFile: {filepath}")
-                return False
+            self.player.play()
             
             self.is_playing = True
-            self.play_btn.config(text="⏸")
+            self.play_btn.configure(text="⏸")
             
-            # Wait for media to parse (with timeout)
-            for _ in range(50):  # 5 seconds max
-                time.sleep(0.1)
-                length = self.player.get_length()
-                if length > 0:
-                    self.duration = length // 1000
+            # Wait for length
+            for _ in range(20):
+                time.sleep(0.05)
+                if self.player.get_length() > 0:
+                    self.duration = self.player.get_length() // 1000
                     break
             else:
                 self.duration = 0
-            
-            # Update UI
+                
             filename = os.path.basename(filepath)
             title = os.path.splitext(filename)[0].replace('_', ' ')
-            self.now_playing_label.config(text=title)
-            self.artist_label.config(text=f"Playing from: {os.path.dirname(filepath)}")
+            self.title_label.configure(text=title[:40]) # Truncate
+            artist = os.path.dirname(filepath).split(os.sep)[-1] # Use folder name as artist roughly
+            self.artist_label.configure(text=artist)
             
-            # Update duration label
-            self.duration_label.config(text=self.format_time(self.duration))
+            # Update Discord
+            self.discord.update_presence(title, artist, self.duration, 0, False)
+
             return True
         except Exception as e:
-            import tkinter.messagebox as messagebox
-            import traceback
-            error_msg = f"Failed to play file:\n{filepath}\n\nError: {e}\n\n{traceback.format_exc()}"
-            messagebox.showerror("Playback Error", error_msg)
-            print(f"PLAYBACK ERROR: {error_msg}")  # Also print to console
+            print(f"Play error: {e}")
             return False
-    
+
     def toggle_playback(self):
-        """Toggle play/pause."""
-        if not self.player: return
+        if not self.player or not self.current_file: return
         
-        if not self.current_file:
-            return
+        filename = os.path.basename(self.current_file)
+        title = os.path.splitext(filename)[0].replace('_', ' ')
+        artist = os.path.dirname(self.current_file).split(os.sep)[-1]
         
         if self.is_playing:
             self.player.pause()
             self.is_playing = False
-            self.play_btn.config(text="▶")
+            self.play_btn.configure(text="▶")
+            self.discord.update_presence(title, artist, is_paused=True)
         else:
             self.player.play()
             self.is_playing = True
-            self.play_btn.config(text="⏸")
-    
-    def stop(self):
-        """Stop playback."""
-        if not self.player: return
+            self.play_btn.configure(text="⏸")
+            
+            # Get current pos
+            pos = self.player.get_position()
+            current_time = 0
+            if pos >= 0:
+                current_time = pos * self.duration
+                
+            self.discord.update_presence(title, artist, self.duration, current_time, False)
 
-        self.player.stop()
-        self.is_playing = False
-        self.play_btn.config(text="▶")
-        self.seek_var.set(0)
-        self.time_label.config(text="0:00")
-    
     def on_seek(self, value):
-        """Handle seek slider change."""
-        if not self.player: return
+        if not self.player or not self.is_playing: return
+        self.player.set_position(value / 100.0)
 
-        if not self.current_file or not self.is_playing:
-            return
-        
-        # Convert slider value (0-100) to position (0.0-1.0)
-        position = float(value) / 100.0
-        self.player.set_position(position)
-    
     def on_volume_change(self, value):
-        """Handle volume slider change."""
-        if not self.player: return
+        if self.player:
+            self.player.audio_set_volume(int(value))
 
-        volume = int(float(value))
-        self.player.audio_set_volume(volume)
-    
     def toggle_shuffle(self):
-        """Toggle shuffle mode."""
         self.shuffle_mode = not self.shuffle_mode
-        if self.shuffle_mode:
-            self.shuffle_btn.config(fg=self.accent_purple)
-        else:
-            self.shuffle_btn.config(fg=self.fg_secondary)
+        self.shuffle_btn.configure(text_color="#8b5cf6" if self.shuffle_mode else "gray")
 
     def toggle_repeat(self):
-        """Toggle repeat mode: Off -> All -> One -> Off."""
         self.repeat_mode = (self.repeat_mode + 1) % 3
+        colors = ["gray", "#8b5cf6", "#d946ef"]
+        texts = ["🔁", "🔁", "🔂"]
+        self.repeat_btn.configure(text=texts[self.repeat_mode], text_color=colors[self.repeat_mode])
+
+    def next_song(self):
+        if not self.playlist: return
         
-        if self.repeat_mode == 0: # Off
-            self.repeat_btn.config(text="🔁", fg=self.fg_secondary)
-        elif self.repeat_mode == 1: # All
-            self.repeat_btn.config(text="🔁", fg=self.accent_purple)
-        elif self.repeat_mode == 2: # One
-            self.repeat_btn.config(text="🔂", fg=self.accent_purple)
+        new_index = self.current_index + 1
+        if self.shuffle_mode:
+            new_index = random.randint(0, len(self.playlist) - 1)
+        elif self.repeat_mode == 2:
+            new_index = self.current_index
+        
+        if new_index >= len(self.playlist):
+            if self.repeat_mode == 1: new_index = 0
+            else: return # Stop
+            
+        self.play_song_at_index(new_index)
 
     def previous_song(self):
-        """Play previous song."""
-        if not self.playlist: return
-        
-        # If playing > 3 seconds, restart song
-        if self.player and self.player.get_time() > 3000:
-            self.player.set_time(0)
-            return
-
-        if self.shuffle_mode:
-            # Random previous isn't standard, usually we go back in history. 
-            # For simplicity, just random or previous index.
-            # Let's just go to previous index for now, shuffle usually only affects 'next'
-            pass
-            
         new_index = self.current_index - 1
-        if new_index < 0:
-            if self.repeat_mode == 1: # Loop all
-                new_index = len(self.playlist) - 1
-            else:
-                return # Stop at start
-                
+        if new_index < 0: return
         self.play_song_at_index(new_index)
-    
-    def next_song(self):
-        """Play next song."""
-        if not self.playlist: return
+
+    def toggle_tag(self, tag):
+        # Logic matches previous impl but simplified for brevity
+        uuid = None
+        if self.current_index >= 0:
+            uuid = self.playlist[self.current_index].get('id')
+            
+        if not uuid and self.library_tab:
+             path = self.library_tab.get_selected_filepath()
+             if path: uuid = path # Fallback to path as ID if needed
         
-        if self.repeat_mode == 2: # Repeat One
-            self.play_song_at_index(self.current_index)
-            return
+        if not uuid: return
+        
+        # Tag logic
+        if self.tags.get(uuid) == tag:
+            del self.tags[uuid]
+        else:
+            self.tags[uuid] = tag
+            
+        self._save_tags()
+        self.update_tag_ui(uuid)
+        self.event_generate("<<TagsUpdated>>")
 
-        if self.shuffle_mode:
-            # Pick random index
-            new_index = random.randint(0, len(self.playlist) - 1)
-            # Try not to pick same song unless playlist is size 1
-            if len(self.playlist) > 1 and new_index == self.current_index:
-                new_index = (new_index + 1) % len(self.playlist)
-            self.play_song_at_index(new_index)
-            return
-
-        new_index = self.current_index + 1
-        if new_index >= len(self.playlist):
-            if self.repeat_mode == 1: # Loop all
-                new_index = 0
+    def update_tag_ui(self, uuid):
+        current = self.tags.get(uuid)
+        for tag, (btn, color) in self.tag_btns.items():
+            if tag == current:
+                btn.configure(fg_color=color, text_color="white")
             else:
-                return # Stop at end
-                
-        self.play_song_at_index(new_index)
-    
-    def start_update_loop(self):
-        """Start the UI update loop using after() for thread safety."""
-        self._update_ui()
-        
-    def _update_ui(self):
-        """Update UI elements. Must run on main thread."""
-        if self.is_playing and self.duration > 0 and self.player:
-            try:
-                # Update seek bar and time
-                position = self.player.get_position()
-                if position >= 0:
-                    current_time = int(position * self.duration)
-                    # Only update if not dragging (optional optimization, but simple set is fine)
-                    self.seek_var.set(int(position * 100))
-                    self.time_label.config(text=self.format_time(current_time))
-                
-                # Check if song ended
-                state = self.player.get_state()
-                if state == vlc.State.Ended:
-                    self.is_playing = False
-                    self.play_btn.config(text="▶")
-                    self.next_song()  # Auto-play next
-            except Exception:
-                pass
-        
-        # Schedule next update
-        self.after(500, self._update_ui)
-    
-    @staticmethod
-    def format_time(seconds):
-        """Format time as M:SS."""
-        if seconds < 0:
-            return "0:00"
-        mins = seconds // 60
-        secs = seconds % 60
-        return f"{mins}:{secs:02d}"
+                btn.configure(fg_color="transparent", text_color="gray")
 
-
-if __name__ == "__main__":
-    # Test the player standalone
-    root = tk.Tk()
-    root.title("Player Test")
-    root.geometry("800x120")
-    root.configure(bg="#1a1a1a")
-    
-    player = PlayerWidget(root)
-    player.pack(fill="both", expand=True)
-    
-    # Test with a file (replace with actual path)
-    test_file = "Suno_Downloads/test.mp3"  # Change this
-    if os.path.exists(test_file):
-        player.play_file(test_file)
-    
-    root.mainloop()
+    def _update_loop(self):
+        if self.is_playing and self.player:
+            pos = self.player.get_position()
+            if pos >= 0:
+                self.seek_var.set(pos * 100)
+                current = int(pos * self.duration)
+                self.time_label.configure(text=f"{current//60}:{current%60:02d} / {self.duration//60}:{self.duration%60:02d}")
+            
+            if self.player.get_state() == vlc.State.Ended:
+                 self.next_song()
+        
+        self.after(500, self._update_loop)

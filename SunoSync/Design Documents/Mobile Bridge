@@ -1,0 +1,104 @@
+We need to do this in 2 Steps:
+
+The Server Script (mobile_server.py): This runs in the background, finds your local Wi-Fi IP, and serves a "Netflix-style" web player to your phone.
+
+The UI Button: A button in your app to show the QR Code.
+
+Step 0: Install Dependencies
+You will need the QR code library. Tell your terminal:
+
+Bash
+
+pip install qrcode
+Step 1: The Server (The Brains)
+This script does the magic. It generates a mobile-friendly website on the fly containing your specific songs.
+
+Copy and paste this prompt:
+
+"I need to implement the Mobile Bridge Server. Please create a new file named mobile_server.py.
+
+1. The Setup:
+
+Import http.server, socket, qrcode, threading, os.
+
+Create a class MobileServer.
+
+It should serve files from the user's Suno_Downloads folder.
+
+Port: Start at 8080. If busy, increment until a free port is found.
+
+2. The Web Player (HTML Generation):
+
+Create a method generate_index_html() that scans the download folder for .mp3 files.
+
+It must write an index.html file with this design:
+
+Dark Mode: Black background, white text.
+
+Search Bar: Fixed at the top. Javascript to filter the song list instantly.
+
+Song List: A clean vertical list. Each row shows the Filename (cleaned up).
+
+Sticky Player: An HTML5 <audio> player fixed to the bottom of the screen.
+
+Logic: Clicking a song name updates the audio player src and plays it. Auto-play next song when ended.
+
+3. The Connection Info:
+
+Create a method get_connection_info():
+
+Find IP: Use socket to get the local LAN IP (e.g., 192.168.1.x).
+
+QR Code: Generate a QR image for http://{ip}:{port} using the qrcode library.
+
+Return the URL and the QR Image object.
+
+4. Threading:
+
+The server serve_forever() must run in a separate daemon thread so it doesn't freeze the main app."
+
+Step 2: The UI (The Button)
+Now we add the "Mobile" button to your main dashboard that reveals the QR code.
+
+Copy and paste this prompt:
+
+"I need to add the Mobile Connect UI to my main app.
+
+1. The Button:
+
+In suno_layout.py (or the top navigation bar area), add a generic button with a 'Phone' or 'Wifi' icon.
+
+Text: 'Mobile Sync'.
+
+2. The Popup Window:
+
+When clicked, run self.show_mobile_qr().
+
+Initialize mobile_server.MobileServer.
+
+Get the QR code image and URL from the server.
+
+Open a CTkToplevel window:
+
+Title: 'Scan to Play'.
+
+Center: Display the QR Code image (resize to 250x250).
+
+Bottom: A clickable link label with the URL (e.g., http://192.168.1.5:8080).
+
+Footer: 'Keep this window open to stream.'
+
+3. Behavior:
+
+Ensure the server thread starts only once.
+
+If I close the popup, the server can keep running (or stop, your choice), but the window should disappear."
+
+How to test it once code is generated:
+Run the app and click the new Mobile Sync button.
+
+Point your actual phone camera at the screen.
+
+Click the yellow link that appears on your phone.
+
+Boom: You should see your library on your phone screen. Click a song to test the audio streaming.

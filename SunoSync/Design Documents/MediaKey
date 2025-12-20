@@ -1,0 +1,77 @@
+Part 1: Global Media Keys (Control while minimized)
+We need the app to listen for the dedicated "Play/Pause" keys on your keyboard even when the window is in the background. We will use the pynput library, which is safer and less likely to trigger antivirus software than the keyboard library.
+
+Prompt 1: The Media Key Listener
+
+Copy and paste this:
+
+"I need to implement Global Media Keys support.
+
+1. Install Dependency:
+
+I will install pynput (pip install pynput).
+
+2. Create the Manager (media_keys.py):
+
+Create a class MediaKeyHandler that accepts my player instance.
+
+Use pynput.keyboard.Listener to listen for specific keys globally.
+
+Map these keys:
+
+Key.media_play_pause → player.toggle_play()
+
+Key.media_next → player.play_next()
+
+Key.media_previous → player.play_previous()
+
+Thread Safety: Since this runs in a separate thread, ensure the player commands are triggered safely (using app.after or directly if your player is thread-safe).
+
+Add a start() and stop() method to control the listener.
+
+3. Integration:
+
+In main.py, initialize this handler right after the player is created.
+
+Start it on app launch and stop it on app close."
+
+Part 2: Discord Rich Presence (The "Flex" Feature)
+This connects your app to Discord so it shows "Listening to Cyberpunk Synthwave" on your profile. You will use pypresence.
+
+Prompt 2: Discord RPC Integration
+
+Copy and paste this:
+
+"I need to add Discord Rich Presence.
+
+1. Install Dependency:
+
+I will install pypresence (pip install pypresence).
+
+2. Create the Manager (discord_handler.py):
+
+Create a class DiscordRPC.
+
+Init: Accept a client_id (Use a placeholder '123456789' for now, I will register my own app on the Discord Dev Portal later).
+
+Connect using RPC.connect(). Handle errors (e.g., if Discord isn't running, don't crash the app).
+
+3. The Update Method:
+
+Create a function update_presence(track_title, artist, duration, current_time, is_paused).
+
+Logic:
+
+If paused: Show state='Paused'.
+
+If playing: Show details=track_title, state=artist.
+
+Time: Calculate end_time (epoch timestamp) so Discord shows the 'Time Remaining' countdown automatically.
+
+Image: Set large_image to 'suno_logo' (or a default key).
+
+4. Integration with Player:
+
+Update player_widget.py.
+
+Whenever the song changes or play/pause is clicked, call discord_rpc.update_presence()."

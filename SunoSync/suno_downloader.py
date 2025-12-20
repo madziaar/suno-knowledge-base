@@ -63,7 +63,7 @@ class SunoDownloader:
     def configure(self, token, directory, max_pages, start_page, 
                   organize_by_month, embed_metadata_enabled, prefer_wav, download_delay, 
                   filter_settings=None, scan_only=False, target_songs=None, save_lyrics=True,
-                  organize_by_track=False, stems_only=False, smart_resume=False):
+                  organize_by_track=False, stems_only=False, smart_resume=False, force_rescan=False):
         self.config = {
             "token": token,
             "directory": directory,
@@ -79,7 +79,10 @@ class SunoDownloader:
             "target_songs": target_songs or [], # List of dicts or UUIDs
             "organize_by_track": organize_by_track,
             "stems_only": stems_only,
-            "smart_resume": smart_resume
+            "organize_by_track": organize_by_track,
+            "stems_only": stems_only,
+            "smart_resume": smart_resume,
+            "force_rescan": force_rescan
         }
         self.rate_limiter = RateLimiter(self.config["download_delay"])
 
@@ -178,9 +181,12 @@ class SunoDownloader:
             
             if self.is_stopped():
                 self.signals.status_changed.emit("Stopped")
+                self._log("Process stopped by user.", "warning")
+                self.signals.download_complete.emit(False)
             else:
                 self.signals.status_changed.emit("Complete")
-            self.signals.download_complete.emit(True)
+                self._log("Process finished successfully.", "success")
+                self.signals.download_complete.emit(True)
             return
 
         # Mode 2: Scan/Download from Feed/Workspace
@@ -246,10 +252,15 @@ class SunoDownloader:
             self._log("Fetching song list...", "info")
             
             # Build UUID cache from existing files for duplicate detection
-            self._log("Building UUID cache from existing files...", "info")
-            from suno_utils import build_uuid_cache
-            uuid_cache = build_uuid_cache(directory)
-            self._log(f"Found {len(uuid_cache)} existing songs in cache.", "info")
+            # Build UUID cache from existing files for duplicate detection
+            if self.config.get("force_rescan"):
+                 self._log("Force Rescan Active: Skipping local file cache build.", "warning")
+                 uuid_cache = set()
+            else:
+                self._log(f"Building UUID cache from: {directory}", "info")
+                from suno_utils import build_uuid_cache
+                uuid_cache = build_uuid_cache(directory)
+                self._log(f"Found {len(uuid_cache)} existing songs in cache.", "info")
             
             consecutive_skipped_pages = 0
             # Adaptive threshold: scale with library size
@@ -283,6 +294,8 @@ class SunoDownloader:
                     # Retry logic for fetching page
                     max_retries = 3
                     for attempt in range(max_retries):
+                        if self.is_stopped():
+                            break
                         try:
                             # For playlists, don't append page number
                             if is_playlist:
@@ -292,9 +305,15 @@ class SunoDownloader:
                             # Increased timeout to 30s and added retry loop
                             r = requests.get(url, headers=headers, timeout=30)
                             
+                            
                             # 404 Fallback Logic: Project -> Playlist
                             if r.status_code == 404:
                                 if "/api/project/" in base_url:
+                                    if "default" in base_url:
+                                        self._log("Default Project endpoint 404. Falling back to Main Library (Feed).", "warning")
+                                        base_url = "https://studio-api.prod.suno.com/api/feed/"
+                                        continue
+                                    
                                     self._log("Project endpoint 404. Switching to Playlist endpoint...", "warning")
                                     # Regex replace /api/project/ID -> /api/playlist/ID/
                                     base_url = re.sub(r"/api/project/([^?&]+)", r"/api/playlist/\1/", base_url)
@@ -311,6 +330,24 @@ class SunoDownloader:
                                 break # Break retry loop, outer loop will also break due to success=False
                             r.raise_for_status()
                             data = r.json()
+
+                            # ZERO ITEMS Fallback (Specific to Default Project)
+                            # If we are on the first requested page (usually 1) and we get 0 items from "default" project
+                            # It likely means the user expects "My Library" but selected "My Workspace".
+                            is_default_project = "project/default" in base_url
+                            if is_default_project and (page_num == 1 or page_num == self.config.get("start_page", 1)):
+                                # Check if empty result
+                                has_items = False
+                                if isinstance(data, dict):
+                                    if "project_clips" in data and data["project_clips"]: has_items = True
+                                    elif "clips" in data and data["clips"]: has_items = True
+                                elif isinstance(data, list) and data: has_items = True
+                                
+                                if not has_items:
+                                    self._log("Default Project is empty. Assuming user wants Main Library. switching to Feed...", "warning")
+                                    base_url = "https://studio-api.prod.suno.com/api/feed/"
+                                    # We need to restart the request with the new URL
+                                    continue
                             
                             # Debug: Log response structure for playlists
                             if is_playlist:
@@ -430,7 +467,17 @@ class SunoDownloader:
                     if self.config.get("stems_only"):
                         filter_hide_stems = False
 
+                    if self.is_stopped(): break
+
+                    # Override: If Stems Only is active, disable Hide Stems
+                    if self.config.get("stems_only"):
+                        filter_hide_stems = False
+
+                    skipped_count = 0
+                    
                     for index, item in enumerate(raw_items):
+                        if self.is_stopped(): break
+                        
                         # A. UNWRAP STRATEGY
                         if isinstance(item, dict) and "clip" in item:
                             song_data = item["clip"]
@@ -512,6 +559,7 @@ class SunoDownloader:
                         if search_text:
                             tags = metadata.get("tags", "") or ""
                             prompt = metadata.get("prompt", "") or ""
+                            title_lower = title.lower() # Defined here
                             searchable_content = f"{title_lower} {tags.lower()} {prompt.lower()}"
                             if search_text not in searchable_content:
                                 continue
@@ -521,15 +569,24 @@ class SunoDownloader:
 
                         # 9. Duplicate Check (Metadata-Based)
                         if uuid and uuid in uuid_cache:
-                            self._log(f"Skipping {title} (UUID found in cache)", "info")
+                            skipped_count += 1
+                            # self._log(f"Skipping {title} (UUID found in cache)", "info") 
                             continue
 
                         # E. SUCCESS
                         filtered_clips.append(song_data)
 
 
+                    if skipped_count > 0:
+                        self._log(f"Page {page_num}: Skipped {skipped_count} existing songs.", "info")
+
                     if not filtered_clips:
-                        self._log(f"Page {page_num}: All songs filtered out or skipped.", "info")
+                        if skipped_count > 0:
+                            msg = f"Page {page_num}: All songs skipped (existing). Enable 'Force Rescan' to included."
+                            self._log(msg, "warning")
+                            self.signals.status_changed.emit("Skipped existing (Check Force Rescan)")
+                        else:
+                            self._log(f"Page {page_num}: All songs filtered out.", "info")
                     
                     # Track if we found new songs on this page
                     if filtered_clips:
@@ -565,7 +622,7 @@ class SunoDownloader:
                                     directory,
                                     headers,
                                     token,
-                                    existing_uuids,
+                                    uuid_cache,
                                     self.rate_limiter,
                                 )
                             )

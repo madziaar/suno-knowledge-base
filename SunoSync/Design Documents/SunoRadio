@@ -1,0 +1,109 @@
+The Architecture: "The Host & The DJs"
+The Host (Server): One person clicks "Go Live." Their PC broadcasts the audio.
+
+The Community (DJs): Friends tune in via the Ngrok link. Their web player has a special "Add to Queue" button.
+
+The Magic: When a friend uploads a song (or pastes a Suno ID), it travels through the tunnel and lands directly in the Host's RADIO_QUEUE.
+
+This makes it interactive without costing you a dime in server fees.
+
+Here is the plan to build the Suno On-Air Server with Community Uploads enabled.
+
+Step 1: Install Dependencies
+We need pyngrok to tunnel out to the internet and flask (or just robust http.server logic) to handle the file uploads. To keep it lightweight and dependency-free (standard library), we will stick to http.server but add a POST handler for uploads.
+
+(No action needed if you stick to the prompt below, standard library is fine).
+
+Step 2: The "Community Radio" Server Script
+This script handles three things: Streaming Audio, Serving the Web Page, and Accepting Uploads from friends.
+
+Copy and paste this prompt:
+
+"I need to build the 'Suno On-Air' Radio Server with Community features. Please create a new file named radio_server.py.
+
+1. The Server Setup:
+
+Import http.server, socket, threading, os, random, shutil.
+
+Create a global list PLAYLIST_QUEUE (list of file paths).
+
+Create a global variable CURRENT_TRACK (path).
+
+2. The Request Handler (The Brain):
+
+Create a class RadioHandler(http.server.SimpleHTTPRequestHandler).
+
+GET /: Serve a dynamic HTML page 'Suno Live Radio'.
+
+UI: Dark Mode. Big Album Art. 'Now Playing' text.
+
+Community Feature: A distinct 'Request Song' section. A File Input and 'Upload' button.
+
+Player: <audio src="/stream.mp3" autoplay controls>.
+
+GET /stream.mp3: Serve the bytes of CURRENT_TRACK. (Handle byte-range requests if possible, or just stream the file).
+
+GET /status: Return JSON { title: "...", artist: "...", listeners: 12 } for the UI to auto-update.
+
+POST /upload: Handle file uploads from listeners.
+
+Save the uploaded MP3 to a local Radio_Requests folder.
+
+Automatically add the new file path to PLAYLIST_QUEUE.
+
+Return a success message: 'Track added to queue!'.
+
+3. The Broadcast Controller:
+
+Create a class RadioStation.
+
+start_broadcast():
+
+Start the HTTP server on port 8085.
+
+Tunnel: Import pyngrok and run public_url = ngrok.connect(8085).public_url.
+
+Return the public_url to the main app.
+
+dj_loop(): A background thread that checks:
+
+If song finished? Pop next song from PLAYLIST_QUEUE -> Set as CURRENT_TRACK.
+
+If queue empty? Play a random song from the local Library (fallback).
+
+4. Dependencies:
+
+Ensure it uses pyngrok for the public link."
+
+Step 3: The UI to "Go Live"
+Now add the control panel in your app so you can start the station and see what people are queuing.
+
+Copy and paste this prompt:
+
+"I need the Radio Dashboard UI in my main app.
+
+1. The 'Go Live' Button:
+
+Add a 'Broadcast' icon button to the Sidebar or Top Bar.
+
+2. The Station Manager Window:
+
+When clicked, open a CTkToplevel window.
+
+Header: 'Suno On-Air' with a big Red 'OFF AIR' badge.
+
+Action: A 'Start Broadcast' button.
+
+When clicked, run radio_server.start_broadcast().
+
+Change badge to 'LIVE' (Green).
+
+Show the Public Link (clickable/copyable).
+
+3. The Live Queue (Community Interaction):
+
+Add a CTkScrollableFrame showing the PLAYLIST_QUEUE.
+
+Real-time Updates: When a friend uploads a song via the web link, this list must update to show the new track.
+
+Controls: Add 'Skip' and 'Kick' (remove from queue) buttons next to each track."

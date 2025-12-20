@@ -1,12 +1,12 @@
-# SunoSync V2
+# SunoSync V3.0
 
 **Your World, Your Music. Seamlessly Synced.**
 
-SunoSync V2 is the ultimate desktop manager for your Suno AI music generation. It combines a powerful bulk downloader, a feature-rich music library, and a built-in audio player into one seamless application.
+SunoSync is the ultimate desktop ecosystem for your Suno AI music generation. It combines a powerful bulk downloader, a rich music library, a prompt vault, live radio broadcasting, and a mobile bridge into one seamless application.
 
 ![SunoSync Splash](resources/splash.png)
 
-**Buy the exe or compile yourself below for free:**
+**Get the official build or compile yourself below for free:**
 
 - https://ko-fi.com/s/374c24251c - PayPal accepted here  [$3 or pay what you want]
 - https://justinmurray99.gumroad.com/l/rrxty  [$3 or pay what you want]
@@ -16,65 +16,52 @@ SunoSync V2 is the ultimate desktop manager for your Suno AI music generation. I
 ## 🌟 Key Features
 
 ### 📥 Smart Downloader
-*   **Bulk Downloading:** Download all your Suno songs in one click.
-*   **Smart Sync:** Only downloads new songs, skipping what you already have.
-*   **Format Choice:** Choose between **MP3** (smaller size) or **WAV** (lossless quality).
-*   **Organization:** Automatically organizes downloads into folders by **Year-Month** (e.g., `2025-11`).
-*   **Metadata Embedding:** Automatically embeds Title, Artist, and **Lyrics** directly into the audio file tags (MP3 and WAV).
-*   **Lyrics Files:** Option to save lyrics as separate `.txt` files.
-*   **Smart Resume:** Intelligently stops scanning after consecutive pages with no new songs.
-*   **Workspace & Playlist Support:** Browse and download from your Suno workspaces and playlists.
-*   **Advanced Filtering:** Filter by liked, trashed, stems, public/private, and more.
-*   **Preload Mode:** Preview songs before downloading and uncheck unwanted tracks.
+*   **Bulk Downloading:** Download your entire Suno library in one click.
+*   **Smart Sync:** Only downloads new songs, skipping existing files.
+*   **Format Choice:** **MP3** (Compact) or **WAV** (Lossless).
+*   **Metadata Embedding:** Automatically embeds Title, Artist, **Lyrics**, and Cover Art into audio tags.
+*   **Smart Resume:** Intelligently stops scanning when no new songs are found.
+*   **Organization:** Auto-sorts downloads into `Year-Month` folders.
+*   **Preload Mode:** Preview songs before downloading to curate your list.
 
-### 📚 Music Library
-*   **Visual Browser:** Browse your entire collection in a clean, sortable list.
-*   **Search:** Instantly filter songs by Title or Artist.
-*   **Sorting:** Sort by Date, Duration, Size, Title, or Artist.
-*   **Tag System:** Organize songs with Like 👍, Star ⭐, and Trash 🗑️ tags with filtering support.
-*   **Context Menu:** Right-click to Play, View/Edit Lyrics, Open Folder, or Delete songs.
-*   **Auto-Refresh:** Library automatically updates when new downloads finish.
+### 📚 Ultimate Music Library
+*   **Visual Browser:** Browse your collection with a clean, dark-themed grid.
+*   **Clean Titles:** Automatically sanitizes messy raw titles into readable text.
+*   **Tag System:** Organize with Like 👍, Star ⭐, and Trash 🗑️.
+*   **Stats Dashboard:** View detailed analytics of your library (Top Genres, Monthly Activity, etc.).
+*   **Maintenance Tools:** Built-in cache cleaner and force-rescan options.
 
-### 🎵 Built-in Player
-*   **Seamless Playback:** Play songs directly within the app without opening external players.
-*   **Controls:** Play/Pause, Stop, Seek Bar, and Volume Control.
-*   **Playback Modes:** Shuffle, Repeat All, and Repeat One modes.
-*   **Tag Controls:** Quick-access Like, Star, and Trash buttons with automatic library synchronization.
+### 📻 Suno On-Air & Mobile Bridge
+*   **Live Radio:** Broadcast your library as a live web radio station to share with friends.
+*   **Request Queue:** Listeners can request songs via the public web link.
+*   **Mobile Bridge:** Scan a QR code to stream your library directly to your phone browser.
 
-### ✍️ Lyrics Editor
-*   **View & Edit:** Right-click any song to view the embedded lyrics.
-*   **Multiple Sources:** Reads lyrics from both embedded metadata and `.txt` files.
-*   **Edit Mode:** Fix typos or add your own verses directly in the app.
-*   **Dual Save:** Saves lyrics to both `.txt` file and audio file metadata.
-*   **Verification:** Automatically verifies that your changes are saved to the file on disk.
+### 🔐 Prompt Vault
+*   **Save Your Prompts:** Never lose a great prompt again. Save and organize your best prompts.
+*   **One-Click Copy:** Quickly copy prompts to clipboard for reuse in Suno.
 
-### 🎨 Modern UI & Polish
-*   **Dark Mode:** Sleek, modern dark interface that's easy on the eyes.
-*   **Customizable Notifications:** Option to disable Windows alert notification sounds.
-*   **Window State:** Remembers your window size and position between sessions.
-*   **Debug Tools:** Built-in debug log viewer for troubleshooting.
+### � Built-in Player
+*   **Seamless Playback:** Play songs directly within the app.
+*   **Mini Player:** Collapse the app into a sleek floating bar for background listening.
+*   **Lyrics View:** Sing along with synchronized lyrics (if available) or view static lyrics.
 
 ## 🚀 Getting Started
 
-1.  **Download:** Get the latest `SunoSyncV2.exe` or compile from source (see below).
-2.  **Install VLC:** Ensure you have [VLC Media Player](https://www.videolan.org/) installed (required for audio playback).
-3.  **Run:** Double-click `SunoSyncV2.exe`.
+1.  **Download:** Get the latest `SunoSync.exe`.
+2.  **Install VLC:** Ensure [VLC Media Player](https://www.videolan.org/) is installed (required for audio engine).
+3.  **Run:** Double-click `SunoSync.exe`.
 4.  **Get Token:**
     *   Click "Get Token" in the Downloader tab.
     *   Log in to Suno.com.
     *   Open Developer Tools (F12) -> Application -> Cookies.
-    *   Copy the value of the `__client` cookie.
-5.  **Download:** Paste your token and click **Start Download** or **Preload** to preview first.
+    *   Copy the `__client` cookie value.
+5.  **Sync:** Paste your token and click **Start Download**.
 
-## 🔒 Security & VirusTotal Transparency
+## 🔒 Transparency
 
-We believe in 100% transparency. Because SunoSync is an indie tool built with Python (and not a digitally signed corporation app), a few generic antivirus filters may flag it as "unknown."
-
-**The Reality:** ✅ 69/72 Security Vendors found NO issues (Clean) ⚠️ 3/72 flagged as "False Positive" (Generic/Heuristic)
-
-These flags occur because the app is "unsigned" (common for indie devs). You can verify the file yourself below:
-
-[➢ Click here to view the live VirusTotal Report](https://www.virustotal.com/gui/file/691ec3ad17ff18171b2499ed6c460db0fb1fb6015223eaa37c0cf06cdb92fc30?nocache=1)
+We believe in 100% transparency. SunoSync is an indie tool built with Python.
+*   **Crash Shield:** Built-in error reporting (Sentry) helps us fix bugs faster.
+*   **False Positives:** Some antivirus software may flag the app because it is not digitally signed by a corporation. This is normal for open-source Python tools.
 
 ## ☕ Support
 
@@ -91,14 +78,14 @@ If you love SunoSync, consider buying me a coffee to support future updates!
 ### Prerequisites
 *   **Python 3.10+**
 *   **Git**
-*   **VLC Media Player** (Required for audio playback)
+*   **VLC Media Player**
 
 ### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/sunsetsacoustic/SunoSync.git
-    cd SunoSync
+    git clone https://github.com/sunsetsacoustic/SunoSyncV2.git
+    cd SunoSyncV2
     ```
 
 2.  **Install dependencies:**
@@ -111,18 +98,10 @@ If you love SunoSync, consider buying me a coffee to support future updates!
     python main.py
     ```
 
-### Compiling to Executable
-
+### Compiling
 To build the standalone `.exe` file:
 
-1.  **Install PyInstaller:**
-    ```bash
-    pip install pyinstaller
-    ```
-
-2.  **Build using the spec file:**
-    ```bash
-    pyinstaller SunoApi.spec
-    ```
-
-3.  The executable will be in the `dist/` folder.
+```bash
+pyinstaller SunoApi.spec
+```
+The executable will be in the `dist/` folder.

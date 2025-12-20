@@ -1,239 +1,201 @@
 """Layout builders and dialog helpers for SunoSync GUI."""
 import os
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog, messagebox
+import customtkinter as ctk
+from tkinter import messagebox
 import webbrowser
 import pyperclip
-from suno_widgets import RoundedButton, CollapsibleCard, FilterPopup, WorkspaceBrowser
+from suno_widgets import CollapsibleCard, FilterPopup, WorkspaceBrowser
+
+# Note: App instance passed here is expected to be a CTk class (from main.py)
 
 def create_auth_card(parent, app):
     """Create the authorization card with token input."""
-    card = CollapsibleCard(parent, title="Authorization", bg_color=app.card_bg,
+    # Parent is likely a scrollable frame or main frame
+    bg = getattr(app, 'card_bg', '#27272a')
+    card = CollapsibleCard(parent, title="Authorization", bg_color=bg,
                           corner_radius=12, padding=12, collapsed=False)
     card.pack(fill="x", pady=(0, 12))
+    
     body = card.body
-    tk.Label(body, text="Bearer Token", font=("Segoe UI", 9, "bold"),
-            bg=app.bg_card, fg=app.fg_secondary).pack(anchor="w", padx=12, pady=(8, 4))
     
-    # Container for Input + Button
-    row = tk.Frame(body, bg=app.bg_card)
-    row.pack(fill="x", padx=12, pady=(0, 12))
+    ctk.CTkLabel(body, text="Bearer Token", font=("Segoe UI", 12, "bold"), text_color="gray").pack(anchor="w", padx=5, pady=(5, 0))
     
-    # Input Field
-    token_container = tk.Frame(row, bg=app.bg_input, highlightbackground=app.border_subtle, highlightthickness=1)
-    token_container.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 10))
+    # Input Row
+    row = ctk.CTkFrame(body, fg_color="transparent")
+    row.pack(fill="x", padx=5, pady=5)
     
-    app.token_var = tk.StringVar()
-    app.token_entry = tk.Entry(token_container, textvariable=app.token_var, show="●",
-                               font=("Segoe UI", 10), bg=app.bg_input, fg=app.fg_primary,
-                               insertbackground=app.fg_primary, relief="flat", bd=0, highlightthickness=0)
-    app.token_entry.pack(side=tk.LEFT, fill="x", expand=True, padx=10, pady=8)
+    app.token_var = ctk.StringVar()
+    app.token_entry = ctk.CTkEntry(row, textvariable=app.token_var, show="●", width=300)
+    app.token_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
     
-    # Get Token Button (Small, Secondary)
-    get_token_btn = RoundedButton(row, "Get Token", app.get_token_logic,
-                                  bg_color=app.bg_input, fg_color=app.accent_purple,
-                                  hover_color=app.bg_dark, font=("Segoe UI", 9, "bold"),
-                                  width=90, height=36, corner_radius=8, border_color=app.border_subtle)
-    get_token_btn.pack(side=tk.RIGHT)
-    app.create_tooltip(get_token_btn, "Click to open instructions for getting your token.")
+    get_token_btn = ctk.CTkButton(row, text="Get Token", command=app.get_token_logic, width=100)
+    get_token_btn.pack(side="right")
     
     return card
 
 
 def create_settings_card(parent, app, base_path):
     """Create the settings card with path and toggles."""
-    card = CollapsibleCard(parent, title="Download Settings", bg_color=app.card_bg,
+    bg = getattr(app, 'card_bg', '#27272a')
+    card = CollapsibleCard(parent, title="Download Settings", bg_color=bg,
                           corner_radius=12, padding=12, collapsed=False)
     card.pack(fill="x", pady=(0, 12))
     body = card.body
     
     # --- Path Selection ---
-    tk.Label(body, text="Download Folder", font=("Segoe UI", 9, "bold"),
-            bg=app.bg_card, fg=app.fg_secondary).pack(anchor="w", padx=12, pady=(8, 4))
+    ctk.CTkLabel(body, text="Download Folder", font=("Segoe UI", 12, "bold"), text_color="gray").pack(anchor="w", padx=5, pady=(5, 0))
             
-    path_row = tk.Frame(body, bg=app.bg_card)
-    path_row.pack(fill="x", padx=12, pady=(0, 12))
+    path_row = ctk.CTkFrame(body, fg_color="transparent")
+    path_row.pack(fill="x", padx=5, pady=5)
     
-    app.path_var = tk.StringVar(value=os.path.join(base_path, "Suno_Downloads"))
-    app.path_display_var = tk.StringVar()
+    app.path_var = ctk.StringVar(value=os.path.join(base_path, "Suno_Downloads"))
+    app.path_display_var = ctk.StringVar() # Optional now if we bind directly, but keeping logic same
     
-    path_container = tk.Frame(path_row, bg=app.bg_input, highlightbackground=app.border_subtle, highlightthickness=1)
-    path_container.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 8))
+    # CTkEntry for path
+    path_entry = ctk.CTkEntry(path_row, textvariable=app.path_display_var, state="readonly")
+    path_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
     
-    path_entry = tk.Entry(path_container, textvariable=app.path_display_var, state="readonly",
-                         font=("Segoe UI", 9), bg=app.bg_input, fg=app.fg_secondary,
-                         relief="flat", bd=0, highlightthickness=0, readonlybackground=app.bg_input)
-    path_entry.pack(fill="x", padx=10, pady=8)
-    app.create_tooltip(path_entry, "Full path: " + app.path_var.get())
-    
-    browse_btn = RoundedButton(path_row, "Browse", app.browse_folder,
-                              bg_color=app.bg_input, fg_color=app.fg_primary,
-                              hover_color=app.bg_dark, font=("Segoe UI", 9),
-                              width=80, height=36, corner_radius=8, border_color=app.border_subtle)
-    browse_btn.pack(side=tk.LEFT)
+    browse_btn = ctk.CTkButton(path_row, text="Browse", command=app.browse_folder, width=80)
+    browse_btn.pack(side="right")
 
     # --- Toggles Grid ---
-    toggles_frame = tk.Frame(body, bg=app.bg_card)
-    toggles_frame.pack(fill="x", padx=12, pady=5)
+    toggles_frame = ctk.CTkFrame(body, fg_color="transparent")
+    toggles_frame.pack(fill="x", padx=5, pady=10)
     
-    # Configure grid columns to have minimum widths
-    toggles_frame.columnconfigure(0, weight=1, minsize=180)
-    toggles_frame.columnconfigure(1, weight=1, minsize=180)
+    toggles_frame.columnconfigure(0, weight=1)
+    toggles_frame.columnconfigure(1, weight=1)
     
-    # Helper for grid items
-    def add_toggle(row, col, text, var, tooltip):
-        f = tk.Frame(toggles_frame, bg=app.bg_card)
-        f.grid(row=row, column=col, sticky="w", padx=(0, 20), pady=6)
-        app.create_toggle_option(f, text, var) # Uses existing toggle logic but packed into grid frame
-        app.create_tooltip(f, tooltip)
+    # Helpers
+    def add_toggle(row, col, text, var, tooltip=""):
+        # Wrapper frame not strictly needed for alignment in grid but good for consistency
+        s = ctk.CTkSwitch(toggles_frame, text=text, variable=var)
+        s.grid(row=row, column=col, sticky="w", padx=10, pady=8)
+        # Tooltip logic removed for now or needs a CTkTooltip lib.
 
-    app.embed_thumb_var = tk.BooleanVar(value=True)
-    add_toggle(0, 0, "Embed Metadata", app.embed_thumb_var, "Adds ID3 tags and album art")
+    app.embed_thumb_var = ctk.BooleanVar(value=True)
+    add_toggle(0, 0, "Embed Metadata", app.embed_thumb_var)
     
-    app.download_wav_var = tk.BooleanVar(value=False)
-    add_toggle(0, 1, "Prefer WAV", app.download_wav_var, "Download WAV if available")
+    app.download_wav_var = ctk.BooleanVar(value=False)
+    add_toggle(0, 1, "Prefer WAV", app.download_wav_var)
     
-    app.organize_var = tk.BooleanVar(value=False)
-    add_toggle(1, 0, "Monthly Folders", app.organize_var, "Sort into YYYY-MM folders")
+    app.organize_var = ctk.BooleanVar(value=False)
+    add_toggle(1, 0, "Monthly Folders", app.organize_var)
     
-    app.save_lyrics_var = tk.BooleanVar(value=True)
-    add_toggle(1, 1, "Save Lyrics (.txt)", app.save_lyrics_var, "Save lyrics to a separate text file")
+    app.save_lyrics_var = ctk.BooleanVar(value=True)
+    add_toggle(1, 1, "Save Lyrics (.txt)", app.save_lyrics_var)
 
-    app.track_folder_var = tk.BooleanVar(value=False)
-    add_toggle(2, 0, "Stem Track Folder", app.track_folder_var, "Create a folder for each track")
+    app.track_folder_var = ctk.BooleanVar(value=False)
+    add_toggle(2, 0, "Stem Track Folder", app.track_folder_var)
 
-    app.smart_resume_var = tk.BooleanVar(value=False)
-    add_toggle(2, 1, "Smart Resume", app.smart_resume_var, "Stop scanning after consecutive pages with no new songs (adaptive: 2-20 pages based on library size)")
+    app.smart_resume_var = ctk.BooleanVar(value=False)
+    add_toggle(2, 1, "Smart Resume", app.smart_resume_var)
     
-    app.disable_sounds_var = tk.BooleanVar(value=False)
-    add_toggle(3, 0, "Disable Notification Sounds", app.disable_sounds_var, "Turn off Windows alert notification sounds")
+    app.disable_sounds_var = ctk.BooleanVar(value=False)
+    add_toggle(3, 0, "Disable Notification Sounds", app.disable_sounds_var)
     
     return card
 
 
 def create_scraping_card(parent, app):
     """Create the scraping options card."""
-    card = CollapsibleCard(parent, title="Scraping Options", bg_color=app.card_bg,
+    bg = getattr(app, 'card_bg', '#27272a')
+    card = CollapsibleCard(parent, title="Scraping Options", bg_color=bg,
                           corner_radius=12, padding=12, collapsed=False)
     card.pack(fill="x", pady=(0, 12))
     body = card.body
     
-    # Horizontal layout for controls
-    row = tk.Frame(body, bg=app.bg_card)
-    row.pack(fill="x", padx=12, pady=12)
+    # Horizontal layout for inputs
+    row = ctk.CTkFrame(body, fg_color="transparent")
+    row.pack(fill="x", padx=5, pady=10)
     
-    # Helper for labeled inputs
-    def add_input(parent_frame, label, var, width=5, tooltip=""):
-        f = tk.Frame(parent_frame, bg=app.bg_card)
-        f.pack(side=tk.LEFT, padx=(0, 24))
-        tk.Label(f, text=label, font=("Segoe UI", 9, "bold"), bg=app.bg_card, fg=app.fg_secondary).pack(anchor="w")
-        
-        c = tk.Frame(f, bg=app.bg_input, highlightbackground=app.border_subtle, highlightthickness=1)
-        c.pack(fill="x", pady=(4, 0))
-        
-        s = tk.Spinbox(c, from_=0, to=999, textvariable=var, font=("Segoe UI", 9), width=width,
-                       bg=app.bg_input, fg=app.fg_primary, relief="flat", bd=0, highlightthickness=0,
-                       buttonbackground=app.bg_input)
-        s.pack(padx=8, pady=6)
-        if tooltip: app.create_tooltip(s, tooltip)
-        return s
+    def add_input(frame, label, var, width=60):
+        c = ctk.CTkFrame(frame, fg_color="transparent")
+        c.pack(side="left", padx=(0, 20))
+        ctk.CTkLabel(c, text=label, font=("Segoe UI", 12, "bold"), text_color="gray").pack(anchor="w")
+        # Spinbox doesn't exist natively in basic CTk, using Entry for now or external lib. 
+        # Actually CTk doesn't have Spinbox. We'll use Entry with validation ideally, or just Entry.
+        # User can type number.
+        e = ctk.CTkEntry(c, textvariable=var, width=width)
+        e.pack()
+        return e
 
-    app.rate_limit_var = tk.DoubleVar(value=0.5)
-    add_input(row, "Delay (s)", app.rate_limit_var, width=5, tooltip="Seconds between downloads")
+    app.rate_limit_var = ctk.DoubleVar(value=0.5) # Using DoubleVar for entry works if careful
+    add_input(row, "Delay (s)", app.rate_limit_var)
     
-    app.start_page_var = tk.IntVar(value=1)
-    add_input(row, "Start Page", app.start_page_var, width=5, tooltip="Page to start from")
+    app.start_page_var = ctk.IntVar(value=1)
+    add_input(row, "Start Page", app.start_page_var)
     
-    app.max_pages_var = tk.IntVar(value=0)
-    add_input(row, "Max Pages", app.max_pages_var, width=5, tooltip="0 = All Pages")
+    app.max_pages_var = ctk.IntVar(value=0)
+    add_input(row, "Max Pages", app.max_pages_var)
 
-    # Filters Button
-    filter_frame = tk.Frame(body, bg=app.bg_card)
-    filter_frame.pack(fill="x", padx=12, pady=(0, 12))
+    # Filter/Workspace Buttons Frame
+    filter_frame = ctk.CTkFrame(body, fg_color="transparent")
+    filter_frame.pack(fill="x", padx=5, pady=(0, 10))
     
-    app.filter_btn = RoundedButton(filter_frame, "Filters", app.open_filters,
-                                  bg_color=app.bg_input, fg_color=app.fg_primary,
-                                  hover_color=app.bg_dark, font=("Segoe UI", 9),
-                                  width=95, height=36, corner_radius=8, border_color=app.border_subtle)
-    app.filter_btn.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 4))
-    app.create_tooltip(app.filter_btn, "Configure advanced download filters")
+    app.filter_btn = ctk.CTkButton(filter_frame, text="Filters", command=app.open_filters, fg_color="transparent", border_width=1)
+    app.filter_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+    
+    app.workspace_btn = ctk.CTkButton(filter_frame, text="Workspaces", command=app.open_workspaces, fg_color="transparent", border_width=1)
+    app.workspace_btn.pack(side="left", fill="x", expand=True, padx=5)
 
-    app.workspace_btn = RoundedButton(filter_frame, "Workspaces", app.open_workspaces,
-                                     bg_color=app.bg_input, fg_color=app.fg_primary,
-                                     hover_color=app.bg_dark, font=("Segoe UI", 9),
-                                     width=95, height=36, corner_radius=8, border_color=app.border_subtle)
-    app.workspace_btn.pack(side=tk.LEFT, fill="x", expand=True, padx=(4, 4))
-    app.create_tooltip(app.workspace_btn, "Select a specific workspace to download from")
-
-    app.playlist_btn = RoundedButton(filter_frame, "Playlists", app.open_playlists,
-                                     bg_color=app.bg_input, fg_color=app.fg_primary,
-                                     hover_color=app.bg_dark, font=("Segoe UI", 9),
-                                     width=95, height=36, corner_radius=8, border_color=app.border_subtle)
-    app.playlist_btn.pack(side=tk.LEFT, fill="x", expand=True, padx=(4, 0))
-    app.create_tooltip(app.playlist_btn, "Select a specific playlist to download from")
+    app.playlist_btn = ctk.CTkButton(filter_frame, text="Playlists", command=app.open_playlists, fg_color="transparent", border_width=1)
+    app.playlist_btn.pack(side="left", fill="x", expand=True, padx=(5, 0))
 
     # Preload Button
-    preload_frame = tk.Frame(body, bg=app.bg_card)
-    preload_frame.pack(fill="x", padx=12, pady=(0, 12))
+    app.preload_btn = ctk.CTkButton(body, text="Preload List", command=app.preload_songs, fg_color="#db2777", hover_color="#be185d")
+    app.preload_btn.pack(fill="x", padx=5, pady=(5, 0))
     
-    app.preload_btn = RoundedButton(preload_frame, "Preload List", app.preload_songs,
-                                   bg_color=app.bg_input, fg_color=app.accent_pink,
-                                   hover_color=app.bg_dark, font=("Segoe UI", 9, "bold"),
-                                   width=200, height=36, corner_radius=8, border_color=app.border_subtle)
-    app.preload_btn.pack(fill="x")
-    app.create_tooltip(app.preload_btn, "Fetch song list without downloading to select specific tracks")
+    app.force_rescan_var = ctk.BooleanVar(value=False)
+    rescan_chk = ctk.CTkCheckBox(body, text="Force Rescan (Ignore Cache)", variable=app.force_rescan_var, font=("Segoe UI", 11), text_color="gray")
+    rescan_chk.pack(anchor="e", padx=10, pady=(5, 5))
 
     return card
 
 
 def create_action_area(parent, app):
     """Create the action buttons area."""
-    frame = tk.Frame(parent, bg=app.bg_dark)
+    frame = ctk.CTkFrame(parent, fg_color="transparent")
     frame.pack(fill="x", pady=10)
     
     # Start Button (Primary)
-    app.start_btn = RoundedButton(frame, "Start Download", app.start_download_thread,
-                                 bg_color=app.accent_purple, fg_color="white",
-                                 hover_color="#7c3aed", font=("Segoe UI", 11, "bold"),
-                                 width=180, height=45, corner_radius=8)
-    app.start_btn.pack(side=tk.LEFT, padx=(0, 10), fill="x", expand=True)
+    app.start_btn = ctk.CTkButton(frame, text="Start Download", command=app.start_download_thread,
+                                  height=45, font=("Segoe UI", 16, "bold"), fg_color="#7c3aed", hover_color="#6d28d9")
+    app.start_btn.pack(side="left", padx=(0, 10), fill="x", expand=True)
     
-    # Stop Button (Destructive/Secondary)
-    app.stop_btn = RoundedButton(frame, "Stop", app.stop_download,
-                                bg_color=app.bg_dark, fg_color=app.accent_red,
-                                hover_color=app.bg_input, font=("Segoe UI", 11, "bold"),
-                                width=100, height=45, corner_radius=8, border_color=app.accent_red)
-    app.stop_btn.pack(side=tk.LEFT)
-    app.stop_btn.config_state("disabled")
+    # Stop Button (Destructive)
+    app.stop_btn = ctk.CTkButton(frame, text="Stop", command=app.stop_download,
+                                height=45, font=("Segoe UI", 16, "bold"), fg_color="transparent", 
+                                border_color="#ef4444", border_width=2, text_color="#ef4444", hover_color="#450a0a")
+    app.stop_btn.pack(side="left", padx=(0, 0))
+    app.stop_btn.configure(state="disabled")
     
     return frame
 
 
 def create_token_dialog(app):
     """Create and show the token acquisition dialog."""
-    app.log("Opening Suno in your default browser...", "info")
-    webbrowser.open("https://suno.com")
+    print("create_token_dialog called")
+    try:
+        app.log("Opening Suno in your default browser...", "info")
+        webbrowser.open("https://suno.com")
+        print("Browser opened")
+    except Exception as e:
+        print(f"Browser open error: {e}")
     
-    dialog = tk.Toplevel(app.winfo_toplevel())
-    dialog.title("Get Token")
-    dialog.geometry("600x450")
-    dialog.configure(bg=app.bg_dark)
-    dialog.transient(app.winfo_toplevel())
-    dialog.grab_set()
-    
-    parent_window = app.winfo_toplevel()
-    
-    def close_dialog():
-        """Properly close dialog and return focus to parent."""
-        dialog.grab_release()
-        parent_window.focus_set()
-        dialog.destroy()
-    
-    dialog.protocol("WM_DELETE_WINDOW", close_dialog)
-    
-    tk.Label(dialog, text="INSTRUCTIONS", font=("Segoe UI", 14, "bold"),
-            bg=app.bg_dark, fg=app.fg_primary).pack(pady=15)
+    try:
+        dialog = ctk.CTkToplevel(app)
+        dialog.title("Get Token")
+        dialog.geometry("600x500")
+        dialog.attributes("-topmost", True)
+        dialog.lift()
+        dialog.focus_force()
+        print("Dialog created")
+    except Exception as e:
+        print(f"Dialog creation error: {e}")
+        return
+
+    ctk.CTkLabel(dialog, text="INSTRUCTIONS", font=("Segoe UI", 18, "bold")).pack(pady=15)
     
     steps = (
         "1. Log in to Suno in the opened browser tab.\n"
@@ -241,42 +203,28 @@ def create_token_dialog(app):
         "3. Go to the 'Console' tab.\n"
         "4. Copy the code below and paste it, then press Enter."
     )
-    tk.Label(dialog, text=steps, justify=tk.LEFT, font=("Segoe UI", 10),
-            bg=app.bg_dark, fg=app.fg_primary).pack(pady=10, padx=20, anchor="w")
+    ctk.CTkLabel(dialog, text=steps, justify="left", font=("Segoe UI", 12)).pack(pady=10, padx=20, anchor="w")
     
     code = "window.Clerk.session.getToken().then(t => prompt('Copy this token:', t))"
     
-    code_container = tk.Frame(dialog, bg=app.bg_input, highlightbackground=app.border_subtle, highlightthickness=1)
-    code_container.pack(fill="x", padx=20, pady=10)
+    code_frame = ctk.CTkFrame(dialog)
+    code_frame.pack(fill="x", padx=20, pady=10)
     
-    code_entry = tk.Entry(code_container, font=("Consolas", 10), fg=app.accent_purple,
-                         bg=app.bg_input, relief="flat", bd=0, highlightthickness=0)
+    code_entry = ctk.CTkEntry(code_frame, font=("Consolas", 12))
     code_entry.insert(0, code)
-    code_entry.config(state="readonly")
-    code_entry.pack(side=tk.LEFT, fill="x", expand=True, padx=10, pady=10)
+    code_entry.configure(state="readonly")
+    code_entry.pack(side="left", fill="x", expand=True, padx=10, pady=10)
     
     def copy_code():
         pyperclip.copy(code)
-        btn_copy.set_text("Copied!")
-        dialog.after(2000, lambda: btn_copy.set_text("Copy"))
+        
+    ctk.CTkButton(code_frame, text="Copy", command=copy_code, width=60).pack(side="left", padx=10)
+    copy_code() # Auto copy
     
-    btn_copy = RoundedButton(code_container, "Copy", copy_code,
-                            bg_color=app.accent_purple, fg_color="white",
-                            hover_color="#9d6fff", font=("Segoe UI", 9, "bold"),
-                            width=80, height=30, corner_radius=6)
-    btn_copy.pack(side=tk.LEFT, padx=10)
-    copy_code()
+    ctk.CTkLabel(dialog, text="5. Copy the token from the browser popup.\n6. Paste it below:", justify="left").pack(pady=10, padx=20, anchor="w")
     
-    tk.Label(dialog, text="5. Copy the token from the browser popup.\n6. Paste it below:",
-            font=("Segoe UI", 10), bg=app.bg_dark, fg=app.fg_primary,
-            justify=tk.LEFT).pack(pady=15, padx=20, anchor="w")
-    
-    token_container = tk.Frame(dialog, bg=app.bg_input, highlightbackground=app.border_subtle, highlightthickness=1)
-    token_container.pack(fill="x", padx=20, pady=5)
-    
-    token_input = tk.Entry(token_container, bg=app.bg_input, fg=app.fg_primary,
-                          insertbackground=app.fg_primary, relief="flat", bd=0, highlightthickness=0)
-    token_input.pack(fill="x", padx=5, pady=5)
+    token_input = ctk.CTkEntry(dialog)
+    token_input.pack(fill="x", padx=20, pady=5)
     token_input.focus_set()
     
     def submit():
@@ -285,14 +233,8 @@ def create_token_dialog(app):
             app.token_var.set(t)
             app.log("Token set successfully!", "success")
             app.save_config()
-            close_dialog()
+            dialog.destroy()
         else:
-            messagebox.showwarning("Input Required", "Please paste the token.")
+            print("Token input empty")
     
-    submit_btn = RoundedButton(dialog, "Submit Token", submit,
-                              bg_color=app.accent_purple, fg_color="white",
-                              hover_color="#9d6fff", font=("Segoe UI", 11, "bold"),
-                              width=200, height=45, corner_radius=8)
-    submit_btn.pack(pady=15)
-    
-    app.winfo_toplevel().wait_window(dialog)
+    ctk.CTkButton(dialog, text="Submit Token", command=submit, height=40).pack(pady=20)

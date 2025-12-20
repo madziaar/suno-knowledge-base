@@ -1,900 +1,739 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import os
-import json
 import threading
 import queue
 import time
-from suno_utils import read_song_metadata, save_lyrics_to_file, open_file
-from theme_manager import ThemeManager
+import json
+import customtkinter as ctk
+import subprocess
+import tkinter as tk # For menu
+from tkinter import filedialog, messagebox
+from suno_widgets import SongCard, LibraryRow
+from suno_utils import read_song_metadata
 
-
-class LibraryTab(tk.Frame):
+class LibraryTab(ctk.CTkFrame):
     """Library tab for browsing and playing downloaded songs."""
     
     def __init__(self, parent, config_manager, cache_file=None, tags_file=None, **kwargs):
-        super().__init__(parent, **kwargs)
+        super().__init__(parent, fg_color="transparent", **kwargs)
         
         self.config_manager = config_manager
         self.cache_file = cache_file
         self.tags_file = tags_file
         self.download_path = self.config_manager.get("path", "")
-        self.all_songs = []  # Full song list
-        self.filtered_songs = []  # Filtered by search
+        
+        self.all_songs = []
+        self.filtered_songs = []
+        self.current_page = 0
         self.tags = {}
         self.active_filters = {"keep": False, "trash": False, "star": False}
         self._load_tags()
         
-        # Caching & Threading
         self.cache = {}
         self.scan_queue = queue.Queue()
         self.is_scanning = False
         self._load_cache()
         
-        # Apply theme
-        theme = ThemeManager()
-        self.bg_dark = theme.bg_dark
-        self.bg_card = theme.bg_card
-        self.bg_input = theme.bg_input  # Added for text area
-        self.fg_primary = theme.fg_primary
-        self.fg_secondary = theme.fg_secondary
-        self.accent_purple = theme.accent_purple
+        self.player_widget = None
+        self.song_cards = {} # uuid -> SongCard widget
         
-        self.configure(bg=self.bg_dark)
+        # Selection State
+        self.selected_rows = [] 
+        self.last_selected_row = None
         
-        self.create_widgets()
-        self.refresh_library()
-    
-    def create_widgets(self):
-        """Create the library UI."""
-        # Top toolbar
-        toolbar = tk.Frame(self, bg=self.bg_dark, height=60)
-        toolbar.pack(fill="x", padx=20, pady=(20, 10))
+        self._setup_ui()
         
-        # Search bar
-        search_frame = tk.Frame(toolbar, bg=self.bg_card, highlightthickness=1, 
-                               highlightbackground=self.fg_secondary)
-        search_frame.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 10))
+        # Start queue processing
+        self._process_scan_queue()
         
-        tk.Label(search_frame, text="🔍", bg=self.bg_card, fg=self.fg_secondary,
-                font=("Segoe UI", 12)).pack(side=tk.LEFT, padx=(10, 5))
+        # Initial Refresh
+        self.after(500, self.refresh_library)
+
+    def _setup_ui(self):
+        # Toolbar
+        self.toolbar = ctk.CTkFrame(self, height=50, fg_color="transparent")
+        self.toolbar.pack(fill="x", padx=10, pady=(10, 5))
         
-        self.search_var = tk.StringVar()
+        # Search
+        self.search_var = ctk.StringVar()
         self.search_var.trace_add("write", self.on_search)
-        search_entry = tk.Entry(search_frame, textvariable=self.search_var,
-                               bg=self.bg_card, fg=self.fg_primary,
-                               font=("Segoe UI", 10), relief="flat", bd=0)
-        search_entry.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 10), pady=8)
+        self.search_entry = ctk.CTkEntry(self.toolbar, textvariable=self.search_var, placeholder_text="Search Title, Artist, Genre...", width=250)
+        self.search_entry.pack(side="left", padx=(0, 10))
         
-        # Filter Buttons
-        filter_frame = tk.Frame(toolbar, bg=self.bg_dark)
-        filter_frame.pack(side=tk.LEFT, padx=10)
-        
+        # Filter Buttons via Toggle Logic
+        # We use small buttons that change color
         self.filter_btns = {}
         filters = [("👍", "keep", "#22c55e"), ("⭐", "star", "#eab308"), ("🗑️", "trash", "#ef4444")]
         
         for icon, tag, color in filters:
-            btn = tk.Button(filter_frame, text=icon, 
-                           command=lambda t=tag, c=color: self.toggle_filter(t, c),
-                           bg=self.bg_card, fg=self.fg_secondary,
-                           font=("Segoe UI", 12), relief="flat", cursor="hand2",
-                           width=3, padx=5, pady=2)
-            btn.pack(side=tk.LEFT, padx=2)
-            self.filter_btns[tag] = btn
+            btn = ctk.CTkButton(self.toolbar, text=icon, width=40, 
+                                fg_color="transparent", border_width=1, border_color="gray",
+                                text_color="gray", hover_color=color,
+                                command=lambda t=tag, c=color: self.toggle_filter(t, c))
+            btn.pack(side="left", padx=2)
+            self.filter_btns[tag] = (btn, color) # Store btn and active color
+            
+        # Refresh
+        self.refresh_btn = ctk.CTkButton(self.toolbar, text="🔄", width=40, command=self.refresh_library)
+        self.refresh_btn.pack(side="right", padx=5)
         
-        # Refresh button
-        self.refresh_btn = tk.Button(toolbar, text="🔄 Refresh", command=self.refresh_library,
-                                bg=self.accent_purple, fg="white",
-                                font=("Segoe UI", 10, "bold"),
-                                relief="flat", cursor="hand2",
-                                padx=20, pady=8)
-        self.refresh_btn.pack(side=tk.RIGHT)
+        # Change Folder
+        ctk.CTkButton(self.toolbar, text="📂", width=40, command=self.change_download_folder).pack(side="right", padx=5)
         
-        # Open Folder button (Show in Explorer)
-        open_btn = tk.Button(toolbar, text="📂 Show in Explorer", command=self.open_download_folder,
-                               bg=self.bg_card, fg=self.fg_primary,
-                               font=("Segoe UI", 10),
-                               relief="flat", cursor="hand2",
-                               padx=15, pady=8)
-        open_btn.pack(side=tk.RIGHT, padx=10)
+        # Pagination Controls
+        self.page_frame = ctk.CTkFrame(self.toolbar, fg_color="transparent")
+        self.page_frame.pack(side="right", padx=10)
+        
+        self.prev_btn = ctk.CTkButton(self.page_frame, text="<", width=30, command=self.prev_page, state="disabled")
+        self.prev_btn.pack(side="left", padx=2)
+        
+        self.page_label = ctk.CTkLabel(self.page_frame, text="0 / 0", width=50)
+        self.page_label.pack(side="left", padx=5)
+        
+        self.next_btn = ctk.CTkButton(self.page_frame, text=">", width=30, command=self.next_page, state="disabled")
+        self.next_btn.pack(side="left", padx=2)
 
-        # Change Folder button
-        change_btn = tk.Button(toolbar, text="📁 Change Folder", command=self.change_library_folder,
-                               bg=self.bg_card, fg=self.fg_primary,
-                               font=("Segoe UI", 10),
-                               relief="flat", cursor="hand2",
-                               padx=15, pady=8)
-        change_btn.pack(side=tk.RIGHT, padx=10)
+        # Stat Label
+        self.count_label = ctk.CTkLabel(self.toolbar, text="0 songs", width=80)
+        self.count_label.pack(side="right", padx=5)
         
-        # About button
-        about_btn = tk.Button(toolbar, text="ℹ️ About", command=self.show_about,
-                               bg=self.bg_card, fg=self.fg_primary,
-                               font=("Segoe UI", 10),
-                               relief="flat", cursor="hand2",
-                               padx=15, pady=8)
-        about_btn.pack(side=tk.RIGHT, padx=10)
+        # --- Data Grid Header ---
+        self.header_frame = ctk.CTkFrame(self, height=30, fg_color="#27272a", corner_radius=5)
+        self.header_frame.pack(fill="x", padx=10, pady=(5, 0))
         
-        # Song count label (with minimum width to prevent truncation)
-        self.count_label = tk.Label(toolbar, text="0 songs", bg=self.bg_dark,
-                                   fg=self.fg_secondary, font=("Segoe UI", 9), width=15, anchor="e")
-        self.count_label.pack(side=tk.RIGHT, padx=10)
+        # Configure Header Layout (Matches LibraryRow exactly)
+        self.header_frame.grid_columnconfigure(0, weight=3, minsize=200) # Title
+        self.header_frame.grid_columnconfigure(1, weight=2, minsize=150) # Artist
+        self.header_frame.grid_columnconfigure(2, weight=2, minsize=150) # Genre
+        self.header_frame.grid_columnconfigure(3, weight=1, minsize=80)  # BPM
+        self.header_frame.grid_columnconfigure(4, weight=1, minsize=80)  # Duration
         
-        # Treeview (file list)
-        tree_frame = tk.Frame(self, bg=self.bg_dark)
-        tree_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        headers = ["Title", "Artist", "Genre", "BPM", "Duration"]
+        for idx, text in enumerate(headers):
+            lbl = ctk.CTkLabel(self.header_frame, text=text, font=("Segoe UI", 12, "bold"), text_color="#a1a1aa")
+            # Align: Title/Artist Left, others Center/Right
+            anchor = "w" if idx < 3 else "center" if idx == 3 else "e"
+            padx = (10, 5) if idx == 0 else (5, 10) if idx == 4 else 5
+            lbl.configure(anchor=anchor)
+            lbl.grid(row=0, column=idx, sticky="ew", padx=padx, pady=5)
+
+        # Song List Area
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color="#18181b")
+        self.scroll_frame.pack(fill="both", expand=True, padx=10, pady=(2, 10))
         
-        # Create Treeview with custom styling
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("Library.Treeview",
-                       background=self.bg_card,
-                       foreground=self.fg_primary,
-                       fieldbackground=self.bg_card,
-                       borderwidth=0,
-                       font=("Segoe UI", 10))
-        style.configure("Library.Treeview.Heading",
-                       background=self.bg_dark,
-                       foreground=self.fg_primary,
-                       borderwidth=0,
-                       font=("Segoe UI", 10, "bold"))
-        style.map("Library.Treeview",
-                 background=[("selected", self.accent_purple)])
-        
-        # Scrollbars
-        v_scroll = ttk.Scrollbar(tree_frame, orient="vertical")
-        v_scroll.pack(side=tk.RIGHT, fill="y")
-        
-        h_scroll = ttk.Scrollbar(tree_frame, orient="horizontal")
-        h_scroll.pack(side=tk.BOTTOM, fill="x")
-        
-        # Treeview columns
-        self.tree = ttk.Treeview(tree_frame, style="Library.Treeview",
-                                columns=("tag", "title", "artist", "duration", "date", "size"),
-                                show="headings",
-                                yscrollcommand=v_scroll.set,
-                                xscrollcommand=h_scroll.set)
-        
-        # Column headings
-        self.tree.heading("tag", text="", command=lambda: self.sort_column("tag"))
-        self.tree.heading("title", text="Title", command=lambda: self.sort_column("title"))
-        self.tree.heading("artist", text="Artist", command=lambda: self.sort_column("artist"))
-        self.tree.heading("duration", text="Duration", command=lambda: self.sort_column("duration"))
-        self.tree.heading("date", text="Date", command=lambda: self.sort_column("date"))
-        self.tree.heading("size", text="Size", command=lambda: self.sort_column("size"))
-        
-        # Column widths
-        self.tree.column("tag", width=50, minwidth=50, anchor="center")
-        self.tree.column("title", width=300, minwidth=150)
-        self.tree.column("artist", width=200, minwidth=100)
-        self.tree.column("duration", width=80, minwidth=60)
-        self.tree.column("date", width=100, minwidth=80)
-        self.tree.column("size", width=80, minwidth=60)
-        
-        self.tree.pack(side=tk.LEFT, fill="both", expand=True)
-        
-        v_scroll.config(command=self.tree.yview)
-        h_scroll.config(command=self.tree.xview)
-        
-        self.tree.bind("<Double-1>", self.on_double_click)
-        self.tree.bind("<<TreeviewSelect>>", self.on_selection_change)
-        
-        # Right-click menu
-        self.context_menu = tk.Menu(self, tearoff=0, bg=self.bg_card, fg=self.fg_primary)
-        self.context_menu.add_command(label="Play", command=self.play_selected)
-        self.context_menu.add_command(label="View/Edit Lyrics", command=self.edit_lyrics)
-        self.context_menu.add_command(label="Open Folder", command=self.open_folder)
-        self.context_menu.add_separator()
-        self.context_menu.add_command(label="Delete", command=self.delete_selected)
-        
-        self.tree.bind("<Button-3>", self.show_context_menu)
-        
-        # Reference to player widget (set by main.py)
-        self.player_widget = None
+        # Empty State
+        self.empty_state = ctk.CTkLabel(self.scroll_frame, text="No songs found.\nCheck your folder or download some!", 
+                                        font=("Segoe UI", 14), text_color="gray")
 
     def _load_tags(self):
-        """Load tags from file."""
         if self.tags_file and os.path.exists(self.tags_file):
             try:
                 with open(self.tags_file, 'r', encoding='utf-8') as f:
                     self.tags = json.load(f)
             except:
                 self.tags = {}
-    
-    def reload_tags(self):
-        """Reload tags and update UI."""
-        try:
-            # Check if tree exists and is ready
-            if not hasattr(self, 'tree') or not self.tree:
-                return
-            
-            # Preserve current selection before rebuilding tree
-            selected_filepath = None
-            selection = self.tree.selection()
-            if selection:
-                item = selection[0]
-                selected_filepath = self.tree.item(item)['tags'][0]
-                if selected_filepath:
-                    selected_filepath = os.path.normpath(selected_filepath)
-            
-            # Reload tags from file
-            self._load_tags()
-            
-            # Re-apply filters to update the view (this rebuilds the tree)
-            self.on_search()
-            
-            # Restore selection after tree rebuild
-            if selected_filepath:
-                # Use after() to ensure tree is fully updated before restoring selection
-                self.after(50, lambda: self._restore_selection(selected_filepath))
-        except Exception as e:
-            print(f"Error in reload_tags: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    def _restore_selection(self, filepath):
-        """Restore selection to the specified filepath."""
-        try:
-            if not filepath:
-                return
-            
-            # Normalize filepath for comparison
-            filepath = os.path.normpath(filepath)
-            filepath_alt = filepath.replace('\\', '/')
-            
-            # Find and select the item
-            for item in self.tree.get_children():
-                try:
-                    item_tags = self.tree.item(item, "tags")
-                    if item_tags and len(item_tags) > 0:
-                        item_filepath = os.path.normpath(item_tags[0])
-                        item_filepath_alt = item_filepath.replace('\\', '/')
-                        
-                        if item_filepath == filepath or item_filepath == filepath_alt or \
-                           item_filepath_alt == filepath or item_filepath_alt == filepath_alt:
-                            self.tree.selection_set(item)
-                            self.tree.see(item)
-                            # Update player tag UI now that selection is restored
-                            if self.player_widget:
-                                self.player_widget.update_tag_ui()
-                            return
-                except tk.TclError:
-                    continue
-        except Exception as e:
-            print(f"Error in _restore_selection: {e}")
 
-    def _get_tag_icon(self, song):
-        """Get icon for song tag."""
-        try:
-            uuid = song.get('id')
-            if not uuid:
-                # Normalize filepath for consistent lookup
-                filepath = song.get('filepath', '')
-                if not filepath:
-                    return ""
-                uuid = os.path.normpath(filepath)
-            
-            if not uuid:
-                return ""
-            
-            # Try lookup with UUID first
-            tag = self.tags.get(uuid)
-            
-            # If not found and UUID is a filepath, try with forward slashes (for compatibility)
-            if not tag and uuid and os.path.sep in uuid:
-                uuid_alt = uuid.replace('\\', '/')
-                tag = self.tags.get(uuid_alt)
-                if tag:
-                    # Update the tags dict to use normalized path for future lookups
-                    self.tags[uuid] = tag
-                    if uuid_alt in self.tags:
-                        del self.tags[uuid_alt]
-            
-            if tag == "keep": return "👍"
-            if tag == "trash": return "🗑️"
-            if tag == "star": return "⭐"
-            return ""
-        except Exception as e:
-            print(f"Error in _get_tag_icon: {e}")
-            return ""
+    def change_download_folder(self):
+        print("[Library] change_download_folder called")
+        print(f"[Library] Current path: {self.download_path}")
+        new_dir = filedialog.askdirectory(initialdir=self.download_path, title="Select Download Folder")
+        print(f"[Library] User selected: {new_dir}")
+        if new_dir:
+            self.download_path = new_dir
+            self.config_manager.set("path", new_dir)
+            print(f"[Library] Path updated, calling refresh_library()")
+            self.refresh_library()
+            messagebox.showinfo("Folder Changed", f"Library folder updated to:\n{new_dir}")
+        else:
+            print("[Library] No folder selected, cancelled")
 
     def _load_cache(self):
-        """Load metadata cache from file."""
         if self.cache_file and os.path.exists(self.cache_file):
             try:
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     self.cache = json.load(f)
-            except Exception as e:
-                print(f"Error loading cache: {e}")
+            except:
                 self.cache = {}
-
+                
     def _save_cache(self):
-        """Save metadata cache to file."""
         if self.cache_file:
-            try:
-                with open(self.cache_file, 'w', encoding='utf-8') as f:
-                    json.dump(self.cache, f)
-            except Exception as e:
-                print(f"Error saving cache: {e}")
+             try:
+                 with open(self.cache_file, 'w', encoding='utf-8') as f:
+                     json.dump(self.cache, f)
+             except: pass
 
-    def _scan_thread(self):
-        """Background thread to scan library."""
-        new_songs = []
-        cache_updated = False
+    def _refresh_list(self):
+        self.current_page = 0
+        self.render_page()
+
+    def refresh_library(self):
+        # Prevent concurrent refreshes
+        if self.is_scanning:
+            print("[Library] Already scanning, skipping refresh")
+            return
+        
+        print("[Library] refresh_library called")
         
         try:
-            for root, dirs, files in os.walk(self.download_path):
+            # Clear existing data
+            self.all_songs = []
+            self.filtered_songs = []
+            
+            # Cancel any pending render_page calls to avoid race condition
+            if hasattr(self, '_pending_render') and self._pending_render:
+                self.after_cancel(self._pending_render)
+                self._pending_render = None
+            
+            # Clear UI immediately instead of delayed
+            self.render_page()
+            
+            self.download_path = self.config_manager.get("path", "")
+            print(f"[Library] Download path from config: {self.download_path}")
+            
+            if not self.download_path or not os.path.exists(self.download_path):
+                 default_path = os.path.join(os.getcwd(), "Suno_Downloads")
+                 if os.path.exists(default_path):
+                     self.download_path = default_path
+                     print(f"[Library] Using default path: {default_path}")
+                 else:
+                     print("[Library] No valid path found, returning")
+                     return
+                
+            print(f"[Library] Starting scan of: {self.download_path}")
+            self.is_scanning = True
+            self.refresh_btn.configure(state="disabled")
+            self.count_label.configure(text="Scanning...")
+            
+            # Ensure queue processor is running
+            self._process_scan_queue()
+            
+            threading.Thread(target=self._scan_thread, daemon=True).start()
+        except Exception as e:
+            print(f"[Library] Refresh error: {e}")
+            self.is_scanning = False
+            self.refresh_btn.configure(state="normal")
+
+    def _garbage_collect_widgets(self, widgets):
+        # Destroy in chunks
+        chunk = widgets[:50]
+        remainder = widgets[50:]
+        
+        for w in chunk:
+            try:
+                if w.winfo_exists(): w.destroy()
+            except: pass
+            
+        if remainder:
+            self.after(50, lambda: self._garbage_collect_widgets(remainder))
+
+    def _scan_thread(self):
+        new_songs = []
+        count = 0
+        print(f"[Library] _scan_thread started, scanning: {self.download_path}")
+        try:
+             if not os.path.exists(self.download_path):
+                 print(f"[Library] Path does not exist: {self.download_path}")
+                 self.scan_queue.put(("done", None))
+                 return
+
+             print(f"[Library] Starting os.walk on: {self.download_path}")
+             for root, dirs, files in os.walk(self.download_path):
+                print(f"[Library] Scanning directory: {root}, found {len(files)} files")
                 for file in files:
                     if file.lower().endswith(('.mp3', '.wav')):
                         filepath = os.path.join(root, file)
+                        print(f"[Library] Found audio file: {file}")
                         try:
                             mtime = os.path.getmtime(filepath)
+                            cached = self.cache.get(filepath)
                             
-                            # Check cache
-                            cached_data = self.cache.get(filepath)
-                            if cached_data and cached_data.get('mtime') == mtime:
-                                song_data = cached_data
+                            if cached and cached.get('mtime') == mtime:
+                                song_data = cached
+                                print(f"[Library] Using cached data for: {file}")
                             else:
-                                # Parse file
+                                print(f"[Library] Reading metadata for: {file}")
                                 song_data = read_song_metadata(filepath)
                                 if song_data:
                                     song_data['mtime'] = mtime
                                     self.cache[filepath] = song_data
-                                    cache_updated = True
                             
                             if song_data:
                                 new_songs.append(song_data)
-                                
-                                # Batch update UI every 20 songs
-                                if len(new_songs) >= 20:
+                                count += 1
+                                if len(new_songs) >= 10:
+                                    print(f"[Library] Sending batch of {len(new_songs)} songs")
                                     self.scan_queue.put(("batch", list(new_songs)))
                                     new_songs = []
-                                    time.sleep(0.01) # Yield
+                                    time.sleep(0.02) # Sleep longer to yield CPU
                         except Exception as e:
-                            print(f"Error processing {file}: {e}")
-                                
-            # Final batch
-            if new_songs:
-                self.scan_queue.put(("batch", new_songs))
-                
-            self.scan_queue.put(("done", None))
+                            print(f"[Library] Error processing {file}: {e}")
+                    else:
+                        print(f"[Library] Skipping non-audio file: {file}")
             
-            if cache_updated:
-                self._save_cache()
-                
+             if new_songs:
+                print(f"[Library] Sending final batch of {len(new_songs)} songs")
+                self.scan_queue.put(("batch", new_songs))
+             
+             print(f"[Library] Scan thread complete, total files processed: {count}")
+             self.scan_queue.put(("done", None))
+             self._save_cache()
+            
         except Exception as e:
-            print(f"Scan error: {e}")
+            print(f"[Library] Error in _scan_thread: {e}")
+            import traceback
+            traceback.print_exc()
             self.scan_queue.put(("done", None))
 
     def _process_scan_queue(self):
-        """Process updates from scan thread."""
         try:
-            # Process only one batch at a time to avoid freezing UI or recursion depth issues
-            try:
-                msg_type, data = self.scan_queue.get_nowait()
-                
+            # Consume ALL available messages instantly since we aren't rendering yet
+            # This makes scanning super fast
+            while not self.scan_queue.empty():
+                try:
+                    msg_type, data = self.scan_queue.get_nowait()
+                except queue.Empty:
+                    break
+
                 if msg_type == "batch":
                     self.all_songs.extend(data)
-                    self._add_songs_to_tree(data)
-                    self.count_label.config(text=f"{len(self.all_songs)} songs")
+                    # Update count but DO NOT render rows
+                    self.count_label.configure(text=f"Found {len(self.all_songs)}...")
+                    print(f"[Library] Batch added, total songs: {len(self.all_songs)}")
                     
                 elif msg_type == "done":
+                    print(f"[Library] Scan complete! Total songs found: {len(self.all_songs)}")
                     self.is_scanning = False
-                    self.refresh_btn.config(state="normal", text="🔄 Refresh")
-                    # Final sort
+                    self.refresh_btn.configure(state="normal")
+                    
+                    # Final sorting
                     self.all_songs.sort(key=lambda x: x['date'], reverse=True)
-                    self.filtered_songs = self.all_songs.copy()
-                    self.update_tree()
-                    return # Stop processing
-            except queue.Empty:
-                pass
-            
+                    self.filtered_songs = list(self.all_songs)
+                    print(f"[Library] Filtered songs: {len(self.filtered_songs)}")
+                    
+                    # Reset to page 0 and Render Page 1
+                    self.current_page = 0
+                    print(f"[Library] Calling render_page() to display songs")
+                    self.render_page()
+                    print(f"[Library] render_page() completed")
+                    
         except Exception as e:
-            print(f"Queue error: {e}")
-        
+            print(f"[Library] Error in _process_scan_queue: {e}")
+            import traceback
+            traceback.print_exc()
+            
+        # Reschedule
         if self.is_scanning or not self.scan_queue.empty():
-            self.after(10, self._process_scan_queue)
+            self.after(50, self._process_scan_queue)
 
-    def _add_songs_to_tree(self, songs):
-        """Add a batch of songs to the treeview."""
+    def render_page(self):
+        print(f"[Library] render_page called - filtered_songs: {len(self.filtered_songs)}, current_page: {self.current_page}")
+        
+        # 1. Clear existing widgets safely
         try:
-            for song in songs:
-                duration_str = self.format_duration(song['duration'])
-                size_str = self.format_size(song['filesize'])
-                tag_icon = self._get_tag_icon(song)
-                
-                self.tree.insert("", "end", values=(
-                    tag_icon,
-                    song['title'],
-                    song['artist'],
-                    duration_str,
-                    song['date'],
-                    size_str
-                ), tags=(song['filepath'].replace('\\', '/'),))
+            old_widgets = list(self.song_cards.values())
+            # First, unpack all widgets to stop drawing
+            for w in old_widgets:
+                try:
+                    if w.winfo_exists():
+                        w.pack_forget()
+                except:
+                    pass
+            
+            self.song_cards.clear()
+            
+            # Schedule destruction after a delay to avoid TclError
+            if old_widgets:
+                self.after(100, lambda: self._destroy_widgets(old_widgets))
         except Exception as e:
-            print(f"Tree insert error: {e}")
+            print(f"[Library] Error clearing widgets: {e}")
 
-    def refresh_library(self):
-        """Scan download folder and populate tree."""
-        if self.is_scanning:
+        # 2. Calculate Slice
+        total = len(self.filtered_songs)
+        per_page = 50
+        max_page = max(0, (total - 1) // per_page)
+        
+        # Clamp page
+        self.current_page = max(0, min(self.current_page, max_page))
+        
+        start = self.current_page * per_page
+        end = start + per_page
+        page_items = self.filtered_songs[start:end]
+        
+        print(f"[Library] Rendering page {self.current_page + 1}/{max_page + 1}, items: {len(page_items)}")
+        
+        # 3. Render Items
+        # Empty State
+        if total == 0:
+            print("[Library] No songs to display, showing empty state")
+            if hasattr(self, 'empty_state'): self.empty_state.pack(pady=40)
+            self.count_label.configure(text="0 songs")
+            self.page_label.configure(text="0 / 0")
+            self.prev_btn.configure(state="disabled")
+            self.next_btn.configure(state="disabled")
             return
+        else:
+            if hasattr(self, 'empty_state') and self.empty_state.winfo_exists():
+                self.empty_state.pack_forget()
+        
+        # Loop
+        for i, song in enumerate(page_items):
+            # Clean title on the fly to fix display of cached items
+            if 'title' in song:
+                from suno_utils import clean_title
+                song['title'] = clean_title(song['title'])
+            self._add_row(self.scroll_frame, song, start + i)
+        
+        print(f"[Library] Added {len(page_items)} rows to UI")
             
-        # Clear current
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        # 4. Update UI Controls
+        self.count_label.configure(text=f"{total} songs")
+        self.page_label.configure(text=f"{self.current_page + 1} / {max_page + 1}")
         
-        self.all_songs = []
+        self.prev_btn.configure(state="normal" if self.current_page > 0 else "disabled")
+        self.next_btn.configure(state="normal" if self.current_page < max_page else "disabled")
         
-        # Update path from config
-        self.download_path = self.config_manager.get("path", "")
-        
-        if not self.download_path or not os.path.exists(self.download_path):
-            # Silent return if not set, or maybe just show empty
-            return
-            
-        # Start scanning
-        self.is_scanning = True
-        self.refresh_btn.config(state="disabled", text="Scanning...")
-        self.count_label.config(text="Scanning...")
-        
-        threading.Thread(target=self._scan_thread, daemon=True).start()
-        self._process_scan_queue()
+        # Scroll to top
+        # self.scroll_frame._parent_canvas.yview_moveto(0) # CTk internal hack if needed
     
-    def update_tree(self):
-        """Update treeview with filtered songs."""
+    def _destroy_widgets(self, widgets):
+        """Safely destroy widgets in a delayed callback"""
+        for w in widgets:
+            try:
+                if w.winfo_exists():
+                    w.destroy()
+            except:
+                pass
+
+    def prev_page(self):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.render_page()
+
+    def next_page(self):
+        total = len(self.filtered_songs)
+        max_page = (total - 1) // 50
+        if self.current_page < max_page:
+            self.current_page += 1
+            self.render_page()
+
+    def _add_row(self, parent, data, index):
+        # Odd row check for striping
+        odd = (index % 2 == 1)
+        
+        try:
+            row = LibraryRow(parent, data, on_play=self.play_song_data, on_menu=self.show_context_menu, odd_row=odd, on_click=self.on_row_click)
+            row.pack(fill="x", pady=0)
+            
+            uuid = data.get("id") or str(hash(data.get("filepath")))
+            if "id" in data:
+                self.song_cards[data["id"]] = row
+            else:
+                self.song_cards[uuid] = row
+        except Exception:
+            pass
+
+    def play_song_data(self, data):
+        if data:
+            self.play_song(data)
+
+    def show_context_menu(self, event, data):
+        try:
+             # Check selection count logic
+             count = len(self.selected_rows)
+             
+             # Logic for right-click on selection
+             clicked_path = data.get("filepath")
+             in_selection = any(r.data.get("filepath") == clicked_path for r in self.selected_rows)
+             
+             menu = tk.Menu(self, tearoff=0)
+             
+             if count > 1 and in_selection:
+                 menu.add_command(label=f"📋 Copy {count} files (Ctrl+C)", command=self.copy_selection)
+                 menu.add_separator()
+                 # Future: Batch Delete
+             else:
+                 menu.add_command(label="▶ Play", command=lambda: self.play_song_data(data))
+                 menu.add_separator()
+                 menu.add_command(label="📋 Copy File (Ctrl+C)", command=self.copy_selection)
+                 
+             menu.add_command(label="📂 Show in Explorer", command=lambda: self.show_in_explorer(data.get("filepath")))
+             menu.add_command(label="✏️ Edit Tags", command=lambda: self.edit_metadata(data))
+             menu.add_command(label="📓 Save Prompt to Vault", command=lambda: self.save_prompt_to_vault(data))
+             menu.add_separator()
+             menu.add_command(label="🗑️ Delete", command=lambda: self.delete_song(data))
+             
+             menu.tk_popup(event.x_root, event.y_root)
+        except Exception as e:
+            print(f"Context menu error: {e}")
+
+    def edit_metadata(self, data):
+        """Open metadata editor dialog."""
+        try:
+            from metadata_editor import MetadataEditorDialog
+            
+            def on_save(updated_data):
+                # Refresh library to show updated metadata
+                self.refresh_library()
+            
+            editor = MetadataEditorDialog(self, data, on_save_callback=on_save)
+        except Exception as e:
+            print(f"Error opening metadata editor: {e}")
+            messagebox.showerror("Error", f"Failed to open editor: {e}")
+
+    def save_prompt_to_vault(self, data):
+        """Save song prompt to Vault."""
+        prompt_text = data.get("prompt", "")
+        if not prompt_text:
+            # Try to read from file if missing in cache
+            if "filepath" in data:
+                from suno_utils import read_song_metadata
+                full_data = read_song_metadata(data["filepath"])
+                prompt_text = full_data.get("prompt", "")
+        
+        if not prompt_text:
+            messagebox.showinfo("Info", "No prompt found for this song.")
+            return
+
+        # Ask for title
+        default_title = data.get("title", "My Prompt")
+        dialog = ctk.CTkInputDialog(text="Enter a title for this prompt:", title="Save to Vault")
+        title = dialog.get_input()
+        
+        if title:
+            try:
+                from prompt_vault import PromptManager
+                manager = PromptManager()
+                # Extract tags (Genre)
+                tags = data.get("genre", "")
+                manager.add_prompt(title, prompt_text, tags)
+                
+                # Show toast/message
+                # We don't have a toast widget, use active label or messagebox
+                # Making a non-blocking label or just a message box
+                # Design doc said "Toast notification", standard messagebox is safest for now
+                messagebox.showinfo("Saved", "Prompt saved to Vault!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save to vault: {e}")
+
+    def show_in_explorer(self, filepath):
+        if filepath and os.path.exists(filepath):
+            try:
+                subprocess.run(['explorer', '/select,', os.path.normpath(filepath)])
+            except:
+                open_file(os.path.dirname(filepath))
+
+    def delete_song(self, data):
+        path = data.get("filepath")
+        if not path or not os.path.exists(path): return
+        
+        if messagebox.askyesno("Delete", f"Are you sure you want to delete:\\n{data.get('title')}?"):
+            try:
+                os.remove(path)
+                # Remove from UI
+                self.refresh_library()
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not delete: {e}")
+
+    def _create_card(self, parent, data):
+        # Legacy/Fallback if needed, but we are using _add_row now
+        pass
+
+    def _add_cards(self, songs):
+        # Update Empty State
+        if self.all_songs:
+            if hasattr(self, 'empty_state') and self.empty_state.winfo_exists():
+                self.empty_state.pack_forget()
+        else:
+            if hasattr(self, 'empty_state'):
+                self.empty_state.pack(pady=40)
+                
+        start_idx = len(self.song_cards)
+        for i, song in enumerate(songs):
+            self._add_row(self.scroll_frame, song, start_idx + i)           
+            self._create_card(self.scroll_frame, song)
+
+    def _refresh_list(self):
         # Clear existing
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+        for w in self.song_cards.values():
+            w.pack_forget()
+            # To optimize, we can reuse. But for now, simple approach:
         
-        # Add songs
-        self._add_songs_to_tree(self.filtered_songs)
-    
-        # self.update_tree()
-        self.count_label.config(text=f"{len(self.filtered_songs)} / {len(self.all_songs)} songs")
-
-    def toggle_filter(self, tag, color):
-        """Toggle a tag filter."""
-        self.active_filters[tag] = not self.active_filters[tag]
+        # Since logic clears filtered_songs often, we might want to just repack correct ones.
+        visible_count = 0
+        limit = 100 # Limit render for performance
         
-        # Update button visual
-        btn = self.filter_btns[tag]
-        if self.active_filters[tag]:
-            btn.config(bg=color, fg="white")
-        else:
-            btn.config(bg=self.bg_card, fg=self.fg_secondary)
+        for song in self.filtered_songs:
+            if visible_count > limit: break
             
-        # Re-apply filters
-        self.on_search()
+            uuid = song.get('id') or song.get('filepath')
+            if uuid in self.song_cards:
+                self.song_cards[uuid].pack(fill="x", pady=2)
+                visible_count += 1
+            else:
+                pass # Should exist if all_songs parsed.
+                
+        self.count_label.configure(text=f"{len(self.filtered_songs)} songs")
 
-    def on_search(self, *args):
-        """Filter songs by search query and tags."""
-        query = self.search_var.get().lower()
-        
-        # Start with all songs
-        candidates = self.all_songs
-        
-        # 1. Apply Tag Filters
-        # If any filter is active, we only show songs that match AT LEAST ONE of the active filters
-        # OR should it be AND? Usually filters are AND, but for tags like "Liked" and "Trash" they are mutually exclusive usually.
-        # Let's assume OR for now if multiple selected, but usually user selects one.
-        # Actually, let's do: if any filter is active, song must have one of the active tags.
-        
-        active_tags = [t for t, active in self.active_filters.items() if active]
-        
-        if active_tags:
-            filtered_by_tags = []
-            for song in candidates:
-                # Get UUID for tag lookup (normalize filepath for consistency)
-                uuid = song.get('id')
-                if not uuid:
-                    uuid = os.path.normpath(song.get('filepath', ''))
-                
-                # Look up tag (try normalized path first, then forward slashes)
-                tag = self.tags.get(uuid)
-                if not tag and uuid and os.path.sep in uuid:
-                    uuid_alt = uuid.replace('\\', '/')
-                    tag = self.tags.get(uuid_alt)
-                
-                if tag in active_tags:
-                    filtered_by_tags.append(song)
-            candidates = filtered_by_tags
-            
-        # 2. Apply Search Query
-        if query:
-            self.filtered_songs = [
-                song for song in candidates
-                if query in song['title'].lower() or query in song['artist'].lower()
-            ]
-        else:
-            self.filtered_songs = list(candidates)
-        
-        self.update_tree()
-        self.count_label.config(text=f"{len(self.filtered_songs)} / {len(self.all_songs)} songs")
-    
-    def sort_column(self, col):
-        """Sort tree by column."""
-        # Toggle sort order
-        if not hasattr(self, 'sort_reverse'):
-            self.sort_reverse = {}
-        
-        reverse = self.sort_reverse.get(col, False)
-        self.sort_reverse[col] = not reverse
-        
-        # Sort
-        if col == "duration":
-            self.filtered_songs.sort(key=lambda x: x['duration'], reverse=reverse)
-        elif col == "size":
-            self.filtered_songs.sort(key=lambda x: x['filesize'], reverse=reverse)
-        elif col == "title":
-            self.filtered_songs.sort(key=lambda x: x['title'], reverse=reverse)
-        elif col == "artist":
-            self.filtered_songs.sort(key=lambda x: x['artist'], reverse=reverse)
-        elif col == "date":
-            self.filtered_songs.sort(key=lambda x: x['date'], reverse=reverse)
-        
-        self.update_tree()
-    
-    def on_selection_change(self, event=None):
-        """Handle selection change - update player tag UI."""
-        if self.player_widget:
-            self.player_widget.update_tag_ui()
-    
-    def on_double_click(self, event):
-        """Handle double-click on song."""
-        self.play_selected()
-    
-    def play_selected(self):
-        """Play the selected song (to be connected to player)."""
-        selection = self.tree.selection()
-        if not selection:
+    def play_song(self, song_input):
+        if not self.player_widget: 
             return
         
-        item = selection[0]
-        filepath = self.tree.item(item)['tags'][0]
+        # Determine if song_input is dict or string (filepath)
+        selected_song = None
+        if isinstance(song_input, dict):
+            selected_song = song_input
+        elif isinstance(song_input, str):
+            # It's a filepath string, find it in all_songs
+            for s in self.all_songs:
+                if s.get('filepath') == song_input:
+                    selected_song = s
+                    break
         
-        # Normalize filepath
-        filepath = os.path.normpath(filepath)
-        
-        # Verify file exists
-        if not os.path.exists(filepath):
-            import tkinter.messagebox as messagebox
-            messagebox.showerror("File Not Found", f"File does not exist:\n{filepath}")
+        if not selected_song:
+            # Last resort: play it directly if it's a string
+            if isinstance(song_input, str) and os.path.exists(song_input):
+                self.player_widget.play_file(song_input)
             return
-        
-        # Find index in filtered_songs
-        index = -1
-        for i, song in enumerate(self.filtered_songs):
-            if os.path.normpath(song['filepath']) == filepath:
-                index = i
-                break
-        
-        if index != -1:
-            # Emit event with playlist data
-            # We can't pass complex data via event string, so we'll use a callback or direct method
-            # But since we are using bind, we need to pass data differently or change architecture
-            # Let's use a custom event with a reference, or just call a method on parent if possible
-            # Actually, main.py binds this. We can attach data to the widget temporarily
-            self.current_playlist = self.filtered_songs
-            self.current_index = index
-            self.event_generate("<<PlaySong>>")
-        else:
-            # If not in filtered list, try to play directly
+
+        # Set playlist context and play
+        try:
+            # Find index in filtered list
+            index = self.filtered_songs.index(selected_song)
+            
+            # Call player directly instead of using events
+            if self.player_widget and hasattr(self.player_widget, 'set_playlist'):
+                self.player_widget.set_playlist(self.filtered_songs, index)
+            else:
+                # Fallback: play single file
+                filepath = selected_song.get('filepath', '')
+                self.player_widget.play_file(filepath)
+                
+        except ValueError:
+            # Not in filtered list, play single file
+            filepath = selected_song.get('filepath', '')
             if self.player_widget:
                 self.player_widget.play_file(filepath)
-    
-    def select_song(self, filepath):
-        """Select song in tree by filepath."""
-        if not filepath:
-            return
-        
-        # Normalize filepath for comparison
-        filepath = os.path.normpath(filepath)
-        
-        # Also try with forward slashes for compatibility
-        filepath_alt = filepath.replace('\\', '/')
-            
-        # Find item with matching tag
-        # Since we don't have a direct map, we iterate. 
-        # For large libraries this might be slow, but acceptable for now.
-        for item in self.tree.get_children():
-            try:
-                item_tags = self.tree.item(item, "tags")
-                if item_tags and len(item_tags) > 0:
-                    item_filepath = os.path.normpath(item_tags[0])
-                    item_filepath_alt = item_filepath.replace('\\', '/')
-                    
-                    # Try both normalized paths
-                    if item_filepath == filepath or item_filepath == filepath_alt or \
-                       item_filepath_alt == filepath or item_filepath_alt == filepath_alt:
-                        self.tree.selection_set(item)
-                        self.tree.see(item)
-                        # Update player tag UI
-                        if self.player_widget:
-                            self.player_widget.update_tag_ui()
-                        return
-            except tk.TclError:
-                # Item was deleted, skip it
-                continue
 
-    def get_selected_filepath(self):
-        """Get filepath of selected song."""
-        selection = self.tree.selection()
-        if not selection:
-            return None
+    def on_search(self, *args):
+        query = self.search_var.get().lower()
+        active_tags = [t for t, active in self.active_filters.items() if active]
         
-        item = selection[0]
-        return self.tree.item(item)['tags'][0]
-    
-    def show_context_menu(self, event):
-        """Show right-click context menu."""
-        # Select the item under cursor
-        item = self.tree.identify_row(event.y)
-        if item:
-            self.tree.selection_set(item)
-            self.context_menu.post(event.x_root, event.y_root)
-    
+        candidates = self.all_songs
+        
+        # Tag filter
+        if active_tags:
+            filtered = []
+            for song in candidates:
+                uuid = song.get('id') or song.get('filepath')
+                tag = self.tags.get(uuid)
+                if tag in active_tags:
+                    filtered.append(song)
+            candidates = filtered
+            
+        # Text filter
+        if query:
+            self.filtered_songs = [s for s in candidates if query in s['title'].lower() or query in s['artist'].lower()]
+        else:
+            self.filtered_songs = list(candidates)
+            
+        self._refresh_list()
+
+    def toggle_filter(self, tag, color):
+        self.active_filters[tag] = not self.active_filters[tag]
+        
+        btn, active_color = self.filter_btns[tag]
+        if self.active_filters[tag]:
+            btn.configure(fg_color=active_color, text_color="white")
+        else:
+            btn.configure(fg_color="transparent", text_color="gray")
+            
+        self.on_search()
+
+    def select_song(self, filepath):
+        # Used by Main to highlight currently playing song
+        # TODO: Implement scrolling to song card if visible
+        pass
+
     def open_download_folder(self):
-        """Open the main download directory in system explorer."""
+        # Fetch fresh path from config
         path = self.config_manager.get("path", "")
         if path and os.path.exists(path):
             open_file(path)
         else:
-            messagebox.showwarning("Error", "Download folder not set or does not exist.\nPlease configure it in the Downloader tab.")
-
-    def change_library_folder(self):
-        """Change the library folder."""
-        from tkinter import filedialog
-        current_path = self.config_manager.get("path", "")
-        folder = filedialog.askdirectory(initialdir=current_path, title="Select Library Folder")
-        if folder:
-            self.config_manager.set("path", folder)
-            self.config_manager.save_config()
-            self.refresh_library()
-
-    def show_about(self):
-        """Show about dialog."""
-        messagebox.showinfo("About SunoSync", 
-            "SunoSync v2.0\n\n"
-            "Your World, Your Music. Seamlessly Synced.\n\n"
-            "Created by @InternetThot\n"
-            "Buy me a coffee: buymeacoffee.com/audioalchemy")
-
-    def open_folder(self):
-        """Open folder containing selected song."""
-        filepath = self.get_selected_filepath()
-        if filepath:
-            folder = os.path.dirname(filepath)
-            open_file(folder)
-    
-    def edit_lyrics(self):
-        """Open dialog to view/edit lyrics."""
-        filepath = self.get_selected_filepath()
-        if not filepath:
-            messagebox.showwarning("No Selection", "Please select a song first.")
-            return
-        
-        # Normalize filepath for comparison
-        filepath = os.path.normpath(filepath)
-        
-        # Always read fresh metadata from file to get latest lyrics
-        # Don't rely on cache which might be stale
-        try:
-            song_meta = read_song_metadata(filepath)
-            if not song_meta:
-                messagebox.showerror("Error", f"Could not read metadata from file:\n{filepath}")
-                return
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not read file:\n{filepath}\n\nError: {e}")
-            return
-        
-        # Get lyrics - prioritize .txt file if it exists, then metadata
-        current_lyrics = ''
-        txt_path = os.path.splitext(filepath)[0] + ".txt"
-        
-        # First, check for .txt file (most reliable source)
-        if os.path.exists(txt_path):
-            try:
-                with open(txt_path, 'r', encoding='utf-8') as f:
-                    current_lyrics = f.read()
-            except Exception as e:
-                print(f"Error reading lyrics from .txt file: {e}")
-        
-        # If no .txt file or empty, check metadata
-        if not current_lyrics or current_lyrics.strip() == '':
-            current_lyrics = song_meta.get('lyrics', '')
-        
-        song_title = song_meta.get('title', os.path.basename(filepath))
-        
-        # Create Dialog
-        dialog = tk.Toplevel(self.winfo_toplevel())
-        dialog.title(f"Lyrics: {song_title}")
-        dialog.geometry("750x650")
-        dialog.configure(bg=self.bg_dark)
-        dialog.transient(self.winfo_toplevel())
-        dialog.resizable(True, True)
-        
-        # Make sure dialog appears on top
-        dialog.lift()
-        dialog.focus_force()
-        
-        # Main container with proper layout
-        main_container = tk.Frame(dialog, bg=self.bg_dark)
-        main_container.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Text Area Frame (takes most space)
-        text_frame = tk.Frame(main_container, bg=self.bg_card, padx=2, pady=2)
-        text_frame.pack(side=tk.TOP, fill="both", expand=True, pady=(0, 20))
-        
-        # Text area with scrollbar
-        text_scroll_frame = tk.Frame(text_frame, bg=self.bg_card)
-        text_scroll_frame.pack(fill="both", expand=True)
-        
-        scrollbar = ttk.Scrollbar(text_scroll_frame, orient="vertical")
-        scrollbar.pack(side=tk.RIGHT, fill="y")
-        
-        text_area = tk.Text(text_scroll_frame, font=("Segoe UI", 11), bg=self.bg_input, 
-                           fg=self.fg_primary, wrap="word", relief="flat",
-                           insertbackground=self.fg_primary, yscrollcommand=scrollbar.set)
-        text_area.pack(side=tk.LEFT, fill="both", expand=True)
-        scrollbar.config(command=text_area.yview)
-        text_area.insert("1.0", current_lyrics)
-        text_area.focus_set()
-        
-        # Buttons Frame (fixed at bottom)
-        btn_frame = tk.Frame(main_container, bg=self.bg_dark)
-        btn_frame.pack(side=tk.BOTTOM, fill="x")
-        
-        def save():
-            new_lyrics = text_area.get("1.0", "end-1c")
-            normalized_filepath = os.path.normpath(filepath)
+            print(f"Download path invalid or not set: {path}")
             
-            # Save to .txt file first
-            txt_path = os.path.splitext(normalized_filepath)[0] + ".txt"
-            txt_saved = False
-            try:
-                with open(txt_path, 'w', encoding='utf-8') as f:
-                    f.write(new_lyrics)
-                txt_saved = True
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to save lyrics to .txt file:\n{txt_path}\n\nError: {e}")
-                return
-            
-            # Also save to audio file metadata
-            metadata_saved = False
-            if new_lyrics.strip():  # Only save to metadata if there's content
-                success, message = save_lyrics_to_file(normalized_filepath, new_lyrics)
-                metadata_saved = success
-                if not success:
-                    # Warn but don't fail if metadata save fails
-                    print(f"Warning: Could not save lyrics to metadata: {message}")
-            
-            if txt_saved:
-                # Update cache
-                if song_meta:
-                    song_meta['lyrics'] = new_lyrics
+    def reload_tags(self):
+        self._load_tags()
+        self.on_search()
+
+    # --- Batch Selection Logic ---
+    def on_row_click(self, event, data, row_widget):
+        ctrl_pressed = (event.state & 0x4) != 0 
+        shift_pressed = (event.state & 0x1) != 0
+        
+        if not ctrl_pressed and not shift_pressed:
+            self.deselect_all()
+            self.set_row_selected(row_widget, True)
+            self.last_selected_row = row_widget
+        elif ctrl_pressed:
+            is_sel = row_widget.is_selected
+            self.set_row_selected(row_widget, not is_sel)
+            self.last_selected_row = row_widget
+        elif shift_pressed:
+             if self.last_selected_row and self.last_selected_row != row_widget:
+                 rows = [w for w in self.scroll_frame.winfo_children() if isinstance(w, LibraryRow)]
+                 try:
+                     start_idx = rows.index(self.last_selected_row)
+                     end_idx = rows.index(row_widget)
+                     
+                     if start_idx > end_idx: start_idx, end_idx = end_idx, start_idx
+                     
+                     for i in range(start_idx, end_idx + 1):
+                         self.set_row_selected(rows[i], True)
+                         
+                 except ValueError:
+                     self.set_row_selected(row_widget, True)
+                     self.last_selected_row = row_widget
+             else:
+                 self.set_row_selected(row_widget, True)
+                 self.last_selected_row = row_widget
+
+    def set_row_selected(self, row, selected):
+        row.set_selected(selected)
+        if selected:
+            if row not in self.selected_rows:
+                self.selected_rows.append(row)
+        else:
+            if row in self.selected_rows:
+                self.selected_rows.remove(row)
                 
-                # Verify .txt file was written correctly
-                try:
-                    with open(txt_path, 'r', encoding='utf-8') as f:
-                        saved_lyrics = f.read()
-                    
-                    if saved_lyrics.replace('\r\n', '\n').strip() == new_lyrics.replace('\r\n', '\n').strip():
-                        messagebox.showinfo("Success", "Lyrics saved successfully!\n\n" + 
-                                          f"Saved to: {os.path.basename(txt_path)}" + 
-                                          (f"\nAnd embedded in audio file metadata." if metadata_saved else ""))
-                        dialog.destroy()
-                    else:
-                        messagebox.showwarning("Verification Failed", 
-                            f".txt file saved but read-back verification failed.\n\n"
-                            f"Expected length: {len(new_lyrics)}\n"
-                            f"Actual on disk: {len(saved_lyrics)}\n\n"
-                            f"File: {txt_path}")
-                except Exception as e:
-                    messagebox.showerror("Verification Error", f"Error reading back .txt file: {e}")
+    def deselect_all(self, event=None):
+        for row in self.selected_rows:
+            if row.winfo_exists():
+                row.set_selected(False)
+        self.selected_rows.clear()
+        
+    def select_all(self, event=None):
+        if hasattr(self, 'scroll_frame'):
+            rows = [w for w in self.scroll_frame.winfo_children() if isinstance(w, LibraryRow)]
+            for row in rows:
+                self.set_row_selected(row, True)
+        
+    def copy_selection(self, event=None):
+        if not self.selected_rows: return
+        
+        filepaths = [r.data.get('filepath') for r in self.selected_rows if r.data.get('filepath')]
+        # Filter existing
+        filepaths = [fp.replace("/", "\\") for fp in filepaths if os.path.exists(fp)]
+        
+        if not filepaths: return
+        
+        try:
+            from suno_utils import copy_files_to_clipboard
+            if copy_files_to_clipboard(filepaths):
+                messagebox.showinfo("Copied", f"Copied {len(filepaths)} files to clipboard.")
             else:
-                messagebox.showerror("Error", f"Failed to save lyrics to .txt file:\n{txt_path}\n\nIf the song is playing, please STOP playback and try again.")
-        
-        cancel_btn = tk.Button(btn_frame, text="Cancel", command=dialog.destroy,
-                              bg=self.bg_card, fg=self.fg_primary, font=("Segoe UI", 10),
-                              relief="flat", padx=20, pady=10, cursor="hand2")
-        cancel_btn.pack(side=tk.RIGHT, padx=(10, 0))
-        
-        save_btn = tk.Button(btn_frame, text="Save Lyrics", command=save,
-                            bg=self.accent_purple, fg="white", font=("Segoe UI", 10, "bold"),
-                            relief="flat", padx=20, pady=10, cursor="hand2")
-        save_btn.pack(side=tk.RIGHT)
-        
-        # Ensure dialog is visible
-        dialog.update_idletasks()
-        dialog.deiconify()
-
-    def tag_selected(self, tag):
-        """Tag the selected song."""
-        filepath = self.get_selected_filepath()
-        if not filepath:
-            messagebox.showwarning("No Selection", "Please select a song first.")
-            return
-        
-        # Normalize filepath
-        filepath = os.path.normpath(filepath)
-        
-        # Find song in all_songs to get UUID
-        song = next((s for s in self.all_songs if os.path.normpath(s['filepath']) == filepath), None)
-        if not song:
-            # Try using filepath as UUID if song not found
-            uuid = filepath
-        else:
-            uuid = song.get('id') or os.path.normpath(song['filepath'])
-        
-        if tag:
-            self.tags[uuid] = tag
-        else:
-            # Remove tag
-            if uuid in self.tags:
-                del self.tags[uuid]
-        
-        # Save tags
-        if self.tags_file:
-            try:
-                with open(self.tags_file, 'w', encoding='utf-8') as f:
-                    json.dump(self.tags, f)
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to save tag: {e}")
-                return
-        
-        # Update UI
-        self.update_tree()
-        
-        # Show confirmation
-        tag_name = {"keep": "👍 Keep", "star": "⭐ Star", "trash": "🗑️ Trash"}.get(tag, tag)
-        if tag:
-            messagebox.showinfo("Tagged", f"Tagged as: {tag_name}")
-        else:
-            messagebox.showinfo("Tag Removed", "Tag removed successfully")
-    
-    def delete_selected(self):
-        """Delete selected song."""
-        filepath = self.get_selected_filepath()
-        if not filepath:
-            return
-        
-        if messagebox.askyesno("Delete", f"Delete this file?\n{os.path.basename(filepath)}"):
-            try:
-                os.remove(filepath)
-                self.refresh_library()
-                messagebox.showinfo("Deleted", "File deleted successfully")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to delete file:\n{e}")
-    
-    @staticmethod
-    def format_duration(seconds):
-        """Format duration as MM:SS."""
-        if seconds == 0:
-            return "--:--"
-        mins = seconds // 60
-        secs = seconds % 60
-        return f"{mins}:{secs:02d}"
-    
-    @staticmethod
-    def format_size(bytes):
-        """Format file size."""
-        if bytes == 0:
-            return "0 KB"
-        
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if bytes < 1024.0:
-                return f"{bytes:.1f} {unit}"
-            bytes /= 1024.0
-        
-        return f"{bytes:.1f} TB"
-
-
-if __name__ == "__main__":
-    # Test the library tab standalone
-    root = tk.Tk()
-    root.title("Library Test")
-    root.geometry("900x600")
-    
-    library = LibraryTab(root, download_path="Suno_Downloads")
-    library.pack(fill="both", expand=True)
-    
-    root.mainloop()
+                 import pyperclip
+                 pyperclip.copy("\n".join(filepaths))
+                 messagebox.showinfo("Copied", f"Copied paths of {len(filepaths)} files to clipboard (File copy not supported).")
+        except Exception as e:
+            messagebox.showerror("Error", f"Copy failed: {e}")

@@ -1,19 +1,23 @@
 import os
 import sys
 import threading
-import tkinter as tk
 import queue
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk, ImageDraw
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk
 
-from suno_utils import blend_colors, truncate_path, create_tooltip
+# Helpers and Widgets
+from suno_utils import truncate_path
+from suno_widgets import SongCard, WorkspaceBrowser, FilterPopup, EmptyStateWidget
+from suno_layout import create_token_dialog
+from suno_downloader import SunoDownloader
+from tooltip import ToolTip
 
-
+# Stdout Capture for Debug Log
 class StdoutCapture:
-    """Capture stdout and send to debug window."""
-    def __init__(self, downloader_tab):
-        self.downloader_tab = downloader_tab
-        # Use sys.stdout instead of sys.__stdout__ for better compatibility
+    def __init__(self, tab_instance):
+        self.tab = tab_instance
         try:
             self.original_stdout = sys.stdout if sys.stdout else sys.__stdout__
         except:
@@ -21,7 +25,6 @@ class StdoutCapture:
         self.buffer = ""
     
     def write(self, text):
-        """Write to both original stdout and debug window."""
         try:
             if self.original_stdout:
                 self.original_stdout.write(text)
@@ -29,983 +32,432 @@ class StdoutCapture:
         except:
             pass
         
-        # Buffer text until newline
-        if not hasattr(self, 'buffer'):
-            self.buffer = ""
         if text:
-            self.buffer += text
-            if '\n' in self.buffer:
-                lines = self.buffer.split('\n')
-                self.buffer = lines[-1]  # Keep incomplete line in buffer
-                for line in lines[:-1]:
-                    if line.strip():  # Only log non-empty lines
-                        # Use after() to update GUI from main thread (thread-safe)
-                        line_copy = line  # Capture in closure
-                        try:
-                            self.downloader_tab.after(0, lambda l=line_copy: self.downloader_tab.add_debug_log(l))
-                        except:
-                            # Fallback: try direct call if after() fails
-                            try:
-                                self.downloader_tab.add_debug_log(line_copy)
-                            except:
-                                pass
-    
+            self.tab.add_debug_log(text)
+
     def flush(self):
         try:
             if self.original_stdout:
                 self.original_stdout.flush()
         except:
             pass
-        # Flush any remaining buffer
-        if hasattr(self, 'buffer') and self.buffer.strip():
-            try:
-                self.downloader_tab.after(0, lambda: self.downloader_tab.add_debug_log(self.buffer))
-            except:
-                try:
-                    self.downloader_tab.add_debug_log(self.buffer)
-                except:
-                    pass
-            self.buffer = ""
-from suno_widgets import (
-    RoundedButton,
-    RoundedCardFrame,
-    DownloadQueuePane,
-    NeonProgressBar,
-    ToggleSwitch,
-    FilterPopup,
-    WorkspaceBrowser
-)
-from suno_downloader import SunoDownloader
-from suno_layout import (
-    create_auth_card, 
-    create_settings_card, 
-    create_scraping_card, 
-    create_action_area, 
-    create_token_dialog
-)
-from config_manager import ConfigManager
-from theme_manager import ThemeManager
 
-
-if getattr(sys, 'frozen', False):
-    base_path = os.path.dirname(sys.executable)
-else:
-    base_path = os.path.dirname(os.path.abspath(__file__))
-
-user_data_dir = os.path.join(base_path, "Suno_Browser_Profile")
-CONFIG_FILE = os.path.join(base_path, "config.json")
-
-# --- DOWNLOADER TAB (Refactored for tab view) ---
-class DownloaderTab(tk.Frame):
-    def __init__(self, parent, config_manager=None, **kwargs):
-        super().__init__(parent, **kwargs)
+class DownloaderTab(ctk.CTkFrame):
+    def __init__(self, parent, config_manager, **kwargs):
+        super().__init__(parent, fg_color="transparent", **kwargs)
         
-        if config_manager:
-            self.config_manager = config_manager
-        else:
-            self.config_manager = ConfigManager(CONFIG_FILE)
-            
-        self.theme_manager = ThemeManager()
-        
-        # Map theme properties to self for compatibility with layout helpers
-        self._apply_theme()
-        
+        self.config_manager = config_manager
         self.downloader = SunoDownloader()
+        
+        # State
         self.gui_queue = queue.Queue()
-        self.preloaded_songs = {}  # uuid -> song_data
+        self.queue_items = {} # uuid -> SongCard
+        self.preloaded_songs = {} # uuid -> meta
         self.is_preloaded = False
         self.filter_settings = {}
+        self.debug_logs = []
         self.debug_window = None
-        self.debug_logs = []  # Store logs for debug window
-        self.debug_text = None
         
-        # Redirect stdout to capture print statements
-        self.original_stdout = sys.stdout
-        self.stdout_capture = StdoutCapture(self)
-        sys.stdout = self.stdout_capture
+        # Theme Attributes
+        self.card_bg = "#27272a"
         
-        self.create_widgets()
-        self.load_config_into_ui()
-        self.update_path_display()  # Initial path truncation
+        # Debug Log Capture
+        sys.stdout = StdoutCapture(self)
         
-        # Start GUI processor
-        self._process_gui_queue()
+        # Initialize Variables manually (since generic settings card is moved)
+        self.init_variables()
         
-        # Initialize debug log (but don't auto-open window)
-        self.add_debug_log("=== Debug Log Started ===")
-        self.add_debug_log("Click 'Debug Log' button to view logs")
+        # UI Setup
+        self._setup_layout()
+        self.load_config()
         
-        # Test debug log is working
-        print("DEBUG: Debug log capture test - if you see this in debug log, it's working!")
-        self.add_debug_log("Debug log initialized successfully")
+        # Start GUI Loop
+        self.after(100, self._process_gui_queue)
         
-        # Check for initial path setup
+        # Initial checks
         self.after(500, self.check_initial_path)
-    
-    def _apply_theme(self):
-        t = self.theme_manager
-        self.bg_dark = t.bg_dark
-        self.card_bg = t.card_bg
-        self.bg_card = t.bg_card
-        self.card_border = t.card_border
-        self.bg_input = t.bg_input
-        self.fg_primary = t.fg_primary
-        self.fg_secondary = t.fg_secondary
-        self.accent_purple = t.accent_purple
-        self.accent_pink = t.accent_pink
-        self.accent_red = t.accent_red
-        self.border_subtle = t.border_subtle
-        self.section_font = t.section_font
-        self.title_font = t.title_font
-        
-        self.configure(bg=self.bg_dark)
-        self.title_image = self._create_title_image("SunoSync")
 
-    def _create_title_image(self, text):
-        font = self.theme_manager.load_title_font(46)
-        try:
-            bbox = font.getbbox(text)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-        except AttributeError:
-            text_width, text_height = font.getsize(text)
-        padding = 12
-        gradient_height = text_height + padding
-        gradient = Image.new("RGBA", (text_width, gradient_height))
-        draw = ImageDraw.Draw(gradient)
-        for y in range(gradient_height):
-            ratio = y / max(1, gradient_height - 1)
-            color = blend_colors(self.accent_purple, self.accent_pink, ratio)
-            draw.line([(0, y), (text_width, y)], fill=color)
-        mask = Image.new("L", (text_width, gradient_height), 0)
-        mask_draw = ImageDraw.Draw(mask)
-        mask_draw.text((0, 0), text, font=font, fill=255)
-        gradient.putalpha(mask)
-        return ImageTk.PhotoImage(gradient)
+    def _setup_layout(self):
+        # --- Root Layout ---
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1) # List expands (Row 2 now)
+        
+        # --- 1. Settings Header (3-Column Grid) ---
+        self.header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
+        
+        self.header_frame.grid_columnconfigure(0, weight=1)
+        self.header_frame.grid_columnconfigure(1, weight=1)
+        self.header_frame.grid_columnconfigure(2, weight=1)
+        
+        # --- Left Panel: Connection ---
+        conn_frame = ctk.CTkFrame(self.header_frame)
+        conn_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=5)
+        
+        ctk.CTkLabel(conn_frame, text="Connection", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=10, pady=(5,0))
+        
+        conn_inner = ctk.CTkFrame(conn_frame, fg_color="transparent")
+        conn_inner.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(conn_inner, text="Suno Cookie", font=("Segoe UI", 11)).pack(anchor="w")
+        
+        self.token_var = ctk.StringVar()
+        entry_row = ctk.CTkFrame(conn_inner, fg_color="transparent")
+        entry_row.pack(fill="x", pady=(2, 5))
+        
+        self.token_entry = ctk.CTkEntry(entry_row, textvariable=self.token_var, show="●", height=28)
+        self.token_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        ctk.CTkButton(entry_row, text="Get Token", command=self.get_token_logic, width=80, height=28, 
+                      fg_color="#333", hover_color="#444").pack(side="right")
 
-    def update_path_display(self):
-        """Update path entry with truncated display"""
-        if hasattr(self, 'path_display_var'):
-            full_path = self.path_var.get()
-            self.path_display_var.set(truncate_path(full_path))
-    
-    def create_tooltip(self, widget, text):
-        """Create a tooltip for a widget"""
-        create_tooltip(widget, text)
+        # --- Center Panel: Scan Settings ---
+        scan_frame = ctk.CTkFrame(self.header_frame)
+        scan_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+        
+        ctk.CTkLabel(scan_frame, text="Scan Settings", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=10, pady=(5,0))
+        
+        scan_inner = ctk.CTkFrame(scan_frame, fg_color="transparent")
+        scan_inner.pack(fill="x", padx=10, pady=5)
+        
+        self.rate_limit_var = ctk.DoubleVar(value=0.5)
+        self.start_page_var = ctk.IntVar(value=1)
+        self.max_pages_var = ctk.IntVar(value=0)
 
-    def create_widgets(self):
-        self.log_font_size_var = tk.IntVar(value=12)
+        # Grid for inputs
+        scan_inner.grid_columnconfigure(3, weight=1) # Filler column to preventing stretching
+        
+        # Speed
+        lbl_speed = ctk.CTkLabel(scan_inner, text="Speed (Delay):", font=("Segoe UI", 11), text_color="gray")
+        lbl_speed.grid(row=0, column=0, sticky="w", pady=2)
+        ent_speed = ctk.CTkEntry(scan_inner, textvariable=self.rate_limit_var, width=60, height=24)
+        ent_speed.grid(row=0, column=1, sticky="w", padx=5, pady=2)
+        ctk.CTkLabel(scan_inner, text="s", font=("Segoe UI", 11), text_color="gray").grid(row=0, column=2, sticky="w")
+        ToolTip(lbl_speed, "Time to wait between API requests. Increase if downloads fail.")
 
-        # Main Container (2-Column Grid)
-        self.columnconfigure(0, weight=0, minsize=400) # Left Column (Fixed/Min width)
-        self.columnconfigure(1, weight=1)              # Right Column (Expands)
-        self.rowconfigure(0, weight=1)                 # Full Height
+        # Start Page
+        lbl_page = ctk.CTkLabel(scan_inner, text="Start Page:", font=("Segoe UI", 11), text_color="gray")
+        lbl_page.grid(row=1, column=0, sticky="w", pady=2)
+        ent_page = ctk.CTkEntry(scan_inner, textvariable=self.start_page_var, width=60, height=24)
+        ent_page.grid(row=1, column=1, sticky="w", padx=5, pady=2)
+        ToolTip(lbl_page, "Which page of your library to start scanning from.")
+        
+        # Limit
+        lbl_limit = ctk.CTkLabel(scan_inner, text="Max Pages:", font=("Segoe UI", 11), text_color="gray")
+        lbl_limit.grid(row=2, column=0, sticky="w", pady=2)
+        ctk.CTkEntry(scan_inner, textvariable=self.max_pages_var, width=60, height=24).grid(row=2, column=1, sticky="w", padx=5, pady=2)
+        ToolTip(lbl_limit, "Limit how many pages to scan (0 = unlimited).")
 
-        # --- LEFT COLUMN: Control Panel ---
-        left_panel = tk.Frame(self, bg=self.bg_dark, padx=20, pady=20)
-        left_panel.grid(row=0, column=0, sticky="nsew")
+        # --- Right Panel: Target ---
+        target_frame = ctk.CTkFrame(self.header_frame)
+        target_frame.grid(row=0, column=2, sticky="nsew", padx=(5, 0), pady=5)
         
-        # Header (Logo + Status)
-        header_frame = tk.Frame(left_panel, bg=self.bg_dark)
-        header_frame.pack(fill="x", pady=(0, 20))
+        ctk.CTkLabel(target_frame, text="Target", font=("Segoe UI", 12, "bold")).pack(anchor="w", padx=10, pady=(5,0))
         
-        title_label = tk.Label(header_frame, image=self.title_image, bg=self.bg_dark)
-        title_label.pack(side=tk.LEFT)
-        title_label.image = self.title_image
+        target_inner = ctk.CTkFrame(target_frame, fg_color="transparent")
+        target_inner.pack(fill="x", padx=10, pady=5)
         
-        # Status Badge
-        self.status_frame = tk.Frame(header_frame, bg=self.bg_dark)
-        self.status_frame.pack(side=tk.RIGHT, pady=10)
+        self.filter_btn = ctk.CTkButton(target_inner, text="Filters", command=self.open_filters, height=24, 
+                                        fg_color="transparent", border_width=1, border_color="gray", text_color="gray")
+        self.filter_btn.pack(fill="x", pady=2)
         
-        self.status_dot = tk.Canvas(self.status_frame, width=12, height=12, bg=self.bg_dark, highlightthickness=0)
-        self.status_dot.pack(side=tk.LEFT, padx=(0, 6))
-        self.status_indicator = self.status_dot.create_oval(2, 2, 10, 10, fill="#6b7280", outline="")
-        
-        self.status_label = tk.Label(self.status_frame, text="Ready", 
-                                    font=("Segoe UI", 9, "bold"), bg=self.bg_dark, fg=self.fg_secondary)
-        self.status_label.pack(side=tk.LEFT)
-        self.status_label.bind("<Button-1>", self._on_status_click)
-        self.status_label.bind("<Enter>", self._on_status_hover)
-        
-        self._status_pulse_job = None
-        self._status_pulse_on = False
-        self.last_error = None
+        self.workspace_btn = ctk.CTkButton(target_inner, text="Workspaces", command=self.open_workspaces, height=24,
+                                           fg_color="transparent", border_width=1, border_color="gray", text_color="gray")
+        self.workspace_btn.pack(fill="x", pady=2)
 
-        # Cards Container
-        cards_container = tk.Frame(left_panel, bg=self.bg_dark)
-        cards_container.pack(fill="both", expand=True)
-        
-        # 1. Authorization Card
-        self.auth_card = create_auth_card(cards_container, self)
-        
-        # 2. Settings Card
-        self.settings_card = create_settings_card(cards_container, self, base_path)
-        
-        # 3. Scraping Options Card
-        self.scraping_card = create_scraping_card(cards_container, self)
-        
-        # 4. Action Buttons
-        create_action_area(left_panel, self)
-        
-        # Initial Summary Update
-        self.update_accordion_summaries()
-        
-        # Debug button (use Label to avoid focus border)
-        debug_frame = tk.Frame(left_panel, bg=self.bg_card, relief="flat", bd=0)
-        debug_frame.pack(pady=5)
-        debug_btn = tk.Label(debug_frame, text="🐛 Debug Log", 
-                             bg=self.bg_card, fg=self.fg_primary, font=("Segoe UI", 9),
-                             cursor="hand2", padx=10, pady=5, relief="flat", bd=0)
-        debug_btn.pack()
-        debug_btn.bind("<Button-1>", lambda e: self.open_debug_window())
-        # Hover effect
-        debug_btn.bind("<Enter>", lambda e: debug_btn.config(bg="#333333"))
-        debug_btn.bind("<Leave>", lambda e: debug_btn.config(bg=self.bg_card))
-        
-        # Progress Bar (Bottom of Left Panel)
-        progress_container = tk.Frame(left_panel, bg=self.bg_dark, height=24)
-        progress_container.pack(fill="x", pady=(15, 0))
-        progress_container.pack_propagate(False)
-        
-        self.progress = NeonProgressBar(progress_container, height=20,
-                                        colors=(self.accent_purple, self.accent_pink),
-                                        bg=self.bg_dark)
-        self.progress.pack(fill="both", expand=True, padx=0, pady=2)
-        right_panel = tk.Frame(self, bg=self.bg_dark, padx=20, pady=20)
-        right_panel.grid(row=0, column=1, sticky="nsew")
-        
-        queue_frame = RoundedCardFrame(right_panel, bg_color=self.card_bg, corner_radius=12, padding=0)
-        queue_frame.pack(fill="both", expand=True)
-        
-        # Header
-        queue_header = tk.Frame(queue_frame.inner, bg=self.card_bg, padx=15, pady=10)
-        queue_header.pack(fill="x")
-        tk.Label(queue_header, text="DOWNLOAD QUEUE", font=("Segoe UI", 10, "bold"),
-                 bg=self.card_bg, fg=self.fg_secondary).pack(side=tk.LEFT)
-        
-        theme_dict = {
-            "panel_bg": self.card_bg,
-            "text_secondary": self.fg_secondary,
-            "text_tertiary": "#475569"
-        }
-        self.queue_pane = DownloadQueuePane(queue_frame.inner, bg_color=self.card_bg, theme=theme_dict)
-        self.queue_pane.pack(fill="both", expand=True, padx=2, pady=(0, 2))
-        
-        self.update_status_safe("Ready")
+        self.playlist_btn = ctk.CTkButton(target_inner, text="Playlists", command=self.open_playlists, height=24,
+                                          fg_color="transparent", border_width=1, border_color="gray", text_color="gray")
+        self.playlist_btn.pack(fill="x", pady=2)
 
-    def create_toggle_option(self, parent, text, variable):
-        # Simplified toggle creation for grid layouts
-        # Note: 'parent' is expected to be the grid cell frame
-        toggle = ToggleSwitch(parent, variable, 
-                              bg_color=self.bg_card, active_color=self.accent_purple)
-        toggle.pack(side=tk.LEFT, padx=(0, 8))
+
+        # --- 2. Action Bar (Row 1) ---
+        action_frame = ctk.CTkFrame(self, fg_color="transparent")
+        action_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
         
-        label = tk.Label(parent, text=text, font=("Segoe UI", 9),
-                        bg=self.bg_card, fg=self.fg_primary)
-        label.pack(side=tk.LEFT)
-        return parent
-    
-    def validate_page_range(self):
-        """Ensure start page doesn't exceed max page"""
-        start = self.start_page_var.get()
-        max_pages = self.max_pages_var.get()
+        # Spacer check? No, just removing the top util row.
+        # Main Buttons
+        btn_inner = ctk.CTkFrame(action_frame, fg_color="transparent")
+        btn_inner.pack(fill="x")
         
-        if max_pages > 0 and start > max_pages:
-            self.start_page_var.set(max_pages)
-
-    def on_log_font_size_change(self, *args):
-        pass # Removed
-
-    def toggle_token_visibility(self):
-        if self.token_entry.cget("show") == "●":
-            self.token_entry.config(show="")
-        else:
-            self.token_entry.config(show="●")
-
-    def update_status_safe(self, text, color=None):
-        """Thread-safe status update."""
-        self.after(0, lambda: self._update_status(text, color))
-
-    def _update_status(self, text, color=None):
-        status_text = text
-        status_lower = status_text.lower()
-        color_map = {
-            "ready": "#10b981",       # Green
-            "downloading": "#8B5CF6", # Purple
-            "stopped": "#EF4444",     # Red
-            "complete": "#10b981",    # Green
-            "error": "#EF4444"        # Red
-        }
-        resolved_color = color_map.get(status_lower, color or "#6b7280")
-        self.status_label.config(text=status_text, fg=resolved_color)
-        self.status_dot.itemconfig(self.status_indicator, fill=resolved_color)
-        if "downloading" in status_lower:
-            if self._status_pulse_job is None:
-                self._pulse_status()
-        else:
-            if self._status_pulse_job:
-                self.after_cancel(self._status_pulse_job)
-                self._status_pulse_job = None
-            self._status_pulse_on = False
-            self.status_dot.itemconfig(self.status_indicator, fill=resolved_color)
-
-    def _pulse_status(self):
-        if self._status_pulse_job:
-            self.after_cancel(self._status_pulse_job)
-        self._status_pulse_on = not self._status_pulse_on
-        base_color = "#8B5CF6"
-        highlight = "#A78BFA"
-        fill_color = highlight if self._status_pulse_on else base_color
-        self.status_dot.itemconfig(self.status_indicator, fill=fill_color)
-        self._status_pulse_job = self.after(600, self._pulse_status)
-
-    def open_folder(self):
-        folder = self.path_var.get()
-        if os.path.exists(folder):
-            os.startfile(folder)
-        else:
-            messagebox.showwarning("Error", "Folder does not exist yet.")
-
-    def browse_folder(self):
-        """Open a dialog to select the download folder."""
-        folder = filedialog.askdirectory(initialdir=self.path_var.get())
-        if folder:
-            self.path_var.set(folder)
-            self.update_path_display()
-            self.save_config()
-
-    def get_token_logic(self):
-        """Open the token acquisition dialog."""
-        create_token_dialog(self)
-
-    def stop_download(self):
-        """Stop the current download process."""
-        if self.downloader:
-            self.downloader.stop()
-        self.update_status_safe("Stopping...")
-        self.progress.stop()
-        self.progress.set_text("")
-        # Reset buttons after a short delay to allow stop to process
-        self.after(500, lambda: self.toggle_action_buttons(downloading=False))
-        self.after(500, lambda: self.update_status_safe("Stopped"))
-        # Reset preload state if stopped during preload
-        if self.is_preloaded:
-            self.after(500, lambda: self.start_btn.set_text("Start Download"))
-
-    def toggle_action_buttons(self, downloading=False):
-        """Toggle button states based on download status."""
-        if downloading:
-            self.start_btn.config_state("disabled")
-            self.stop_btn.config_state("normal")
-            if hasattr(self, 'preload_btn'):
-                self.preload_btn.config_state("disabled")
-        else:
-            self.start_btn.config_state("normal")
-            self.stop_btn.config_state("disabled")
-            if hasattr(self, 'preload_btn'):
-                self.preload_btn.config_state("normal")
-
-    def on_error_safe(self, message):
-        """Thread-safe error handling."""
-        self.after(0, lambda: self._show_error(message))
-
-    def _show_error(self, message):
-        self.last_error = message
-        self.update_status_safe("Error")
-        self.toggle_action_buttons(downloading=False)
-        self.progress.stop()
-        self.progress.set_text("")
-        messagebox.showerror("Error", message)
-
-    def _on_status_click(self, event):
-        if self.last_error and self.status_label.cget("text") == "Error":
-            self._show_error_toast(event)
-
-    def _on_status_hover(self, event):
-        if self.last_error and self.status_label.cget("text") == "Error":
-            # Optional: could show tooltip on hover too, but toast on click is more persistent
-            pass
-
-    def open_debug_window(self):
-        """Open or focus the debug log window."""
-        if self.debug_window is None or not self.debug_window.winfo_exists():
-            self.debug_window = tk.Toplevel(self.winfo_toplevel())
-            self.debug_window.title("Debug Log")
-            self.debug_window.geometry("800x600")
-            self.debug_window.configure(bg=self.bg_dark)
-            
-            # Header
-            header = tk.Frame(self.debug_window, bg=self.bg_dark, pady=10)
-            header.pack(fill="x")
-            tk.Label(header, text="Debug Log", font=("Segoe UI", 14, "bold"),
-                    bg=self.bg_dark, fg=self.fg_primary).pack(side=tk.LEFT, padx=10)
-            
-            # Button frame
-            btn_frame = tk.Frame(header, bg=self.bg_dark)
-            btn_frame.pack(side=tk.RIGHT, padx=10)
-            
-            # Save Log button
-            save_btn = tk.Button(btn_frame, text="Save Log", command=self.save_debug_log,
-                                 bg=self.accent_purple, fg="white", font=("Segoe UI", 9, "bold"),
-                                 relief="flat", padx=10, pady=5, cursor="hand2")
-            save_btn.pack(side=tk.RIGHT, padx=(0, 10))
-            
-            # Clear button
-            clear_btn = tk.Button(btn_frame, text="Clear", command=self.clear_debug_log,
-                                 bg=self.bg_card, fg=self.fg_primary, font=("Segoe UI", 9),
-                                 relief="flat", padx=10, pady=5, cursor="hand2")
-            clear_btn.pack(side=tk.RIGHT)
-            
-            # Text widget with scrollbar
-            text_frame = tk.Frame(self.debug_window, bg=self.bg_dark)
-            text_frame.pack(fill="both", expand=True, padx=10, pady=10)
-            
-            scrollbar = tk.Scrollbar(text_frame)
-            scrollbar.pack(side=tk.RIGHT, fill="y")
-            
-            self.debug_text = tk.Text(text_frame, bg="#0a0a0a", fg="#00ff00",
-                                     font=("Consolas", 10), wrap="word",
-                                     yscrollcommand=scrollbar.set,
-                                     relief="flat", bd=0)
-            self.debug_text.pack(side=tk.LEFT, fill="both", expand=True)
-            scrollbar.config(command=self.debug_text.yview)
-            
-            # Load existing logs
-            for log in self.debug_logs:
-                self.debug_text.insert("end", log + "\n")
-            self.debug_text.see("end")
-            
-            # Make window close properly
-            self.debug_window.protocol("WM_DELETE_WINDOW", self._close_debug_window)
-        else:
-            self.debug_window.lift()
-            self.debug_window.focus()
-    
-    def _close_debug_window(self):
-        """Close debug window but keep it available."""
-        if self.debug_window:
-            self.debug_window.destroy()
-            self.debug_window = None
-    
-    def clear_debug_log(self):
-        """Clear the debug log."""
-        self.debug_logs.clear()
-        if hasattr(self, 'debug_text') and self.debug_text:
-            self.debug_text.delete("1.0", "end")
-    
-    def save_debug_log(self):
-        """Save debug log to a text file."""
-        if not self.debug_logs:
-            messagebox.showinfo("Info", "Debug log is empty.")
-            return
+        self.preload_btn = ctk.CTkButton(btn_inner, text="Preload List", command=self.preload_songs, 
+                                         height=36, fg_color="transparent", border_width=1, border_color="#555", 
+                                         text_color="gray", hover_color="#333", font=("Segoe UI", 13, "bold"))
+        self.preload_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
         
-        try:
-            from tkinter import filedialog
-            import datetime
-            
-            # Suggest filename with timestamp
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            default_filename = f"SunoSync_DebugLog_{timestamp}.txt"
-            
-            filepath = filedialog.asksaveasfilename(
-                title="Save Debug Log",
-                defaultextension=".txt",
-                initialfile=default_filename,
-                filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
-            )
-            
-            if filepath:
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write("SunoSync Debug Log\n")
-                    f.write("=" * 50 + "\n")
-                    f.write(f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                    f.write("=" * 50 + "\n\n")
-                    for log in self.debug_logs:
-                        f.write(log + "\n")
-                
-                messagebox.showinfo("Success", f"Debug log saved to:\n{filepath}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save debug log:\n{e}")
-    
-    def add_debug_log(self, message):
-        """Add a message to the debug log (must be called from main thread)."""
-        if not message:
-            return
-            
-        self.debug_logs.append(message)
-        # Keep only last 1000 lines
-        if len(self.debug_logs) > 1000:
-            self.debug_logs = self.debug_logs[-1000:]
+        self.start_btn = ctk.CTkButton(btn_inner, text="Start Download", command=self.start_download_thread,
+                                       height=36, fg_color="#7c3aed", hover_color="#6d28d9", font=("Segoe UI", 13, "bold"))
+        self.start_btn.pack(side="left", fill="x", expand=True, padx=(5, 5))
         
-        if hasattr(self, 'debug_text') and self.debug_text:
-            try:
-                if self.debug_text.winfo_exists():
-                    self.debug_text.insert("end", message + "\n")
-                    self.debug_text.see("end")
-            except:
-                pass
-    
-    def _show_error_toast(self, event):
-        """Show a temporary toast message with the error details."""
-        toast = tk.Toplevel(self.winfo_toplevel())
-        toast.wm_overrideredirect(True)
-        toast.configure(bg="#ef4444")
-        
-        x = event.x_root + 10
-        y = event.y_root + 10
-        toast.geometry(f"+{x}+{y}")
-        
-        label = tk.Label(toast, text=self.last_error, bg="#ef4444", fg="white", 
-                         font=("Segoe UI", 9), padx=10, pady=6, justify="left")
-        label.pack()
-        
-        # Close on click or after 3 seconds
-        toast.bind("<Button-1>", lambda e: toast.destroy())
-        self.after(4000, toast.destroy)
+        self.stop_btn = ctk.CTkButton(btn_inner, text="Stop", command=self.stop_download,
+                                      height=36, width=80, fg_color="#ef4444", hover_color="#b91c1c", font=("Segoe UI", 13, "bold"))
+        self.stop_btn.pack(side="right")
+        self.stop_btn.configure(state="disabled")
 
-    def load_config_into_ui(self):
+        # --- 3. Song List (Row 2) ---
+        self.queue_list_frame = ctk.CTkScrollableFrame(self, fg_color="#18181b") 
+        self.queue_list_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=5)
+        
+        # Empty State
+        self.empty_state = EmptyStateWidget(self.queue_list_frame, theme={})
+        self.empty_state.pack(fill="both", expand=True, pady=40)
+        
+        # --- 4. Footer (Row 3) ---
+        footer = ctk.CTkFrame(self, fg_color="transparent")
+        footer.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 10))
+        
+        self.status_label = ctk.CTkLabel(footer, text="Ready", text_color="#10b981", font=("Segoe UI", 11))
+        self.status_label.pack(side="left")
+        
+        self.progress_bar = ctk.CTkProgressBar(footer, height=6)
+        self.progress_bar.pack(side="right", fill="x", expand=True, padx=(10, 0))
+        self.progress_bar.set(0)
+
+    def init_variables(self):
+        # Variables previously created by create_settings_card
+        base_path = os.getcwd()
+        self.path_var = ctk.StringVar(value=os.path.join(base_path, "Suno_Downloads"))
+        self.path_display_var = ctk.StringVar()
+        
+        self.embed_thumb_var = ctk.BooleanVar(value=True)
+        self.download_wav_var = ctk.BooleanVar(value=False)
+        self.organize_var = ctk.BooleanVar(value=False)
+        self.save_lyrics_var = ctk.BooleanVar(value=True)
+        self.track_folder_var = ctk.BooleanVar(value=False)
+        self.smart_resume_var = ctk.BooleanVar(value=False)
+        self.disable_sounds_var = ctk.BooleanVar(value=False)
+        self.force_rescan_var = ctk.BooleanVar(value=False)
+        
+    def load_config(self):
         c = self.config_manager
-        self.token_var.set(c.get("token", ""))
-        self.token_var.set(c.get("token", ""))
-        self.path_var.set(c.get("path", ""))
+        # Variables were created by layout helpers
+        if hasattr(self, 'token_var'): self.token_var.set(c.get("token", ""))
+        
+        # Path
+        p = c.get("path", "")
+        if p: self.path_var.set(p)
+        self.path_display_var.set(truncate_path(self.path_var.get()))
+
+        # Toggles
         self.embed_thumb_var.set(c.get("embed_metadata", True))
         self.organize_var.set(c.get("organize", False))
         self.save_lyrics_var.set(c.get("save_lyrics", True))
         self.download_wav_var.set(c.get("prefer_wav", False))
-        self.rate_limit_var.set(c.get("download_delay", 0.5))
-        self.max_pages_var.set(c.get("max_pages", 0))
-        self.start_page_var.set(c.get("start_page", 0))
         self.track_folder_var.set(c.get("track_folder", False))
         self.smart_resume_var.set(c.get("smart_resume", False))
+        self.disable_sounds_var.set(c.get("disable_sounds", False))
+
+        # Inputs
+        if hasattr(self, 'rate_limit_var'): self.rate_limit_var.set(c.get("download_delay", 0.5))
+        if hasattr(self, 'max_pages_var'): self.max_pages_var.set(c.get("max_pages", 0))
+        if hasattr(self, 'start_page_var'): self.start_page_var.set(c.get("start_page", 1))
         
-        # Load disable sounds setting (apply after UI is created)
-        if hasattr(self, 'disable_sounds_var'):
-            self.disable_sounds_var.set(c.get("disable_sounds", False))
-            # Apply sound setting after a short delay to ensure root exists
-            self.after(100, self._apply_sound_setting)
-        
-        # Load filters
-        self.filter_settings = c.get("filter_settings", {
-            "liked": False,
-            "hide_disliked": True,
-            "hide_gen_stems": True,
-            "hide_studio_clips": True,
-            "is_public": False,
-            "trashed": False,
-            "type": "all"
-        })
+        # Filters
+        self.filter_settings = c.get("filter_settings", {})
         self._update_filter_btn_text()
-        
-        # Bind traces for real-time summary updates
-        self.token_var.trace_add("write", self.update_accordion_summaries)
-        self.download_wav_var.trace_add("write", self.update_accordion_summaries)
-        self.embed_thumb_var.trace_add("write", self.update_accordion_summaries)
-        self.organize_var.trace_add("write", self.update_accordion_summaries)
-        self.organize_var.trace_add("write", self.update_accordion_summaries)
-        self.track_folder_var.trace_add("write", self.update_accordion_summaries)
-        self.smart_resume_var.trace_add("write", self.update_accordion_summaries)
-        
-        # Add trace for disable sounds to apply immediately
-        if hasattr(self, 'disable_sounds_var'):
-            self.disable_sounds_var.trace_add("write", lambda *args: (self._apply_sound_setting(), self.save_config()))
-
-    def update_accordion_summaries(self, *args):
-        """Update the summary chips on accordion headers."""
-        # 1. Authorization Summary
-        token = self.token_var.get().strip()
-        if token:
-            self.auth_card.set_summary("✓ Token Set")
-        else:
-            self.auth_card.set_summary("••••")
-            
-        # 2. Settings Summary
-        settings_summary = []
-        if self.download_wav_var.get():
-            settings_summary.append("WAV")
-        else:
-            settings_summary.append("MP3")
-            
-        if self.embed_thumb_var.get():
-            settings_summary.append("Meta: ON")
-            
-        if self.organize_var.get():
-            settings_summary.append("Monthly")
-            
-        if self.track_folder_var.get():
-            settings_summary.append("TrackFolder")
-
-        if self.smart_resume_var.get():
-            settings_summary.append("SmartResume")
-            
-        if self.filter_settings.get("stems_only"):
-            settings_summary.append("StemsOnly")
-            
-        self.settings_card.set_summary(f"[{' '.join(settings_summary)}]")
 
     def save_config(self):
         c = self.config_manager
-        c.set("token", self.token_var.get())
+        if hasattr(self, 'token_var'): c.set("token", self.token_var.get())
         c.set("path", self.path_var.get())
+        
+        # Toggles & Inputs
         c.set("embed_metadata", self.embed_thumb_var.get())
         c.set("organize", self.organize_var.get())
         c.set("save_lyrics", self.save_lyrics_var.get())
-        c.set("download_delay", self.rate_limit_var.get())
         c.set("prefer_wav", self.download_wav_var.get())
-        c.set("max_pages", self.max_pages_var.get())
-        c.set("start_page", self.start_page_var.get())
         c.set("track_folder", self.track_folder_var.get())
         c.set("smart_resume", self.smart_resume_var.get())
+        c.set("disable_sounds", self.disable_sounds_var.get())
+        
+        if hasattr(self, 'rate_limit_var'): c.set("download_delay", self.rate_limit_var.get())
+        if hasattr(self, 'max_pages_var'): c.set("max_pages", self.max_pages_var.get())
+        if hasattr(self, 'start_page_var'): c.set("start_page", self.start_page_var.get())
+        
         c.set("filter_settings", self.filter_settings)
-        
-        # Save disable sounds setting
-        if hasattr(self, 'disable_sounds_var'):
-            c.set("disable_sounds", self.disable_sounds_var.get())
-            self._apply_sound_setting()
-        
         c.save_config()
+
+    # --- Actions ---
+    def get_token_logic(self):
+        create_token_dialog(self) # Helper from suno_layout
         
-        # Update summaries when config is saved (covers most changes)
-        self.update_accordion_summaries()
-    
-    def _apply_sound_setting(self):
-        """Apply sound suppression setting by disabling Windows notification bell."""
-        if hasattr(self, 'disable_sounds_var'):
-            disable = self.disable_sounds_var.get()
-            try:
-                root = self.winfo_toplevel()
-                if disable:
-                    # Disable bell sound globally
-                    root.option_add('*bellOff', '1')
-                else:
-                    # Re-enable bell sound
-                    root.option_clear('*bellOff')
-            except:
-                pass
+    def browse_folder(self):
+        path = tk.filedialog.askdirectory(initialdir=self.path_var.get())
+        if path:
+            self.path_var.set(path)
+            if hasattr(self, 'path_display_var'): self.path_display_var.set(truncate_path(path))
+            self.save_config()
 
     def open_filters(self):
-        ws_name = self.filter_settings.get("workspace_name")
-        FilterPopup(self, self.filter_settings, self.on_filters_applied, active_workspace_name=ws_name,
-                    bg_color=self.bg_dark, fg_color=self.fg_primary, accent_color=self.accent_purple)
+        FilterPopup(self, self.filter_settings, self.on_filters_applied)
 
     def on_filters_applied(self, new_filters):
-        if new_filters.pop("clear_workspace", False):
-            self.filter_settings["workspace_id"] = None
-            self.filter_settings["workspace_name"] = None
-            self.filter_settings["type"] = "all" # Reset to all or keep previous? Usually reset.
-            if hasattr(self, 'workspace_btn'):
-                self.workspace_btn.set_text("Workspaces")
-            messagebox.showinfo("Workspace Cleared", "Workspace selection has been cleared.")
-        
         self.filter_settings.update(new_filters)
         self._update_filter_btn_text()
         self.save_config()
-        self.update_accordion_summaries()
 
     def _update_filter_btn_text(self):
         if hasattr(self, 'filter_btn'):
-            active_count = sum(1 for k, v in self.filter_settings.items() if v is True)
-            if self.filter_settings.get("type") != "all":
-                active_count += 1
-            self.filter_btn.set_text(f"Filters ({active_count})")
-
-    def log_safe(self, message, tag=None, thumbnail_data=None):
-        """Thread-safe logging via queue."""
-        # For compatibility, we still accept logs but we might not show them all in the queue
-        # unless they are relevant. For now, we rely on the specific song signals.
-        pass
-
-    def log(self, message, tag=None, thumbnail_data=None):
-        """Alias for log_safe for compatibility."""
-        self.log_safe(message, tag, thumbnail_data)
-
-    # --- New Signal Handlers ---
-    def on_song_started_safe(self, uuid, title, thumb_data, metadata):
-        self.gui_queue.put(('add_song', uuid, title, thumb_data, metadata))
-        
-    def on_song_updated_safe(self, uuid, status, progress):
-        self.gui_queue.put(('update_song', uuid, status, progress))
-        
-    def on_song_finished_safe(self, uuid, success, path):
-        self.gui_queue.put(('finish_song', uuid, success, path))
-
-    def on_song_found_safe(self, metadata):
-        self.gui_queue.put(('found_song', metadata))
-
-    def _process_gui_queue(self):
-        """Process all pending GUI updates."""
-        try:
-            while True:
-                try:
-                    item = self.gui_queue.get_nowait()
-                except queue.Empty:
-                    break
-                
-                msg_type = item[0]
-                
-                try:
-                    if msg_type == 'add_song':
-                        _, uuid, title, thumb, meta = item
-                        self.queue_pane.add_song(uuid, title, thumb, metadata=meta)
-                    elif msg_type == 'update_song':
-                        _, uuid, status, progress = item
-                        self.queue_pane.update_song(uuid, status=status, progress=progress)
-                    elif msg_type == 'finish_song':
-                        _, uuid, success, path = item
-                        status = "Complete" if success else "Error"
-                        self.queue_pane.update_song(uuid, status=status, filepath=path)
-                    elif msg_type == 'found_song':
-                        _, meta = item
-                        uuid = meta.get("id")
-                        title = meta.get("title") or uuid
-                        image_url = meta.get("image_url")
-                        # We don't have thumbnail bytes here yet, so pass None or fetch?
-                        # Passing None will show placeholder.
-                        # We can store metadata for later.
-                        self.preloaded_songs[uuid] = meta
-                        self.queue_pane.add_song(uuid, title, None, metadata=meta)
-                        # Trigger thumbnail fetch in background? 
-                        # For now, just show placeholder to be fast.
-                        if image_url:
-                            threading.Thread(target=self._fetch_thumb_bg, args=(uuid, image_url), daemon=True).start()
-                except Exception as e:
-                    import traceback
-                    traceback.print_exc()
-                    
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            
-        self.after(100, self._process_gui_queue)
-
-    def _fetch_thumb_bg(self, uuid, url):
-        data = self.downloader.fetch_thumbnail_bytes(url)
-        if data:
-            self.after(0, lambda: self.queue_pane.update_thumbnail(uuid, data))
+            count = sum(1 for v in self.filter_settings.values() if v is True)
+            self.filter_btn.configure(text=f"Filters ({count})")
 
     def open_workspaces(self):
-        token = self.token_var.get().strip()
-        if not token:
-            messagebox.showerror("Error", "Please enter a Bearer Token first.")
-            return
-            
-        self.update_status_safe("Fetching workspaces...")
-        threading.Thread(target=self._fetch_workspaces_thread, args=(token,), daemon=True).start()
-
-    def _fetch_workspaces_thread(self, token):
-        workspaces = self.downloader.fetch_workspaces(token)
-        self.after(0, lambda: self._show_workspace_browser(workspaces))
-
-    def _show_workspace_browser(self, workspaces):
-        self.update_status_safe("Ready")
-        if not workspaces:
-            messagebox.showinfo("Info", "No workspaces found or failed to fetch.")
-            return
-        WorkspaceBrowser(self, workspaces, self.on_workspace_selected,
-                        bg_color=self.bg_dark, fg_color=self.fg_primary)
-
-    def on_workspace_selected(self, ws):
-        # ws is a dict
-        ws_id = ws.get("id")
-        name = ws.get("name")
-        self.filter_settings["workspace_id"] = ws_id
-        self.filter_settings["workspace_name"] = name
-        self.filter_settings["type"] = "workspace" # Custom type to indicate workspace mode if needed
-        self.save_config()
-        
-        # Update UI to show selected workspace
-        if hasattr(self, 'workspace_btn'):
-            self.workspace_btn.set_text(f"WS: {name[:10]}...")
-        
-        messagebox.showinfo("Workspace Selected", f"Selected workspace: {name}\nClick 'Start Download' or 'Preload' to proceed.")
+        self.log("Fetching workspaces...")
+        token = self.token_var.get()
+        threading.Thread(target=lambda: self._fetch_browser_items(token, "workspaces"), daemon=True).start()
 
     def open_playlists(self):
-        token = self.token_var.get().strip()
-        if not token:
-            messagebox.showerror("Error", "Please enter a Bearer Token first.")
-            return
+        self.log("Fetching playlists...")
+        token = self.token_var.get()
+        threading.Thread(target=lambda: self._fetch_browser_items(token, "playlists"), daemon=True).start()
+    
+    def _fetch_browser_items(self, token, mode):
+        # Fetch items
+        items = []
+        try:
+            if mode == "workspaces":
+                items = self.downloader.fetch_workspaces(token)
+            else:
+                items = self.downloader.fetch_playlists(token)
             
-        self.update_status_safe("Fetching playlists...")
-        threading.Thread(target=self._fetch_playlists_thread, args=(token,), daemon=True).start()
+            self.after(0, lambda: self._show_browser(items, mode))
+        except Exception as e:
+            self.log(f"Error fetching {mode}: {e}")
 
-    def _fetch_playlists_thread(self, token):
-        playlists = self.downloader.fetch_playlists(token)
-        self.after(0, lambda: self._show_playlist_browser(playlists))
+    def _show_browser(self, items, mode):
+        def on_select(item):
+            # Update filter settings
+            self.filter_settings["workspace_id"] = item.get("id")
+            self.filter_settings["workspace_name"] = item.get("name")
+            self.filter_settings["type"] = "playlist" if mode == "playlists" else "workspace"
+            
+            self.save_config()
+            
+            name = item.get("name") or "Selected"
+            btn = self.workspace_btn if mode == "workspaces" else self.playlist_btn
+            btn.configure(text=truncate_path(name, 12))
+            
+            messagebox.showinfo("Selected", f"Selected {mode[:-1]}: {name}")
 
-    def _show_playlist_browser(self, playlists):
-        self.update_status_safe("Ready")
-        if not playlists:
-            messagebox.showinfo("Info", "No playlists found or failed to fetch.")
-            return
-        WorkspaceBrowser(self, playlists, self.on_playlist_selected,
-                        bg_color=self.bg_dark, fg_color=self.fg_primary, title="Select Playlist")
-
-    def on_playlist_selected(self, pl):
-        # pl is a dict
-        pl_id = pl.get("id")
-        name = pl.get("name") or pl.get("title")
-        self.filter_settings["workspace_id"] = pl_id # We reuse workspace_id as it's just an ID passed to API
-        self.filter_settings["workspace_name"] = name
-        self.filter_settings["type"] = "playlist" # Custom type
-        
-        # Note: The downloader needs to know if it's a playlist or workspace to use correct URL?
-        # Actually, in suno_downloader.py, we need to handle "playlist" type if the API endpoint is different.
-        # Currently suno_downloader uses /api/project/{id} for workspace_id.
-        # If playlists use /api/playlist/{id}, we need to update suno_downloader.py.
-        # Let's check suno_downloader.py logic.
-        
-        self.save_config()
-        
-        # Update UI
-        if hasattr(self, 'playlist_btn'):
-            self.playlist_btn.set_text(f"PL: {name[:10]}...")
-        
-        messagebox.showinfo("Playlist Selected", f"Selected playlist: {name}\nClick 'Start Download' or 'Preload' to proceed.")
+        WorkspaceBrowser(self, items, on_select, title=f"Select {mode.capitalize()[:-1]}")
 
     def preload_songs(self):
-        print("DEBUG: Preload button clicked")
-        self.add_debug_log("=== Starting Preload ===")
-        
-        token = self.token_var.get().strip()
-        print(f"DEBUG: Token length: {len(token)}")
-        self.add_debug_log(f"Token present: {bool(token)}, length: {len(token)}")
-        
-        if not token:
-            error_msg = "Please enter a Bearer Token."
-            messagebox.showerror("Error", error_msg)
-            self.add_debug_log(f"ERROR: {error_msg}")
+        if not self.token_var.get():
+            messagebox.showwarning("Error", "No token set")
             return
-
-        download_path = self.path_var.get()
-        print(f"DEBUG: Download path: {download_path}")
-        self.add_debug_log(f"Download path: {download_path}")
-        
-        if not download_path:
-            error_msg = "Please select a download folder."
-            messagebox.showerror("Error", error_msg)
-            self.add_debug_log(f"ERROR: {error_msg}")
-            return
-
-        self.save_config()
-        self.toggle_action_buttons(downloading=True)
-        self.update_status_safe("Preloading...")
-        self.start_btn.set_text("Scanning...")
-        self.progress.start(10)
-        self.progress.set_text("Fetching List...")
-        
-        self.queue_pane.clear()
-        self.preloaded_songs.clear()
+            
         self.is_preloaded = True
+        self.preloaded_songs.clear()
+        self.clear_queue()
         
-        print(f"DEBUG: Filter settings: {self.filter_settings}")
-        self.add_debug_log(f"Filter settings: {self.filter_settings}")
-        
-        # Connect signals
-        self.downloader.signals.status_changed.connect(self.update_status_safe)
-        self.downloader.signals.download_complete.connect(self.on_preload_complete_safe)
-        self.downloader.signals.error_occurred.connect(self.on_error_safe)
-        self.downloader.signals.song_found.connect(self.on_song_found_safe)
+        self.update_status("Scanning...", "busy")
+        self.toggle_inputs(False) # Enable Stop button
+        self.save_config()
         
         # Configure downloader for SCAN ONLY
-        print("DEBUG: Configuring downloader...")
-        self.add_debug_log("Configuring downloader for scan-only mode...")
-        self.downloader.configure(
-            token=token,
-            directory=download_path,
-            max_pages=self.max_pages_var.get(),
-            start_page=self.start_page_var.get(),
-            organize_by_month=self.organize_var.get(),
-            embed_metadata_enabled=self.embed_thumb_var.get(),
-            save_lyrics=self.save_lyrics_var.get(),
-            prefer_wav=self.download_wav_var.get(),
-            download_delay=self.rate_limit_var.get(),
-            filter_settings=self.filter_settings,
-            organize_by_track=self.track_folder_var.get(),
-            stems_only=self.filter_settings.get("stems_only"),
-            smart_resume=self.smart_resume_var.get(),
-            scan_only=True  # CRITICAL: Only scan, don't download
-        )
+        self._configure_downloader(scan_only=True)
         
-        print("DEBUG: Starting downloader thread...")
-        self.add_debug_log("Starting downloader thread...")
-        thread = threading.Thread(target=self.downloader.run, daemon=True)
-        thread.start()
-        print("DEBUG: Downloader thread started")
-        self.add_debug_log("Downloader thread started - check debug log for progress")
+        # Connect signals (Required for UI updates)
+        self.downloader.signals.download_complete.connect(self.on_download_complete)
+        self.downloader.signals.song_found.connect(self.on_song_found)
+        self.downloader.signals.song_started.connect(self.on_song_started)
+        self.downloader.signals.song_updated.connect(self.on_song_updated)
+        self.downloader.signals.song_finished.connect(self.on_song_finished)
+        self.downloader.signals.status_changed.connect(lambda msg: self.update_status(msg, "busy"))
+        self.downloader.signals.log_message.connect(lambda msg, type, _: self.log(msg, type))
+        
+        threading.Thread(target=self.downloader.run, daemon=True).start()
 
-    def on_preload_complete_safe(self, success):
-        self.after(0, lambda: self.on_preload_complete(success))
-
-    def on_preload_complete(self, success):
-        print(f"DEBUG: Preload complete called with success={success}, songs found={len(self.preloaded_songs)}")
-        self.add_debug_log(f"Preload complete: success={success}, songs={len(self.preloaded_songs)}")
-        
-        self.toggle_action_buttons(downloading=False)
-        self.progress.stop()
-        self.progress.set_text("")
-        
-        if success:
-            self.update_status_safe("Preload Complete")
-            self.start_btn.set_text("Download Selected")
-            if len(self.preloaded_songs) > 0:
-                messagebox.showinfo("Preload Complete", f"Found {len(self.preloaded_songs)} songs.\nUncheck songs you don't want, then click 'Download Selected'.")
-            else:
-                messagebox.showwarning("Preload Complete", "Preload finished but no songs were found. Check filters or try a different workspace/playlist.")
-        else:
-            self.start_btn.set_text("Start Download")
-            self.is_preloaded = False # Reset if failed
-            self.update_status_safe("Error")
-            print("ERROR: Preload failed - check debug log for details")
-            self.add_debug_log("ERROR: Preload failed - check logs above for error details")
+    def clear_uuid_cache(self):
+        try:
+             # Just delete the cache file if it exists
+            # We need to access library_cache.json path. It's not stored in config, but main passes it.
+            # Wait, DownloaderTab doesn't know about cache file path directly unless passed.
+            # But the user said "clear cache button to reset UUID cache". That usually means the internal memory cache or the file.
+            # Let's assume they mean preventing duplicates.
+            
+            # Reset internal preloaded songs
+            self.preloaded_songs.clear()
+            self.clear_queue()
+            self.preloaded_songs.clear()
+            self.clear_queue()
+            messagebox.showinfo("Cache Cleared", "Queue cleared.\nDownload history is based on files in the current folder.\nTo re-download existing songs, enable 'Force Rescan'.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
 
     def start_download_thread(self):
-        token = self.token_var.get().strip()
-        if not token:
-            messagebox.showerror("Error", "Please enter a Bearer Token.")
-            return
-
-        if not self.path_var.get():
-            messagebox.showerror("Error", "Please select a download folder.")
-            return
-
         self.save_config()
         
-        target_songs = []
+        target_list = []
         if self.is_preloaded:
-            # Get selected UUIDs
-            selected_uuids = self.queue_pane.get_selected_uuids()
-            if not selected_uuids:
-                messagebox.showwarning("No Selection", "Please select at least one song to download.")
-                return
+            # Collect checked items
+            for uuid, card in self.queue_items.items():
+                if card.selected_var.get():
+                    # We need metadata. preloaded_songs has it.
+                    if uuid in self.preloaded_songs:
+                        target_list.append(self.preloaded_songs[uuid])
             
-            # Filter preloaded_songs
-            target_songs = [self.preloaded_songs[uuid] for uuid in selected_uuids if uuid in self.preloaded_songs]
-            self.update_status_safe(f"Downloading {len(target_songs)} songs...")
-        
-        self.toggle_action_buttons(downloading=True)
-        self.update_status_safe("Downloading")
-        self.start_btn.set_text("Downloading...")
-        self.progress.start(10)
-        self.progress.set_text("Starting...")
+            if not target_list and self.queue_items:
+                 messagebox.showinfo("Info", "No songs selected.")
+                 return
+
+        self.update_status("Downloading...", "busy")
+        self.toggle_inputs(False)
         
         if not self.is_preloaded:
-            self.queue_pane.clear()
+            self.clear_queue()
+        
+        # Configure downloader
+        # If is_preloaded is True, we pass the specific list.
+        # If False, we pass None (or empty list) which triggers full scan/download.
+        self._configure_downloader(scan_only=False)
+        if target_list:
+            self.downloader.config["target_songs"] = target_list
+            # Disable page limits if we are targeting specific songs (optional, but safer)
+            # self.downloader.config["max_pages"] = 0 
         
         # Connect signals
-        self.downloader.signals.status_changed.connect(self.update_status_safe)
-        self.downloader.signals.download_complete.connect(self.on_download_complete_safe)
-        self.downloader.signals.error_occurred.connect(self.on_error_safe)
+        self.downloader.signals.download_complete.connect(self.on_download_complete)
+        self.downloader.signals.song_found.connect(self.on_song_found)
+        self.downloader.signals.song_started.connect(self.on_song_started)
+        self.downloader.signals.song_updated.connect(self.on_song_updated)
+        self.downloader.signals.song_finished.connect(self.on_song_finished)
         
-        # New Signals
-        self.downloader.signals.song_started.connect(self.on_song_started_safe)
-        self.downloader.signals.song_updated.connect(self.on_song_updated_safe)
-        self.downloader.signals.song_finished.connect(self.on_song_finished_safe)
+        threading.Thread(target=self.downloader.run, daemon=True).start()
 
-        # Configure downloader
+    def stop_download(self):
+        self.downloader.stop()
+        self.update_status("Stopping...", "busy")
+        self.stop_btn.configure(state="disabled", text="Stopping...")
+        
+        # Ensure inputs re-enable after a moment if thread doesn't callback fast enough
+        # But correctly, the thread should finish and call on_download_complete
+        # which calls toggle_inputs(True).
+        # We'll rely on on_download_complete, but force a check.
+        self.after(2000, lambda: self.check_stop_status())
+        
+    def check_stop_status(self):
+        if not self.downloader.is_stopped() and self.start_btn._state == "disabled":
+             # Still waiting? 
+             pass
+        else:
+             # Just in case
+             if self.start_btn._state == "disabled" and not self.downloader.is_stopped(): 
+                 # This means thread might have died silently?
+                 pass
+             elif self.start_btn._state == "disabled":
+                 # Re-enable if stuck
+                 self.toggle_inputs(True)
+                 self.update_status("Stopped", "normal")
+
+    def _configure_downloader(self, scan_only):
+        if not hasattr(self, 'path_var'):
+            self.init_variables()
+            
         self.downloader.configure(
-            token=token,
+            token=self.token_var.get(),
             directory=self.path_var.get(),
             max_pages=self.max_pages_var.get(),
-            start_page=self.start_page_var.get(),
+            start_page=max(1, self.start_page_var.get()), # Enforce minimum 1
             organize_by_month=self.organize_var.get(),
             embed_metadata_enabled=self.embed_thumb_var.get(),
             save_lyrics=self.save_lyrics_var.get(),
@@ -1013,41 +465,179 @@ class DownloaderTab(tk.Frame):
             download_delay=self.rate_limit_var.get(),
             filter_settings=self.filter_settings,
             organize_by_track=self.track_folder_var.get(),
-            stems_only=self.filter_settings.get("stems_only"),
-            smart_resume=self.smart_resume_var.get()
+            smart_resume=self.smart_resume_var.get(),
+            scan_only=scan_only,
+            force_rescan=self.config_manager.get("force_rescan", False)
         )
-        
-        thread = threading.Thread(target=self.downloader.run, daemon=True)
-        thread.start()
 
-    def on_download_complete_safe(self, success):
-        self.after(0, lambda: self.on_download_complete(success))
+    # --- GUI Queue Processing ---
+    def _process_gui_queue(self):
+        try:
+            # Process up to 50 items at a time to keep UI responsive
+            count = 0
+            while not self.gui_queue.empty() and count < 50:
+                msg = self.gui_queue.get_nowait()
+                action = msg[0]
+                if action == "status":
+                    self.status_label.configure(text=msg[1], text_color=msg[2])
+                elif action == "add_song":
+                    self._add_song_card(msg[1])
+                elif action == "update_song":
+                    self._update_song_card(msg[1], msg[2], msg[3])
+                elif action == "log":
+                    text = msg[1]
+                    self.debug_logs.append(text)
+                    # Limit log size
+                    if len(self.debug_logs) > 1000:
+                        self.debug_logs = self.debug_logs[-800:]
+                        
+                    if self.debug_window and self.debug_text:
+                        self.debug_text.insert("end", text + "\n")
+                        if count % 10 == 0: # Auto-scroll occasionally
+                            self.debug_text.see("end")
+                            
+                count += 1
+        except queue.Empty:
+            pass
+        except Exception:
+            pass
+            
+        self.after(50, self._process_gui_queue)
+
+    def update_status(self, text, state="normal"):
+        colors = {"normal": "#10b981", "busy": "#8b5cf6", "error": "#ef4444"}
+        self.gui_queue.put(("status", text, colors.get(state, "gray")))
+
+    def log(self, text, level="info"):
+        self.gui_queue.put(("log", text))
+
+    def add_debug_log(self, text):
+        self.log(text.strip())
+
+    def on_song_found(self, metadata):
+        self.gui_queue.put(("add_song", metadata))
+
+    def _add_song_card(self, metadata):
+        uuid = metadata.get("id")
+        if uuid in self.queue_items: return
+        
+        card = SongCard(self.queue_list_frame, uuid, metadata.get("title", "Unknown"), 
+                        metadata=metadata, bg_color="#27272a") # Zinc 800
+        card.pack(fill="x", pady=2, padx=5)
+        self.queue_items[uuid] = card
+        
+        # Hide empty state when first song is added
+        if hasattr(self, 'empty_state') and self.empty_state.winfo_exists():
+            self.empty_state.pack_forget()
+        
+        if self.is_preloaded:
+            self.preloaded_songs[uuid] = metadata
+
+        # Fetch thumb?
+        if metadata.get("image_url"):
+             self.fetch_thumb(uuid, metadata.get("image_url"))
+
+    def fetch_thumb(self, uuid, url):
+        threading.Thread(target=lambda: self._fetch_thumb_thread(uuid, url), daemon=True).start()
+
+    def _fetch_thumb_thread(self, uuid, url):
+        data = self.downloader.fetch_thumbnail_bytes(url)
+        if data:
+            self.after(0, lambda: self._set_card_thumb(uuid, data))
+
+    def _set_card_thumb(self, uuid, data):
+        if uuid in self.queue_items:
+             self.queue_items[uuid].set_thumbnail(data)
+
+    def on_song_started(self, uuid, title, thumb_data, metadata):
+        # We need to ensure the card exists
+        self.after(0, lambda: self._add_song_card(metadata))
+        self.gui_queue.put(("update_song", uuid, "Downloading", 0))
+
+    def on_song_updated(self, uuid, status, progress):
+        self.gui_queue.put(("update_song", uuid, status, progress))
+
+    def on_song_finished(self, uuid, success, filepath):
+        status = "Complete" if success else "Error"
+        progress = 100 if success else 0
+        self.gui_queue.put(("update_song", uuid, status, progress))
+
+    def _update_song_card(self, uuid, status, progress):
+        if uuid in self.queue_items:
+            self.queue_items[uuid].set_status(status, progress)
 
     def on_download_complete(self, success):
-        self.toggle_action_buttons(downloading=False)
-        self.progress.stop()
-        self.progress.set_text("")
-        self.start_btn.set_text("Start Download")
-        self.is_preloaded = False # Reset after download
+        self.toggle_inputs(True)
+        self.update_status("Complete" if success else "Stopped", "normal" if success else "error")
+
+    def toggle_inputs(self, enable):
+        state = "normal" if enable else "disabled"
+        if hasattr(self, 'start_btn'): 
+            self.start_btn.configure(state=state)
+            self.start_btn.configure(text="Start Download" if enable else "Downloading...")
+        if hasattr(self, 'preload_btn'):
+            self.preload_btn.configure(state=state)
+        if hasattr(self, 'stop_btn'): 
+            self.stop_btn.configure(state="disabled" if enable else "normal", text="Stop")
+    
+    def clear_queue(self):
+        for w in self.queue_list_frame.winfo_children():
+            w.destroy()
+        self.queue_items.clear()
         
-        if success:
-            self.update_status_safe("Complete")
-            messagebox.showinfo("Success", "Download cycle completed.")
-        else:
-            if self.downloader.is_stopped():
-                self.update_status_safe("Stopped")
-            else:
-                self.update_status_safe("Error")
+        # Re-add empty state
+        self.empty_state = EmptyStateWidget(self.queue_list_frame, theme={})
+        self.empty_state.pack(fill="both", expand=True, pady=40)
+        
+    def _add_song_card(self, metadata):
+        try:
+            # Remove empty state if present
+            if hasattr(self, 'empty_state') and self.empty_state.winfo_exists():
+                self.empty_state.destroy()
+                
+            uuid = metadata.get("id")
+            if uuid in self.queue_items: return
+            
+            # Verify frame exists
+            if not self.queue_list_frame.winfo_exists():
+                print("Error: Queue list frame does not exist!")
+                return
 
+            card = SongCard(self.queue_list_frame, uuid, metadata.get("title", "Unknown"), 
+                            metadata=metadata, bg_color="#27272a") # Zinc 800
+            card.pack(fill="x", pady=2, padx=5)
+            self.queue_items[uuid] = card
+            
+            if self.is_preloaded:
+                self.preloaded_songs[uuid] = metadata
 
-
+            # Fetch thumb?
+            if metadata.get("image_url"):
+                 self.fetch_thumb(uuid, metadata.get("image_url"))
+        except Exception as e:
+            print(f"Error adding song card: {e}")
+            self.log(f"UI Error: Failed to add card: {e}", "error")
+        
+    def open_debug_window(self):
+        if self.debug_window and self.debug_window.winfo_exists():
+            self.debug_window.lift()
+            return
+            
+        self.debug_window = ctk.CTkToplevel(self)
+        self.debug_window.title("Debug Log")
+        self.debug_window.geometry("800x600")
+        
+        self.debug_text = ctk.CTkTextbox(self.debug_window, font=("Consolas", 12))
+        self.debug_text.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        for l in self.debug_logs:
+            self.debug_text.insert("end", l + "\n")
+            
     def check_initial_path(self):
-        """Check if download path is set, if not prompt user."""
-        current_path = self.path_var.get()
-        if not current_path or not os.path.exists(current_path):
-            response = messagebox.askyesno("Setup", "Download folder not set or invalid.\nWould you like to select one now?")
-            if response:
-                self.browse_path()
-    def browse_path(self):
-        """Alias for browse_folder for compatibility."""
-        self.browse_folder()
+         if not hasattr(self, 'path_var'):
+             self.init_variables()
+         if not self.path_var.get():
+             pass # Optional prompt?
+             
+    def on_close(self):
+        self.downloader.stop()

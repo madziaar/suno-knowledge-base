@@ -14,6 +14,12 @@ import subprocess
 def open_file(path):
     """Open file or folder with default system application."""
     try:
+        if not path or not os.path.exists(path):
+            print(f"Cannot open path: {path}")
+            return
+            
+        path = os.path.normpath(path)
+        
         if platform.system() == 'Windows':
             os.startfile(path)
         elif platform.system() == 'Darwin':  # macOS
@@ -21,7 +27,7 @@ def open_file(path):
         else:  # Linux
             subprocess.call(('xdg-open', path))
     except Exception as e:
-        print(f"Error opening file: {e}")
+        print(f"Error opening file {path}: {e}")
 
 
 def get_uuid_from_file(filepath):
@@ -73,6 +79,151 @@ def build_uuid_cache(directory):
     return uuid_cache
 
 
+def extract_genre_from_prompt(prompt_text):
+    """
+    Extract genre information from Suno prompt text.
+    Takes the first 3-4 meaningful words/keywords.
+    
+    Args:
+        prompt_text: The prompt or description text from Suno
+        
+    Returns:
+        str: Extracted genre (max 20 chars) or None
+    """
+    if not prompt_text or not isinstance(prompt_text, str):
+        return None
+    
+    # Clean up the text
+    text = prompt_text.strip()
+    if not text:
+        return None
+    
+    # Common patterns: "Dark Techno, fast tempo" or "Indie Rock with emotional vocals"
+    # Take first part before common separators
+    separators = [',', 'with', 'featuring', '|', '-', 'and']
+    for sep in separators:
+        if sep in text.lower():
+            text = text.split(sep)[0].strip()
+            break
+    
+    # Take first 3-4 words (up to 20 chars)
+    words = text.split()[:4]
+    genre = ' '.join(words)
+    
+    # Truncate to 20 chars if needed
+    if len(genre) > 20:
+        genre = genre[:17] + "..."
+    
+    return genre if genre else None
+
+
+def extract_bpm_from_prompt(prompt_text):
+    """
+    Extract BPM (tempo) from Suno prompt text using regex.
+    
+    Args:
+        prompt_text: The prompt or description text from Suno
+        
+    Returns:
+        str: BPM value as string or None
+    """
+    if not prompt_text or not isinstance(prompt_text, str):
+        return None
+    
+    # Regex pattern to find "120 bpm" or "120bpm" (case-insensitive)
+    pattern = r'(\d+)\s*bpm'
+    match = re.search(pattern, prompt_text, re.IGNORECASE)
+    
+    if match:
+        bpm_value = match.group(1)
+        # Validate BPM is in reasonable range (40-300)
+        try:
+            bpm_int = int(bpm_value)
+            if 40 <= bpm_int <= 300:
+                return str(bpm_int)
+        except ValueError:
+            pass
+    
+    return None
+
+
+def is_uuid_like(text):
+    """Check if text looks like a UUID (long alphanumeric with dashes)."""
+    if not text or len(text) < 30:
+        return False
+    # UUID pattern: 8-4-4-4-12 hex characters
+    uuid_pattern = r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    return bool(re.match(uuid_pattern, text.lower()))
+
+
+def clean_title(title_text):
+    """
+    Clean up messy titles that look like raw lists or prompt artifacts.
+    e.g. "['control: bouncy, crisp...']" -> "Untitled Track" (or extracted genre)
+    """
+    if not title_text:
+        return "Untitled Track"
+    
+    # 1. Check for list-like strings
+    # If it starts with [' or [ and contains internal structure signs like control: or verse]
+    if (title_text.startswith("['") or title_text.startswith("[")) and \
+       ("control:" in title_text.lower() or "verse]" in title_text.lower() or "chorus]" in title_text.lower()):
+        # It's a prompt artifact
+        # Try to extract genre/vibe from it before finding 'Untitled'
+        # Remove list chars
+        clean = title_text.replace("['", "").replace("']", "").replace("[", "").replace("]", "")
+        genre = extract_genre_from_prompt(clean)
+        if genre:
+            return f"Untitled ({genre})"
+        return "Untitled Track"
+        
+    # 2. Cleanup general dirt (quotes, brackets at ends)
+    # e.g. "['My Song']" -> "My Song"
+    if title_text.startswith("['") and title_text.endswith("']"):
+        title_text = title_text[2:-2]
+    elif title_text.startswith('[') and title_text.endswith(']'):
+        title_text = title_text[1:-1]
+        
+    return title_text
+
+def get_display_title(title, prompt_text=None):
+    """
+    Get a user-friendly display title.
+    If title is a UUID, use prompt text or 'Untitled Track'.
+    Also cleans up messy prompt artifacts.
+    
+    Args:
+        title: The raw title from metadata
+        prompt_text: Optional prompt text to extract title from
+        
+    Returns:
+        str: User-friendly title
+    """
+    if not title:
+        return "Untitled Track"
+    
+    # Clean the title first
+    title = clean_title(title)
+        
+    # Check if title looks like a UUID
+    if is_uuid_like(title):
+        if prompt_text and prompt_text.strip():
+            # Extract first 4-5 words from prompt
+            words = prompt_text.strip().split()[:5]
+            if words:
+                display_title = ' '.join(words)
+                # Capitalize first letter
+                display_title = display_title[0].upper() + display_title[1:] if len(display_title) > 1 else display_title.upper()
+                # Truncate if too long
+                if len(display_title) > 50:
+                    display_title = display_title[:47] + "..."
+                return display_title
+        
+        return "Untitled Track"
+    
+    return title
+
+
 def read_song_metadata(filepath):
     """
     Reads metadata from MP3/WAV file for library display.
@@ -89,6 +240,8 @@ def read_song_metadata(filepath):
     result = {
         'title': os.path.basename(filepath),
         'artist': 'Unknown Artist',
+        'genre': '--',
+        'bpm': '--',
         'duration': 0,
         'date': '',
         'filepath': filepath,
@@ -125,6 +278,14 @@ def read_song_metadata(filepath):
                 # Artist  
                 if 'TPE1' in audio.tags:
                     result['artist'] = str(audio.tags['TPE1'].text[0])
+
+                # Genre
+                if 'TCON' in audio.tags:
+                    result['genre'] = str(audio.tags['TCON'].text[0])
+                
+                # BPM
+                if 'TBPM' in audio.tags:
+                    result['bpm'] = str(audio.tags['TBPM'].text[0])
                 
                 # Lyrics (USLT) - check all USLT frames and use the first non-empty one
                 for key in audio.tags.keys():
@@ -139,6 +300,48 @@ def read_song_metadata(filepath):
                     # Try to parse filename (remove extension and clean up)
                     name = os.path.splitext(os.path.basename(filepath))[0]
                     result['title'] = name.replace('_', ' ')
+                
+                # Smart parsing: Extract Genre/BPM from prompt text if missing
+                prompt_text = None
+                
+                # Look for prompt in TXXX tags (custom text frames)
+                for key in audio.tags.keys():
+                    if key.startswith('TXXX:'):
+                        tag = audio.tags[key]
+                        if hasattr(tag, 'desc'):
+                            # Check for common prompt field names
+                            if tag.desc.lower() in ['prompt', 'gpt_description_prompt', 'description']:
+                                prompt_text = str(tag.text[0]) if tag.text else None
+                                break
+                
+                # Fallback: Check COMM (comment) tags
+                if not prompt_text:
+                    for key in audio.tags.keys():
+                        if key.startswith('COMM:'):
+                            comment_text = str(audio.tags[key].text)
+                            if comment_text and len(comment_text) > 20:  # Likely a prompt if it's long enough
+                                prompt_text = comment_text
+                                break
+                
+                # Apply smart parsing if we found a prompt
+                if prompt_text:
+                    # Clean up escaped newlines in prompt
+                    prompt_text = prompt_text.replace('\\n', '\n')
+                    
+                    # Store prompt for later use
+                    result['prompt'] = prompt_text
+                    
+                    # Extract Genre if missing
+                    if result['genre'] == '--':
+                        extracted_genre = extract_genre_from_prompt(prompt_text)
+                        if extracted_genre:
+                            result['genre'] = extracted_genre
+                    
+                    # Extract BPM if missing
+                    if result['bpm'] == '--':
+                        extracted_bpm = extract_bpm_from_prompt(prompt_text)
+                        if extracted_bpm:
+                            result['bpm'] = extracted_bpm
         
         # If no lyrics in metadata, check for .txt file
         if not result['lyrics'] or result['lyrics'].strip() == '':
@@ -152,6 +355,9 @@ def read_song_metadata(filepath):
         
         # Get UUID
         result['id'] = get_uuid_from_file(filepath)
+        
+        # Fix UUID titles - apply display title logic
+        result['title'] = get_display_title(result['title'], result.get('prompt'))
     
     except Exception as e:
         # On any error, fallback to filename
@@ -197,6 +403,84 @@ def save_lyrics_to_file(filepath, lyrics):
         print(f"Error saving lyrics to {filepath}: {e}")
         return False, str(e)
     return False, "Unknown error or invalid file type"
+
+
+def save_metadata_to_file(filepath, metadata_dict):
+    """
+    Save metadata to audio file.
+    
+    Args:
+        filepath: Path to audio file
+        metadata_dict: Dict with keys like 'title', 'artist', 'genre', 'bpm', 'prompt', 'lyrics'
+    
+    Returns:
+        bool: True if successful
+    """
+    try:
+        ext = os.path.splitext(filepath)[1].lower()
+        audio = None
+        
+        if ext == '.mp3':
+            from mutagen.id3 import ID3, TIT2, TPE1, TCON, TBPM, USLT, TXXX
+            try:
+                audio = ID3(filepath)
+            except:
+                audio = ID3()
+        elif ext == '.wav':
+            from mutagen.wave import WAVE
+            audio = WAVE(filepath)
+        else:
+            return False
+        
+        if not audio:
+            return False
+        
+        # Update tags
+        if ext == '.mp3':
+            # Title
+            if 'title' in metadata_dict and metadata_dict['title']:
+                audio['TIT2'] = TIT2(encoding=3, text=metadata_dict['title'])
+            
+            # Artist
+            if 'artist' in metadata_dict and metadata_dict['artist']:
+                audio['TPE1'] = TPE1(encoding=3, text=metadata_dict['artist'])
+            
+            # Genre
+            if 'genre' in metadata_dict and metadata_dict['genre']:
+                audio['TCON'] = TCON(encoding=3, text=metadata_dict['genre'])
+            
+            # BPM
+            if 'bpm' in metadata_dict and metadata_dict['bpm']:
+                audio['TBPM'] = TBPM(encoding=3, text=str(metadata_dict['bpm']))
+            
+            # Prompt (store in TXXX)
+            if 'prompt' in metadata_dict and metadata_dict['prompt']:
+                audio['TXXX:prompt'] = TXXX(encoding=3, desc='prompt', text=metadata_dict['prompt'])
+            
+            # Lyrics
+            if 'lyrics' in metadata_dict and metadata_dict['lyrics']:
+                audio['USLT'] = USLT(encoding=3, lang='eng', desc='', text=metadata_dict['lyrics'])
+            
+            audio.save(filepath)
+        
+        elif ext == '.wav':
+            # WAV uses INFO tags
+            if 'title' in metadata_dict and metadata_dict['title']:
+                audio['INAM'] = metadata_dict['title']
+            
+            if 'artist' in metadata_dict and metadata_dict['artist']:
+                audio['IART'] = metadata_dict['artist']
+            
+            if 'genre' in metadata_dict and metadata_dict['genre']:
+                audio['IGNR'] = metadata_dict['genre']
+            
+            audio.save()
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error saving metadata to {filepath}: {e}")
+        return False
 
 
 FILENAME_BAD_CHARS = r'[<>:"/\\|?*\x00-\x1F]'
@@ -490,3 +774,26 @@ def create_tooltip(widget, text):
     widget.bind("<Leave>", on_leave)
     widget.bind("<ButtonPress>", on_leave)
 
+
+def copy_files_to_clipboard(file_list):
+    """
+    Copy list of files to Windows Clipboard (CF_HDROP).
+    Allows pasting files into Explorer, DAW, etc.
+    """
+    try:
+        import win32clipboard
+        import win32con
+        
+        # pywin32 handles DROPFILES struct creation automatically if passed list of strings to CF_HDROP
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32con.CF_HDROP, file_list)
+        win32clipboard.CloseClipboard()
+        return True
+        
+    except ImportError:
+        print("pywin32 not found. Please install it: pip install pywin32")
+        return False
+    except Exception as e:
+        print(f"Clipboard error: {e}")
+        return False

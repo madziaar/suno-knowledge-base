@@ -1,0 +1,157 @@
+import os
+import customtkinter as ctk
+from suno_widgets import CollapsibleCard
+from suno_layout import create_settings_card
+
+class SettingsTab(ctk.CTkFrame):
+    """
+    Global Application Settings View.
+    """
+    def __init__(self, parent, config_manager, **kwargs):
+        super().__init__(parent, fg_color="transparent", **kwargs)
+        self.config_manager = config_manager
+        self.card_bg = "#27272a"
+        
+        # UI Setup
+        self._setup_layout()
+        self.load_settings()
+
+    def _setup_layout(self):
+        # Title
+        title = ctk.CTkLabel(self, text="Settings", font=("Segoe UI", 24, "bold"))
+        title.pack(anchor="w", padx=20, pady=(20, 10))
+        
+        # Scrollable container
+        self.container = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.container.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Use Layout Helper for common settings
+        # We need to simulate 'app' object interface expected by create_settings_card
+        # So we initialize the variables it expects
+        self.init_variables()
+        
+        base_path = os.getcwd()
+        self.settings_card = create_settings_card(self.container, self, base_path)
+        
+        # Add a Save Button/Indicator?
+        # create_settings_card binds vars to nothing (it just uses them). 
+        # We need to bind them to save_config.
+        
+
+        
+        self.app_card = CollapsibleCard(self.container, title="Application", collapsed=False)
+        self.app_card.pack(fill="x", pady=10)
+        
+        self.disable_sounds_var = ctk.BooleanVar(value=False)
+        s = ctk.CTkSwitch(self.app_card.body, text="Disable Notification Sounds", variable=self.disable_sounds_var)
+        s.pack(anchor="w", padx=10, pady=10)
+        
+        # --- Maintenance & Debugging ---
+        self.maint_card = CollapsibleCard(self.container, title="Maintenance & Debugging", collapsed=False)
+        self.maint_card.pack(fill="x", pady=10)
+        
+        # 1. Force Rescan
+        self.force_rescan_var = ctk.BooleanVar(value=False)
+        rescan_frame = ctk.CTkFrame(self.maint_card.body, fg_color="transparent")
+        rescan_frame.pack(fill="x", padx=5, pady=5)
+        
+        ctk.CTkCheckBox(rescan_frame, text="Force Rescan", variable=self.force_rescan_var).pack(anchor="w")
+        ctk.CTkLabel(rescan_frame, text="Forces the downloader to re-check the server for every file, even if it exists locally.\nUseful if downloads were interrupted or files are corrupted.", 
+                     text_color="gray", font=("Segoe UI", 11), justify="left").pack(anchor="w", padx=28)
+
+        # 2. Clear Cache
+        cache_frame = ctk.CTkFrame(self.maint_card.body, fg_color="transparent")
+        cache_frame.pack(fill="x", padx=5, pady=10)
+        
+        ctk.CTkButton(cache_frame, text="🧹 Sweep Cache", width=120, fg_color="#333", hover_color="#444", 
+                      command=self.clear_cache).pack(anchor="w", padx=5)
+        ctk.CTkLabel(cache_frame, text="Clears the internal list of 'seen' songs for the current session.\nDoes not delete files. Resets the queue so you can add songs again.", 
+                     text_color="gray", font=("Segoe UI", 11), justify="left").pack(anchor="w", padx=5, pady=(2,0))
+
+        # 3. Debug Log
+        debug_frame = ctk.CTkFrame(self.maint_card.body, fg_color="transparent")
+        debug_frame.pack(fill="x", padx=5, pady=5)
+        
+        ctk.CTkButton(debug_frame, text="🐞 Open Debug Log", width=120, fg_color="#333", hover_color="#444", 
+                      command=self.open_debug).pack(anchor="w", padx=5)
+        ctk.CTkLabel(debug_frame, text="View raw internal logs and API responses.\nUseful for troubleshooting errors or reporting bugs.", 
+                     text_color="gray", font=("Segoe UI", 11), justify="left").pack(anchor="w", padx=5, pady=(2,0))
+        
+        self.save_btn = ctk.CTkButton(self, text="Save Settings", command=self.save_settings, width=200)
+        self.save_btn.pack(pady=20)
+
+    def init_variables(self):
+        # Variables expected by create_settings_card
+        self.path_var = ctk.StringVar()
+        self.path_display_var = ctk.StringVar()
+        
+        self.embed_thumb_var = ctk.BooleanVar(value=True)
+        self.download_wav_var = ctk.BooleanVar(value=False)
+        self.organize_var = ctk.BooleanVar(value=False)
+        self.save_lyrics_var = ctk.BooleanVar(value=True)
+        self.track_folder_var = ctk.BooleanVar(value=False)
+        self.smart_resume_var = ctk.BooleanVar(value=False)
+        
+        # Dummy variables for "app" interface if needed by other components, 
+        # but create_settings_card only uses the above.
+        
+    def browse_folder(self):
+        from tkinter import filedialog
+        path = filedialog.askdirectory(initialdir=self.path_var.get())
+        if path:
+            self.path_var.set(path)
+            self.path_display_var.set(path) # Simple set, no truncate for full path in settings? Or truncate?
+            # settings_card uses path_display_var for Entry.
+            
+    def clear_cache(self):
+        # Access DownloaderTab logic
+        if hasattr(self.master.master, 'views') and "downloader" in self.master.master.views:
+             # self.master.master is likely the Content Area, so we need to go up to SunoSyncApp?
+             # Actually parent passed to __init__ is self.content_area. 
+             # self.master is content_area. self.master.master is SunoSyncApp.
+             # Ideally we shouldn't rely on strict hierarchy, but let's try safely.
+             try:
+                 app = self.winfo_toplevel()
+                 if hasattr(app, 'views') and "downloader" in app.views:
+                     app.views["downloader"].clear_uuid_cache()
+             except Exception as e:
+                 print(f"Error accessing downloader: {e}")
+    
+    def open_debug(self):
+         try:
+             app = self.winfo_toplevel()
+             if hasattr(app, 'views') and "downloader" in app.views:
+                 app.views["downloader"].open_debug_window()
+         except Exception as e:
+             print(f"Error accessing debug: {e}")
+
+    def load_settings(self):
+        c = self.config_manager
+        self.path_var.set(c.get("path", ""))
+        self.path_display_var.set(c.get("path", ""))
+        
+        self.embed_thumb_var.set(c.get("embed_metadata", True))
+        self.download_wav_var.set(c.get("prefer_wav", False))
+        self.organize_var.set(c.get("organize", False))
+        self.save_lyrics_var.set(c.get("save_lyrics", True))
+        self.track_folder_var.set(c.get("track_folder", False))
+        self.smart_resume_var.set(c.get("smart_resume", False))
+        self.disable_sounds_var.set(c.get("disable_sounds", False))
+        self.force_rescan_var.set(c.get("force_rescan", False))
+
+    def save_settings(self):
+        c = self.config_manager
+        c.set("path", self.path_var.get())
+        c.set("embed_metadata", self.embed_thumb_var.get())
+        c.set("prefer_wav", self.download_wav_var.get())
+        c.set("organize", self.organize_var.get())
+        c.set("save_lyrics", self.save_lyrics_var.get())
+        c.set("track_folder", self.track_folder_var.get())
+        c.set("smart_resume", self.smart_resume_var.get())
+        c.set("disable_sounds", self.disable_sounds_var.get())
+        c.set("force_rescan", self.force_rescan_var.get())
+        c.save_config()
+        
+        # Show toast
+        from tkinter import messagebox
+        messagebox.showinfo("Saved", "Settings saved successfully.")

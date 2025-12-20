@@ -1,0 +1,114 @@
+This is the right move. The Producer Dashboard makes the app feel "alive" immediately upon opening, and the Prompt Vault is the feature that keeps creators coming back to your app instead of a text file.
+
+Here is the implementation plan to build both.
+
+Part 1: The Producer Dashboard
+We will build a visually rich "Home" tab that calculates stats from your library.db.
+
+Prompt to build dashboard_tab.py:
+
+Copy and paste this:
+
+"I need to create the Producer Dashboard (Home Tab). Please create a new file named dashboard_tab.py.
+
+1. Data Retrieval:
+
+Import sqlite3 and connect to library.db.
+
+Create a function get_stats() that runs SQL queries to find:
+
+Total Tracks: SELECT COUNT(*) FROM songs
+
+Total Duration: Sum of the duration column (convert seconds to HH:MM format).
+
+Top Genre: Find the most frequent string in the genre column (ignore 'Unknown').
+
+Storage: Sum of file_size (convert bytes to GB).
+
+2. The UI Layout (Grid):
+
+Inherit from ctk.CTkFrame.
+
+Create a 2x2 Grid for the Stat Cards.
+
+Card Style: Create a helper class StatCard(parent, title, value, icon). Use a slightly lighter background color than the main window to make them pop. Font size 24 for the value (Bold).
+
+3. The 'Recent Activity' List:
+
+Below the cards, add a section 'Recently Downloaded'.
+
+Show the last 5 songs added to the DB (Title, Artist, Date) in a simple list.
+
+4. Refresh Logic:
+
+Add a refresh() method that recalculates these numbers. Call this whenever the tab is shown."
+
+Part 2: The Prompt Vault
+This is a robust "Database" for their creative ideas. We will use a simple JSON file to store them so it's portable.
+
+Prompt to build prompt_vault.py:
+
+Copy and paste this:
+
+"I need to implement the Prompt Vault feature. Please create a new file named prompt_vault.py.
+
+1. The Storage (prompts.json):
+
+Create a PromptManager class that loads/saves a dictionary to prompts.json.
+
+Structure: {'uuid': {'title': '...', 'text': '...', 'tags': ['Dark', 'Techno']}}.
+
+2. The UI (Two-Pane Layout):
+
+Left Sidebar: A scrollable list of saved prompts (Title only). Add a 'Search' bar at the top.
+
+Right Content: A large text area showing the selected prompt.
+
+Buttons:
+
+'Copy to Clipboard' (Main Action, Green/Purple).
+
+'New Prompt' (Clears fields for entry).
+
+'Save' and 'Delete'.
+
+3. Integration Logic:
+
+When 'Copy' is clicked, show a temporary 'Copied!' label.
+
+Add a Tag input field (comma separated) to organize styles."
+
+Part 3: Connecting it all
+Now we need to link these new files into your main layout and give the Library the ability to send data to the Vault.
+
+Prompt to update suno_layout.py & library_tab.py:
+
+Copy and paste this:
+
+"I have created dashboard_tab.py and prompt_vault.py. Now I need to integrate them.
+
+1. Update Sidebar (suno_layout.py):
+
+Import the new tabs.
+
+Add two new sidebar buttons:
+
+'Dashboard' (Icon: Home/Chart) -> Placed at the very top.
+
+'Prompt Vault' (Icon: Book/File) -> Placed below Library.
+
+Ensure clicking them switches the main view correctly.
+
+2. Update Library Context Menu (library_tab.py):
+
+In the Right-Click menu for a song row, add a new option: 'Save Prompt to Vault'.
+
+Logic:
+
+When clicked, extract the prompt text from that song's metadata.
+
+Open a small popup dialog asking for a 'Title' for this prompt (default to Song Title).
+
+Save it to the PromptManager automatically.
+
+Show a 'Saved to Vault' toast notification."
