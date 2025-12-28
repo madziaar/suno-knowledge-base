@@ -1,0 +1,1 @@
+// DELETED: Functionality moved to services/ai/generators.ts
