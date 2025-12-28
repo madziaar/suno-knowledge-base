@@ -17,7 +17,8 @@ interface PersonaManagerModalProps {
 
 const PersonaManagerModal: React.FC<PersonaManagerModalProps> = ({ isOpen, onClose }) => {
   const { personas, deletePersona, updatePersona, savePersona, exportPersonas, importPersonas } = usePersonas();
-  const { isPyriteMode, lang } = useSettingsState();
+  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
+  const { isOverclockedMode: isPyriteMode, lang } = useSettingsState();
   const t = translations[lang].builder;
   
   const [editingId, setEditingId] = useState<string | null>(null);

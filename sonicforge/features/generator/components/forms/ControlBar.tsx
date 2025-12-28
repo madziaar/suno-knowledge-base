@@ -16,7 +16,7 @@ interface ControlBarProps {
   onUserPresetLoad: (preset: UserPreset) => void;
   onPresetChange: (presetId: string) => void;
   t: BuilderTranslation;
-  isPyriteMode: boolean;
+  isPyriteMode: boolean; // Keep prop name for component stability but map it from isOverclockedMode in parent
   lang: 'en' | 'pl';
   showToast: (msg: string, type?: 'success' | 'info' | 'error') => void;
 }
@@ -52,7 +52,7 @@ const ControlBar: React.FC<ControlBarProps> = memo(({
             onRandomize={onRandomize}
             onClear={onClear}
             t={t}
-            isPyriteMode={isPyriteMode}
+            isOverclockedMode={isPyriteMode} // Mapping prop
             lang={lang}
             currentInputs={inputs}
             currentExpertInputs={expertInputs}

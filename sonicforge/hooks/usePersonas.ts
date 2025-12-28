@@ -14,6 +14,7 @@ export const usePersonas = () => {
       prompt 
     };
     setPersonas(prev => [...prev, newPersona]);
+    return newPersona;
   }, [setPersonas]);
 
   const deletePersona = useCallback((id: string) => {
@@ -42,7 +43,6 @@ export const usePersonas = () => {
         try {
           const imported = JSON.parse(e.target?.result as string);
           if (Array.isArray(imported)) {
-            // Deduplicate by name or ID to avoid exact clones
             setPersonas(prev => {
                 const existingIds = new Set(prev.map(p => p.id));
                 const newItems = imported.filter(p => p.id && p.name && p.prompt && !existingIds.has(p.id));

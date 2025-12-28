@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Mic2, Drum, Music, Activity, Waves } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { sfx } from '@/lib/audio';
+import { cn } from '../../../../lib/utils';
+import { sfx } from '../../../../lib/audio';
 import { StemWeights } from '../../../../types';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useDebounce } from '../../../../hooks/useDebounce';
 
 interface StemTerminalProps {
   isPyriteMode: boolean;
@@ -75,11 +75,11 @@ const StemTerminal: React.FC<StemTerminalProps> = memo(({ isPyriteMode, weights,
                 </motion.div>
                 
                 <input 
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={val}
-                  onChange={(e) => handleUpdate(stem.id, parseInt(e.target.value))}
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={val} 
+                  onChange={(e) => handleUpdate(stem.id, parseInt(e.target.value))} 
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   style={{ writingMode: 'vertical-lr' as any, direction: 'rtl' }}
                 />

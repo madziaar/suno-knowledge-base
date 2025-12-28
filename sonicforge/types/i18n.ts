@@ -45,6 +45,7 @@ export interface ErrorTranslation {
   processingFailed: string;
   workerError: string;
   readFailed: string;
+  apiError: string;
 }
 
 export interface ValidationTranslation {
@@ -264,7 +265,6 @@ export interface BuilderTranslation {
     ai: string;
     user: string;
   };
-  // Fix: Added techniques to aiLyricOptions to match translations.ts
   aiLyricOptions: {
     remi: string;
     remiTooltip: string;
@@ -451,6 +451,18 @@ export interface BuilderTranslation {
     fullSuno: string;
   };
   sunoV45Features: SunoV45Translation;
+  health: {
+    title: string;
+    score: string;
+    autoImprove: string;
+    gradeLabel: string;
+    metrics: {
+      completeness: string;
+      specificity: string;
+      balance: string;
+      coherence: string;
+    };
+  };
 }
 
 export interface SettingsTranslation {

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
-import { SongConcept, ExpertInputs, GeneratedPrompt, GenreTemplate, HistoryItem, Platform } from '../types';
+import { SongConcept, ExpertInputs, GeneratedPrompt, GenreTemplate, HistoryItem, Platform, AgentType } from '../types';
 import { useHistory } from './HistoryContext';
 import { useSettings } from './SettingsContext';
 
@@ -30,7 +30,7 @@ const DEFAULT_EXPERT_INPUTS: ExpertInputs = {
   key: '',
   timeSignature: '',
   structure: [],
-  stemWeights: { vocals: 50, drums: 50, bass: 50, melody: 50 } // Default Balanced Mix
+  stemWeights: { vocals: 50, drums: 50, bass: 50, melody: 50 }
 };
 
 export type EnhancementLevel = 'light' | 'medium' | 'heavy';
@@ -46,6 +46,9 @@ export interface PromptState {
   useGoogleSearch: boolean;
   isGeneratingVariations: boolean;
   enhancementLevel: EnhancementLevel;
+  // Consolidated Status State
+  activeAgent: AgentType;
+  error: string;
 }
 
 const initialState: PromptState = {
@@ -59,6 +62,8 @@ const initialState: PromptState = {
   useGoogleSearch: false,
   isGeneratingVariations: false,
   enhancementLevel: 'medium',
+  activeAgent: 'idle',
+  error: ''
 };
 
 interface UndoableState {
@@ -78,6 +83,7 @@ export type Action =
   | { type: 'UPDATE_INPUT'; payload: Partial<SongConcept> }
   | { type: 'UPDATE_EXPERT_INPUT'; payload: Partial<ExpertInputs> }
   | { type: 'SET_RESULT'; payload: { result: GeneratedPrompt | null; researchData: any | null } }
+  | { type: 'SET_STATUS'; payload: { activeAgent: AgentType; error?: string } }
   | { type: 'LOAD_HISTORY_ITEM'; payload: HistoryItem }
   | { type: 'LOAD_TEMPLATE'; payload: { template: GenreTemplate; lang: 'en' | 'pl' } }
   | { type: 'RESET' }
@@ -110,8 +116,19 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
               ...present, 
               result: action.payload.result, 
               researchData: action.payload.researchData, 
-              variations: [] 
+              variations: [],
+              activeAgent: 'idle',
+              error: ''
           } 
+      };
+    case 'SET_STATUS':
+      return {
+        ...state,
+        present: {
+          ...present,
+          activeAgent: action.payload.activeAgent,
+          error: action.payload.error ?? present.error
+        }
       };
     case 'LOAD_HISTORY_ITEM': {
         const item = action.payload;
@@ -121,6 +138,7 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
         };
 
         const newPresent: PromptState = {
+          ...present,
           inputs: { 
             ...cleanedInputs, 
             lyricsInput: item.inputs.lyricsInput || '', 
@@ -134,9 +152,8 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
           result: item.result,
           researchData: item.researchData || null,
           variations: [],
-          useGoogleSearch: false,
-          isGeneratingVariations: false,
-          enhancementLevel: 'medium',
+          activeAgent: 'idle',
+          error: ''
         };
         return { past: [], present: newPresent, future: [] };
     }
@@ -226,91 +243,49 @@ export const usePromptState = () => {
   if (!context) throw new Error('usePromptState must be used within a PromptProvider');
   return context.state;
 };
-export const usePromptInputs = () => usePromptState().inputs;
-export const useExpertSettings = () => usePromptState().expertInputs;
-export const usePromptHistoryInfo = () => {
-  const context = useContext(PromptContext);
-  if (!context) throw new Error('usePromptHistoryInfo must be used within a PromptProvider');
-  return context.history;
-}
+
 export const usePromptDispatch = () => {
   const context = useContext(PromptDispatchContext);
   if (!context) throw new Error('usePromptDispatch must be used within a PromptProvider');
   return context;
 };
 
-export const usePromptActions = () => {
-  const dispatch = usePromptDispatch();
-
-  const updateInput = useCallback((payload: Partial<SongConcept>) => {
-    dispatch({ type: 'UPDATE_INPUT', payload });
-  }, [dispatch]);
-
-  const updateExpertInput = useCallback((payload: Partial<ExpertInputs>) => {
-    dispatch({ type: 'UPDATE_EXPERT_INPUT', payload });
-  }, [dispatch]);
-
-  const setState = useCallback((payload: Partial<PromptState>) => {
-    dispatch({ type: 'SET_PARTIAL_STATE', payload });
-  }, [dispatch]);
-
-  const setResult = useCallback((payload: { result: GeneratedPrompt | null, researchData: any | null }) => {
-    dispatch({ type: 'SET_RESULT', payload });
-  }, [dispatch]);
-
-  const reset = useCallback(() => {
-    dispatch({ type: 'RESET' });
-  }, [dispatch]);
-
-  const undo = useCallback(() => {
-    dispatch({ type: 'UNDO' });
-  }, [dispatch]);
-
-  const redo = useCallback(() => {
-    dispatch({ type: 'REDO' });
-  }, [dispatch]);
-
-  // Convenience Methods
-  const setPlatform = useCallback((platform: Platform) => {
-    updateInput({ platform });
-  }, [updateInput]);
-
-  const setMode = useCallback((mode: 'custom' | 'general' | 'instrumental' | 'easy') => {
-    updateInput({ mode });
-  }, [updateInput]);
-
-  const setWorkflow = useCallback((workflow: 'forge' | 'alchemy') => {
-    updateInput({ workflow });
-  }, [updateInput]);
-
-  const setLyricSource = useCallback((lyricSource: 'ai' | 'user') => {
-    setState({ lyricSource });
-  }, [setState]);
-
-  return {
-    updateInput,
-    updateExpertInput,
-    setState,
-    setResult,
-    reset,
-    undo,
-    redo,
-    setPlatform,
-    setMode,
-    setWorkflow,
-    setLyricSource
-  };
-};
-
-export const usePrompt = () => {
+/**
+ * AUTHORITATIVE HOOK: usePromptBuilder
+ * The single source of truth for UI components to interact with prompt logic.
+ */
+export const usePromptBuilder = () => {
   const state = usePromptState();
-  const { canUndo, canRedo } = usePromptHistoryInfo();
-  const actions = usePromptActions(); // Use actions internally or just return dispatch based
-  
+  const dispatch = usePromptDispatch();
+  const { canUndo, canRedo } = (useContext(PromptContext) as any).history;
+
+  const actions = useMemo(() => ({
+    updateInput: (payload: Partial<SongConcept>) => dispatch({ type: 'UPDATE_INPUT', payload }),
+    updateExpertInput: (payload: Partial<ExpertInputs>) => dispatch({ type: 'UPDATE_EXPERT_INPUT', payload }),
+    setState: (payload: Partial<PromptState>) => dispatch({ type: 'SET_PARTIAL_STATE', payload }),
+    setResult: (payload: { result: GeneratedPrompt | null, researchData: any | null }) => dispatch({ type: 'SET_RESULT', payload }),
+    setStatus: (payload: { activeAgent: AgentType; error?: string }) => dispatch({ type: 'SET_STATUS', payload }),
+    reset: () => dispatch({ type: 'RESET' }),
+    undo: () => dispatch({ type: 'UNDO' }),
+    redo: () => dispatch({ type: 'REDO' }),
+    setMode: (mode: 'custom' | 'general' | 'instrumental' | 'easy') => dispatch({ type: 'UPDATE_INPUT', payload: { mode } }),
+    setLyricSource: (lyricSource: 'ai' | 'user') => dispatch({ type: 'SET_PARTIAL_STATE', payload: { lyricSource } }),
+    setWorkflow: (workflow: 'forge' | 'alchemy') => dispatch({ type: 'UPDATE_INPUT', payload: { workflow } })
+  }), [dispatch]);
+
   return {
     ...state,
     ...actions,
-    canUndo, 
-    canRedo 
+    canUndo,
+    canRedo
   };
 };
+
+// Legacy re-exports
+export const usePromptInputs = () => usePromptState().inputs;
+export const useExpertSettings = () => usePromptState().expertInputs;
+export const usePromptActions = () => {
+    const { updateInput, updateExpertInput, setState, setResult, reset, undo, redo, setMode, setLyricSource, setWorkflow } = usePromptBuilder();
+    return { updateInput, updateExpertInput, setState, setResult, reset, undo, redo, setMode, setLyricSource, setWorkflow };
+};
+export const usePrompt = usePromptBuilder;

@@ -12,7 +12,8 @@ import { useHistoryState, useHistoryDispatch, useSettingsState, useUIDispatch } 
 const History: React.FC = () => {
   const { history } = useHistoryState();
   const { toggleFavorite, loadFromHistory, deleteFromHistory, clearHistory, exportHistory } = useHistoryDispatch();
-  const { isPyriteMode, lang } = useSettingsState();
+  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
+  const { isOverclockedMode: isPyriteMode, lang } = useSettingsState();
   const { setActiveTab, showToast } = useUIDispatch();
   
   const t = translations[lang].history;

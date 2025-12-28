@@ -1,11 +1,11 @@
 
-import React, { Suspense, useState, useCallback, useEffect } from 'react';
-import { Loader2, Music2, Wand2, Settings2, Sliders, Layers, Mic2, Cpu, Ghost, BrainCircuit, ChevronDown, ChevronRight, Activity, User, Flame, Skull, Zap, UserCog } from 'lucide-react';
-import { BuilderTranslation, GeneratorState, ToastTranslation, SongSection } from '../../../types';
+import React, { Suspense, useState, useCallback } from 'react';
+import { Loader2, Settings2, Sliders, Layers, Mic2, Cpu, BrainCircuit } from 'lucide-react';
+import { BuilderTranslation, GeneratorState, ToastTranslation, SongSection, ProducerPersona } from '../../../types';
 import ExpertGlobalPanel from './ExpertGlobalPanel';
 import StructureBuilder from './StructureBuilder';
-import { usePromptState } from '../../../contexts/PromptContext';
-import { usePromptActions } from '../hooks/usePromptActions';
+import DraftHealth from './DraftHealth';
+import { usePromptBuilder } from '../../../contexts/PromptContext';
 import ThemedButton from '../../../components/shared/ThemedButton';
 import { cn } from '../../../lib/utils';
 import { StyleComponents, assembleStylePrompt } from '../utils/styleBuilder';
@@ -16,7 +16,8 @@ import SpecialTechniquesPanel from './inputs/SpecialTechniquesPanel';
 import LyricalArchitect from './Studio/LyricalArchitect';
 import SignalChain from './Studio/SignalChain';
 import { sfx } from '../../../lib/audio';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useGenerationWorkflow } from '../hooks/useGenerationWorkflow';
+import PersonaSelector from '../../../components/shared/PersonaSelector';
 
 interface StudioPanelProps {
   t: BuilderTranslation;
@@ -36,8 +37,8 @@ const LoadingFallback = () => (
 type StudioTab = 'rack' | 'structure' | 'lyrics';
 
 const StudioPanel: React.FC<StudioPanelProps> = ({ t, toast, isPyriteMode, showToast, onGenerate, state }) => {
-  const { expertInputs, inputs } = usePromptState();
-  const { updateExpertInput, updateInput } = usePromptActions();
+  const { expertInputs, inputs, updateExpertInput, updateInput } = usePromptBuilder();
+  const { optimizeDraft } = useGenerationWorkflow('studio');
   const [activeTab, setActiveTab] = useState<StudioTab>('rack');
   
   const aiModel = expertInputs.aiModel || 'gemini-3-pro';
@@ -52,6 +53,14 @@ const StudioPanel: React.FC<StudioPanelProps> = ({ t, toast, isPyriteMode, showT
   const toggleModel = () => {
       const newModel = aiModel === 'gemini-3-pro' ? 'gemini-2.5-flash' : 'gemini-3-pro';
       updateExpertInput({ aiModel: newModel });
+      sfx.play('click');
+  };
+
+  const handlePersonaChange = (persona: ProducerPersona, customPrompt?: string) => {
+      updateInput({ producerPersona: persona });
+      if (customPrompt) {
+          updateExpertInput({ customPersona: customPrompt });
+      }
       sfx.play('click');
   };
 
@@ -96,8 +105,8 @@ const StudioPanel: React.FC<StudioPanelProps> = ({ t, toast, isPyriteMode, showT
   return (
     <div className="flex flex-col h-full relative bg-zinc-950/50 rounded-2xl border border-white/5 overflow-hidden">
       {/* Header Controls */}
-      <div className="p-4 border-b border-white/5 bg-black/20 shrink-0">
-        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
+      <div className="p-4 border-b border-white/5 bg-black/20 shrink-0 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
                 <div className={cn("p-2 rounded-lg border", isPyriteMode ? "bg-purple-900/20 border-purple-500/30 text-purple-400" : "bg-blue-900/20 border-blue-500/30 text-blue-400")}>
                     <Settings2 className="w-4 h-4 md:w-5 md:h-5" />
@@ -109,6 +118,7 @@ const StudioPanel: React.FC<StudioPanelProps> = ({ t, toast, isPyriteMode, showT
             </div>
             
             <div className="flex gap-1.5 md:gap-2">
+                <PersonaSelector value={inputs.producerPersona || 'standard'} onChange={handlePersonaChange} />
                 <button onClick={toggleModel} className={cn("px-2 md:px-3 py-1.5 rounded-lg border flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase transition-all", aiModel === 'gemini-3-pro' ? (isPyriteMode ? "bg-purple-900/30 border-purple-500/50 text-purple-300" : "bg-blue-900/30 border-blue-500/50 text-blue-300") : "bg-zinc-900 border-zinc-700 text-zinc-500")}>
                     <BrainCircuit className="w-3 h-3" />
                     {aiModel === 'gemini-3-pro' ? "Pro" : "Flash"}
@@ -120,12 +130,15 @@ const StudioPanel: React.FC<StudioPanelProps> = ({ t, toast, isPyriteMode, showT
             </div>
         </div>
 
+        <DraftHealth 
+          isPyriteMode={isPyriteMode} 
+          onOptimize={optimizeDraft}
+          isLoading={state === GeneratorState.OPTIMIZING}
+        />
+
         <ExpertGlobalPanel 
             expertInputs={expertInputs}
-            setExpertInputs={(fnOrVal) => {
-                const newVal = typeof fnOrVal === 'function' ? fnOrVal(expertInputs) : fnOrVal;
-                updateExpertInput(newVal);
-            }}
+            setExpertInputs={(val: any) => updateExpertInput(typeof val === 'function' ? val(expertInputs) : val)}
             isPyriteMode={isPyriteMode}
             t={t}
         />

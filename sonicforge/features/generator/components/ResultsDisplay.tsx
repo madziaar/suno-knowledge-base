@@ -1,13 +1,14 @@
 
 import React, { useState, memo, useMemo } from 'react';
-import { BrainCircuit, Copy, Send, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Terminal, Sparkles, MessageSquare } from 'lucide-react';
-import { GeneratedPrompt, GeneratorState, BuilderTranslation, ToastTranslation, BatchConstraints } from '../../../types';
+import { BrainCircuit, Copy, Send, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Terminal, Sparkles, MessageSquare, Globe, ExternalLink, Activity, Info } from 'lucide-react';
+import { GeneratedPrompt, GeneratorState, BuilderTranslation, ToastTranslation, BatchConstraints, GroundingChunk } from '../../../types';
 import GlassPanel from '../../../components/shared/GlassPanel';
 import BatchGenerator from './BatchGenerator';
 import { cn } from '../../../lib/utils';
 import { scorePrompt } from '../utils/promptAnalysis';
 import { sfx } from '../../../lib/audio';
 import { motion, AnimatePresence } from 'framer-motion';
+import NeuralSpinner from '../../../components/shared/NeuralSpinner';
 
 const QualityBadge = memo(({ score, grade, status }: { score: number, grade: string, status: string }) => {
     const isOptimal = status === 'optimal' || status === 'good';
@@ -40,20 +41,22 @@ interface ResultsDisplayProps {
   t: BuilderTranslation;
   toast: ToastTranslation;
   isPyriteMode?: boolean;
-  showToast?: (msg: string, type?: 'success' | 'info') => void;
+  showToast?: (msg: string, type?: 'success' | 'info' | 'error') => void;
   variations?: GeneratedPrompt[]; 
   isGeneratingVariations?: boolean;
   onGenerateVariations: (count: number, level: 'light' | 'medium' | 'heavy', constraints: BatchConstraints, evolutionPath?: string) => void;
   onApplyVariation: (variation: GeneratedPrompt) => void;
   onExportBatch: (selected: number[]) => void;
+  researchData?: { text: string; sources: GroundingChunk[] } | null;
 }
 
 const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ 
   result, state, showLyrics, onEnhance, onRefine, onOpenExport, onUpdateResult,
   t, toast, isPyriteMode = false, showToast,
-  variations = [], isGeneratingVariations = false, onGenerateVariations, onApplyVariation, onExportBatch
+  variations = [], isGeneratingVariations = false, onGenerateVariations, onApplyVariation, onExportBatch,
+  researchData
 }) => {
-  const [showAnalysis, setShowAnalysis] = useState(false); 
+  const [showAnalysis, setShowAnalysis] = useState(true); 
   const [refinementInput, setRefinementInput] = useState('');
   const [isRefining, setIsRefining] = useState(false);
 
@@ -96,17 +99,45 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       analysisTitle: "Deep Reasoning Trace"
   };
 
+  const isWorking = state === GeneratorState.RESEARCHING || state === GeneratorState.ANALYZING || state === GeneratorState.GENERATING;
+
   if (!result && state !== GeneratorState.COMPLETE) {
     return (
-      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" className="h-full min-h-[400px] flex flex-col items-center justify-center text-zinc-600 p-8 text-center border-dashed border-2 border-white/5 relative group">
-        <Sparkles className="w-12 h-12 mb-4 opacity-20 group-hover:scale-110 transition-transform" />
-        <h3 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">{outputT.waiting}</h3>
-        <p className="text-xs max-w-xs mt-2 font-mono">{outputT.waitingDesc}</p>
+      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" className="h-full min-h-[500px] flex flex-col items-center justify-center text-zinc-600 p-8 text-center border-dashed border-2 border-white/5 relative group">
+        <AnimatePresence mode="wait">
+          {isWorking ? (
+            <motion.div 
+              key="spinner"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.2 }}
+              className="flex flex-col items-center"
+            >
+              <NeuralSpinner 
+                isPyriteMode={isPyriteMode} 
+                size="lg" 
+                label={state === GeneratorState.RESEARCHING ? "Researching Sonic DNA" : state === GeneratorState.ANALYZING ? "Spectral Deconstruction" : "Architecting Blueprint"} 
+              />
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="waiting"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center"
+            >
+              <Sparkles className="w-12 h-12 mb-4 opacity-20 group-hover:scale-110 transition-transform" />
+              <h3 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">{outputT.waiting}</h3>
+              <p className="text-xs max-w-xs mt-2 font-mono">{outputT.waitingDesc}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </GlassPanel>
     );
   }
 
   const issues = quality?.issues || [];
+  const sources = researchData?.sources || [];
 
   return (
     <div className="flex flex-col h-full space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
@@ -131,6 +162,30 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
       <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" noPadding className="flex-1 flex flex-col overflow-hidden border-white/10 bg-zinc-950/80 shadow-2xl relative">
         
+        {/* RESEARCH ANCHORS (Google Search Grounding) */}
+        {sources.length > 0 && (
+            <div className="px-5 py-3 border-b border-white/5 bg-blue-500/5 flex flex-col gap-2 shrink-0">
+                <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest">Neural DNA Anchors ({sources.length})</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    {sources.map((source, i) => (
+                        <a 
+                            key={i} 
+                            href={source.web?.uri} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-white/10 text-[8px] text-zinc-400 hover:text-white transition-colors whitespace-nowrap group"
+                        >
+                            <span className="max-w-[120px] truncate">{source.web?.title}</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                    ))}
+                </div>
+            </div>
+        )}
+
         {/* Quick-Fix Terminal */}
         {issues.length > 0 && (
             <div className="px-5 py-3 border-b border-white/5 bg-amber-500/5 flex items-center justify-between shrink-0">
@@ -149,7 +204,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
             </div>
         )}
 
-        {/* REFINEMENT BAR (New) */}
+        {/* REFINEMENT BAR */}
         <div className="p-3 border-b border-white/5 bg-white/[0.02]">
             <div className="relative flex items-center">
                 <MessageSquare className="absolute left-3 w-4 h-4 text-zinc-500" />
@@ -169,7 +224,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                     disabled={!refinementInput.trim() || isRefining}
                     className="absolute right-2 p-1.5 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
                 >
-                    {isRefining ? <span className="animate-spin">⟳</span> : <Send className="w-3.5 h-3.5" />}
+                    {isRefining ? <span className="animate-spin text-xs">⟳</span> : <Send className="w-3.5 h-3.5" />}
                 </button>
             </div>
         </div>
@@ -204,7 +259,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                                     isPyriteMode ? "bg-purple-950/20 border-purple-500/20 text-purple-100/90" : "bg-blue-950/20 border-blue-500/20 text-blue-100/90"
                                 )}>
                                     <div className="absolute top-0 left-0 px-2 py-1 bg-white/5 text-[8px] font-bold uppercase tracking-wider rounded-br-lg text-white/50">
-                                        Logic Core Output
+                                        Agentic Thought stream
                                     </div>
                                     <div className="pt-4 opacity-90">
                                         {result.analysis}
@@ -246,7 +301,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
             {showLyrics && (
               <div className="group pt-4 border-t border-white/5">
-                <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500 mb-3">Structural Lyrics</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500 mb-3">Structured Lyrical Narrative</span>
                 <div className="bg-black/40 p-6 rounded-xl border border-white/5 text-zinc-300 font-mono text-xs leading-loose whitespace-pre-wrap select-all relative overflow-hidden">
                     <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-purple-500/5 to-transparent h-6 top-1/2 -mt-3 opacity-20" />
                     {result?.lyrics}

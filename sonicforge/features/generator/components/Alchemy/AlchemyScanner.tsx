@@ -2,7 +2,7 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scan, Cpu, Zap, Activity, Waves } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../../lib/utils';
 
 interface AlchemyScannerProps {
   isAnalyzing: boolean;

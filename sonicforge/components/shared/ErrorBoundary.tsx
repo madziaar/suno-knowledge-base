@@ -28,7 +28,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("CRITICAL_UI_FAILURE:", error, errorInfo);
+    // FIX: Detailed logging for debugging
+    console.error("CRITICAL_UI_FAILURE_LOGGED:", {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack
+    });
   }
 
   public render(): ReactNode {

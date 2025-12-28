@@ -6,7 +6,7 @@ import { ATMOSPHERIC_TEXTURES, SFX_CATEGORIES } from '../../data/sfxDatabase';
 import { sfx } from '../../../../lib/audio';
 import { BuilderTranslation, DesignersTranslation } from '../../../../types';
 import Tooltip from '../../../../components/Tooltip';
-import { Fader } from '@/components/ui/Fader';
+import { Fader } from '../../../../components/ui/Fader';
 
 interface AtmosphereDesignerProps {
   value: string;
@@ -15,7 +15,7 @@ interface AtmosphereDesignerProps {
   t?: BuilderTranslation;
 }
 
-// Fix: Add missing properties to DEFAULT_DESIGNER_TRANSLATION
+// Default translation fallback to prevent crashes if t is missing
 const DEFAULT_DESIGNER_TRANSLATION: DesignersTranslation = {
     titles: {
         vocal: "Vocal Style Designer",
@@ -37,9 +37,9 @@ const DEFAULT_DESIGNER_TRANSLATION: DesignersTranslation = {
         sfx: "Sound Effects",
         preview: "Live Preview",
         suggestions: "Suggestions for",
-        loadPreset: "Load Preset...",
-        polishedMix: "Polished Mix",
-        showLess: "Show Less",
+        loadPreset: "Load Module",
+        polishedMix: "Final Mastering",
+        showLess: "Hide Details",
         vocalSyncActive: "Neural Vocalist Sync Active",
         vocalSyncPyrite: "My signature style is now your foundation, Darling.",
         hintLabel: "Neural Assistant Hints",

@@ -1,8 +1,9 @@
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import AudioVisualizer from './AudioVisualizer';
 import { useAudio } from '../../contexts/AudioContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { usePromptState } from '../../contexts/PromptContext';
 
 interface BackgroundProps {
   isPyriteMode: boolean;
@@ -10,8 +11,18 @@ interface BackgroundProps {
 
 const Background: React.FC<BackgroundProps> = memo(({ isPyriteMode }) => {
   const { performanceMode } = useSettings();
+  const { inputs } = usePromptState();
   const isHighPerf = performanceMode === 'high';
   const isLowPerf = performanceMode === 'low';
+  
+  const persona = inputs.producerPersona || 'standard';
+
+  const personaColors = useMemo(() => {
+    if (persona === 'pyrite') return "bg-purple-900/10";
+    if (persona === 'shin') return "bg-red-900/10";
+    if (persona === 'twin_flames') return "bg-pink-900/10";
+    return "bg-yellow-500/5";
+  }, [persona]);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -19,20 +30,20 @@ const Background: React.FC<BackgroundProps> = memo(({ isPyriteMode }) => {
       {/* Audio Reactive Layer - Will unmount in low mode */}
       <AudioVisualizer isPyriteMode={isPyriteMode} />
 
-      {isPyriteMode ? (
+      {persona !== 'standard' ? (
         <>
-          {/* Moving Gradient Orbs (Pyrite) - Only in High Perf */}
+          {/* Moving Gradient Orbs */}
           {isHighPerf && (
             <>
-              <div className="hidden md:block absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] bg-purple-900/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[4s]" />
-              <div className="hidden md:block absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] bg-pink-900/5 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[7s]" />
-              <div className="hidden md:block absolute top-[30%] left-[30%] w-[40vw] h-[40vw] bg-indigo-900/5 rounded-full blur-[100px] animate-pulse duration-[5s]" />
+              <div className={`hidden md:block absolute top-[-20%] left-[-10%] w-[60vw] h-[60vw] ${personaColors} rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[4s]`} />
+              <div className={`hidden md:block absolute bottom-[-20%] right-[-10%] w-[70vw] h-[70vw] ${persona === 'shin' ? 'bg-red-800/5' : 'bg-pink-900/5'} rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[7s]`} />
+              <div className={`hidden md:block absolute top-[30%] left-[30%] w-[40vw] h-[40vw] ${persona === 'pyrite' ? 'bg-indigo-900/5' : 'bg-orange-900/5'} rounded-full blur-[100px] animate-pulse duration-[5s]`} />
             </>
           )}
 
           {/* Fallback Static Gradient for Low/Medium */}
           {!isHighPerf && (
-             <div className="absolute inset-0 bg-gradient-to-br from-black via-purple-950/20 to-black opacity-50" />
+             <div className={`absolute inset-0 bg-gradient-to-br from-black via-${persona === 'shin' ? 'red' : 'purple'}-950/20 to-black opacity-50`} />
           )}
           
           {/* Static Noise Overlay (Low Opacity in Low Perf) */}

@@ -1,40 +1,46 @@
 
-import { useCallback, useState } from 'react';
-import { usePromptState } from '../../../contexts/PromptContext';
-import { usePromptActions } from './usePromptActions';
+import { useCallback } from 'react';
+import { usePromptBuilder } from '../../../contexts/PromptContext';
 import { useSettings } from '../../../contexts/SettingsContext';
 import { useUI } from '../../../contexts/UIContext';
 import { usePromptGenerator } from './usePromptGenerator';
 import { useHistoryActions } from './useHistoryActions';
-import { GeneratorState, GeneratedPrompt, BatchConstraints, AgentType, AudioAnalysisResult } from '../../../types';
+import { GeneratorState, GeneratedPrompt, BatchConstraints, AudioAnalysisResult } from '../../../types';
 import { StyleComponents } from '../utils/styleBuilder';
 import { quickEnhance, generateBatchVariations } from '../../../services/ai/tools';
 import { analyzeAudioReference, analyzeYouTubeReference } from '../../../services/ai/analysis';
+import { GeminiService } from '../../../services/ai/GeminiService';
 import { translations } from '../../../translations';
 import { sfx } from '../../../lib/audio';
 
 export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
-  const { inputs, expertInputs, isExpertMode, lyricSource, useGoogleSearch, result, researchData } = usePromptState();
-  const { setResult, setState, updateInput, updateExpertInput } = usePromptActions();
-  const { lang, isPyriteMode } = useSettings();
+  const { 
+    inputs, 
+    expertInputs, 
+    isExpertMode, 
+    lyricSource, 
+    useGoogleSearch, 
+    result, 
+    researchData,
+    setResult, 
+    setState, 
+    updateInput, 
+    updateExpertInput,
+    setStatus
+  } = usePromptBuilder();
+
+  const { lang, isOverclockedMode: isPyriteMode } = useSettings();
   const { setGeneratorState, showToast } = useUI();
   const { saveToHistory } = useHistoryActions();
   
-  const [error, setError] = useState<string>('');
-  const [activeAgent, setActiveAgent] = useState<AgentType>('idle');
-
-  const { generate: apiGenerate, refine: apiRefine, state } = usePromptGenerator({ 
+  const { generate: apiGenerate, refine: apiRefine } = usePromptGenerator({ 
     onStateChange: (s) => setGeneratorState(s) 
   });
 
   const tToast = translations[lang].toast;
 
-  /**
-   * THE ALCHEMY TRIGGER
-   * Analyzes audio and populates the form with extracted DNA.
-   */
   const performAlchemyAnalysis = useCallback(async (base64: string, mimeType: string) => {
-      setError('');
+      setStatus({ activeAgent: 'researcher', error: '' });
       setGeneratorState(GeneratorState.ANALYZING);
       showToast(translations[lang].builder.audio.analyzing, 'info');
       sfx.play('click');
@@ -43,19 +49,16 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
           const analysis: AudioAnalysisResult = await analyzeAudioReference(base64, mimeType, isPyriteMode);
           applyAnalysisResult(analysis);
       } catch (e: any) {
-          setError(e.message);
+          setStatus({ activeAgent: 'idle', error: e.message });
           showToast(tToast.analysisError, 'error');
           sfx.play('error');
       } finally {
           setGeneratorState(GeneratorState.IDLE);
       }
-  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState]);
+  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState, setStatus]);
 
-  /**
-   * YOUTUBE SIGNAL INTERCEPTOR
-   */
   const performYouTubeAnalysis = useCallback(async (url: string) => {
-      setError('');
+      setStatus({ activeAgent: 'researcher', error: '' });
       setGeneratorState(GeneratorState.ANALYZING);
       showToast(translations[lang].builder.audio.analyzing, 'info');
       sfx.play('click');
@@ -64,16 +67,15 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
           const analysis: AudioAnalysisResult = await analyzeYouTubeReference(url, isPyriteMode);
           applyAnalysisResult(analysis);
       } catch (e: any) {
-          setError(e.message);
+          setStatus({ activeAgent: 'idle', error: e.message });
           showToast(tToast.analysisError, 'error');
           sfx.play('error');
       } finally {
           setGeneratorState(GeneratorState.IDLE);
       }
-  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState]);
+  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState, setStatus]);
 
   const applyAnalysisResult = (analysis: AudioAnalysisResult) => {
-      // Populate the forge with the extracted DNA
       updateInput({
           intent: `${analysis.style}. Error Margin: ${analysis.error_measure || 'Unknown'}. Confidence: ${analysis.confidence_score || 0}%`,
           mood: analysis.mood,
@@ -92,11 +94,9 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
   };
 
   const generate = useCallback(async (structuredStyle?: StyleComponents) => {
-    setError('');
+    setStatus({ activeAgent: 'researcher', error: '' });
     setResult({ result: null, researchData: null });
     setState({ variations: [], isGeneratingVariations: false });
-    
-    setActiveAgent('researcher');
     
     try {
         const generationResult = await apiGenerate(
@@ -125,17 +125,15 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
             research || null
           );
         } else if (generationResult.error) {
-            setError(generationResult.error);
+            setStatus({ activeAgent: 'idle', error: generationResult.error });
             showToast(generationResult.error, 'error');
         }
     } catch (e: any) {
         const msg = e.message || "An unexpected error occurred.";
-        setError(msg);
+        setStatus({ activeAgent: 'idle', error: msg });
         showToast(msg, 'error');
-    } finally {
-        setActiveAgent('idle');
     }
-  }, [apiGenerate, inputs, expertInputs, isExpertMode, lyricSource, isPyriteMode, useGoogleSearch, setResult, setState, showToast, tToast, saveToHistory]);
+  }, [apiGenerate, inputs, expertInputs, isExpertMode, lyricSource, isPyriteMode, useGoogleSearch, setResult, setState, showToast, tToast, saveToHistory, setStatus]);
 
   const refine = useCallback(async (instruction: string) => {
       showToast("Refining Prompt...", 'info');
@@ -159,6 +157,40 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
       }
   }, [apiRefine, result, researchData, isPyriteMode, setResult, showToast, setGeneratorState]);
 
+  const optimizeDraft = useCallback(async () => {
+    setGeneratorState(GeneratorState.OPTIMIZING);
+    setStatus({ activeAgent: 'optimizer', error: '' });
+    showToast(lang === 'pl' ? "Optymalizacja architektury..." : "Optimizing architecture...", 'info');
+    sfx.play('click');
+    
+    try {
+        const service = new GeminiService();
+        service.initialize(inputs, expertInputs, isPyriteMode, lang);
+        const optimized = await service.optimizeDraft({ ...inputs, ...expertInputs });
+        
+        // Split back to inputs and expertInputs
+        const newInputs = { ...inputs };
+        const newExpert = { ...expertInputs };
+        
+        Object.keys(inputs).forEach(key => {
+            if ((optimized as any)[key] !== undefined) (newInputs as any)[key] = (optimized as any)[key];
+        });
+        Object.keys(expertInputs).forEach(key => {
+            if ((optimized as any)[key] !== undefined) (newExpert as any)[key] = (optimized as any)[key];
+        });
+
+        updateInput(newInputs);
+        updateExpertInput(newExpert);
+        showToast(lang === 'pl' ? "Architektura zoptymalizowana" : "Architecture Optimized", 'success');
+        sfx.play('success');
+    } catch (e) {
+        showToast("Optimization failed.", 'error');
+    } finally {
+        setGeneratorState(GeneratorState.IDLE);
+        setStatus({ activeAgent: 'idle' });
+    }
+  }, [inputs, expertInputs, isPyriteMode, lang, updateInput, updateExpertInput, showToast, setGeneratorState, setStatus]);
+
   const enhance = useCallback(async (field: 'tags' | 'style', inputStr: string) => {
     if (!result) return;
     showToast("Enhancing...", 'info');
@@ -174,7 +206,7 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
     }
   }, [result, researchData, setResult, showToast, setGeneratorState]);
 
-  const updateResult = useCallback((partial: Partial<GeneratedPrompt>) => {
+  const updateResultWrapper = useCallback((partial: Partial<GeneratedPrompt>) => {
       if (!result) return;
       setResult({ result: { ...result, ...partial }, researchData: researchData });
       showToast("Updated", 'success');
@@ -205,14 +237,11 @@ export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
     generate,
     refine,
     enhance,
-    updateResult,
+    updateResult: updateResultWrapper,
     generateVariations,
     applyVariation,
-    performAlchemyAnalysis, // Export the audio analyzer
-    performYouTubeAnalysis, // Export the youtube analyzer
-    state,
-    error,
-    activeAgent,
-    researchData
+    performAlchemyAnalysis,
+    performYouTubeAnalysis,
+    optimizeDraft,
   };
 };

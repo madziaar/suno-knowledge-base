@@ -84,8 +84,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
       onGenerate(structuredStyle);
   }, [inputs, expertInputs, onGenerate]);
 
-  const isGenerating = state === GeneratorState.GENERATING || state === GeneratorState.RESEARCHING;
-  const isAnalyzing = state === GeneratorState.ANALYZING;
+  const isGenerating = state === GeneratorState.GENERATING || state === GeneratorState.RESEARCHING || state === GeneratorState.ANALYZING || state === GeneratorState.OPTIMIZING;
 
   return (
     <div className="relative flex flex-col h-full space-y-8 pb-32">
@@ -153,7 +152,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
                   ))}
               </div>
 
-              <AlchemyScanner isAnalyzing={isAnalyzing} fileName={alchemyFileName} isPyriteMode={isPyriteMode} />
+              <AlchemyScanner isAnalyzing={state === GeneratorState.ANALYZING} fileName={alchemyFileName} isPyriteMode={isPyriteMode} />
               
               {alchemyMode === 'mashup' ? (
                   <div className="space-y-6">
@@ -196,7 +195,7 @@ const ConfigForm: React.FC<ConfigFormProps> = ({
                           onAudioSelected={(base64, mime) => handleAudioSelected(base64, mime, "Spectral Signal")} 
                           onUrlSelected={handleUrlSelected}
                           onClear={() => { setAlchemyFileName(null); onClear(); }} 
-                          isAnalyzing={isAnalyzing} 
+                          isAnalyzing={state === GeneratorState.ANALYZING} 
                           t={t} 
                           isPyriteMode={isPyriteMode} 
                       />

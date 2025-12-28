@@ -41,6 +41,7 @@ export interface Persona {
   id: string;
   name: string;
   prompt: string;
+  avatar?: string;
 }
 
 // --- GENRE TEMPLATES ---

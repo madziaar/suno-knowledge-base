@@ -2,7 +2,6 @@
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { Loader2, Zap, AlertTriangle, Search, BrainCircuit, ShieldCheck, Edit3, Globe, Activity, CheckCircle2, Terminal, Skull, Flame } from 'lucide-react';
 import { GeneratorState, AgentType, GroundingChunk, ProducerPersona } from '../../../../types';
-import GlassPanel from '../../../../components/shared/GlassPanel';
 import { cn } from '../../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,8 +25,8 @@ const LOGS_BY_PERSONA: Record<string, string[]> = {
 const THEMES: Record<string, { bg: string, border: string, text: string, accent: string, icon: any }> = {
     standard: { bg: "bg-zinc-950/95", border: "border-yellow-500/20", text: "text-yellow-500", accent: "bg-yellow-500", icon: Activity },
     pyrite: { bg: "bg-[#050505]/95", border: "border-purple-500/30", text: "text-purple-400", accent: "bg-purple-600", icon: Flame },
-    shin: { bg: "bg-[#000510]/95", border: "border-cyan-500/30", text: "text-cyan-400", accent: "bg-cyan-600", icon: Skull },
-    twin_flames: { bg: "bg-[#1a0505]/95", border: "border-orange-500/30", text: "text-orange-400", accent: "bg-orange-600", icon: Zap }
+    shin: { bg: "bg-[#000000]/95", border: "border-red-600/40", text: "text-red-500", accent: "bg-red-600", icon: Skull },
+    twin_flames: { bg: "bg-[#100505]/95", border: "border-pink-500/30", text: "text-pink-400", accent: "bg-gradient-to-r from-purple-600 to-red-600", icon: Zap }
 };
 
 const StatusLog: React.FC<StatusLogProps> = memo(({ state, activeAgent = 'idle', researchData, errorMessage, producerPersona = 'standard' }) => {

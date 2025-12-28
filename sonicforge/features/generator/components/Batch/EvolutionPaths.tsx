@@ -1,7 +1,7 @@
 
 import React, { memo } from 'react';
 import { Skull, Zap, Wind, Cpu, Sparkles, Flame, Waves, Radio } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../../lib/utils';
 
 export interface EvolutionPath {
   id: string;

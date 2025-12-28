@@ -2,11 +2,11 @@
 import React, { useState, useCallback, memo } from 'react';
 import { Wand2, Ghost, Sparkles, MessageSquare, Maximize2, Zap, Target } from 'lucide-react';
 import SmartLyricEditor from '../SmartLyricEditor';
-import { cn } from '@/lib/utils';
-import { sfx } from '@/lib/audio';
-import { usePromptState } from '@/contexts/PromptContext';
-import { useSettings } from '@/contexts/SettingsContext';
-import { translations } from '@/translations';
+import { cn } from '../../../../lib/utils';
+import { sfx } from '../../../../lib/audio';
+import { usePromptState } from '../../../../contexts/PromptContext';
+import { useSettings } from '../../../../contexts/SettingsContext';
+import { translations } from '../../../../translations';
 
 interface LyricalArchitectProps {
   isPyriteMode: boolean;

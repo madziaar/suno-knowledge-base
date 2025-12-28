@@ -2,6 +2,7 @@
   "name": "Sonic Forge V5",
   "description": "An advanced, AI-powered music prompt generator for Suno V4.5. Features deep reasoning, real-time research, and advanced architectural guidance.",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera"
   ]
 }

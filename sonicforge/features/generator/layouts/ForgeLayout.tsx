@@ -5,7 +5,7 @@ import ResultsDisplay from '../components/ResultsDisplay';
 import { usePromptState } from '../../../contexts';
 import { GeneratorState, GeneratedPrompt, BatchConstraints, BuilderTranslation, ToastTranslation, AgentType, GroundingChunk } from '../../../types';
 import { StyleComponents } from '../utils/styleBuilder';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../lib/utils';
 import StatusLog from '../components/StatusLog/index';
 
 interface ForgeLayoutProps {

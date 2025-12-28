@@ -1,7 +1,7 @@
 
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '../../lib/utils';
 
 interface TapeMachineProps {
   isActive: boolean;
@@ -11,7 +11,8 @@ interface TapeMachineProps {
 
 const TapeMachine: React.FC<TapeMachineProps> = memo(({ isActive, isPyriteMode, speed = 1 }) => {
   const reelRotation = isActive ? { rotate: 360 } : { rotate: 0 };
-  const reelTransition = { duration: 3 / speed, repeat: Infinity, ease: "linear" };
+  // Fix: Cast 'ease' value to 'as const' to avoid string type mismatch in Framer Motion transitions
+  const reelTransition = { duration: 3 / speed, repeat: Infinity, ease: "linear" as const };
 
   return (
     <div className="relative w-full h-16 flex items-center justify-between px-6 bg-black/40 rounded-xl border border-white/5 overflow-hidden group">

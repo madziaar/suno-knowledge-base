@@ -7,7 +7,8 @@ import { useUIState, useUIDispatch } from '../../contexts/UIContext';
 import { translations } from '../../translations';
 
 const MobileDock: React.FC = memo(() => {
-  const { lang, isPyriteMode, performanceMode } = useSettingsState();
+  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
+  const { lang, isOverclockedMode: isPyriteMode, performanceMode } = useSettingsState();
   const { activeTab } = useUIState();
   const { setActiveTab } = useUIDispatch();
   const t = translations[lang];

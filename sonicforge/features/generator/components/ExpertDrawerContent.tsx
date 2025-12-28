@@ -1,7 +1,7 @@
 
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { Layers, BookOpen, UserCog, Save } from 'lucide-react';
-import { ExpertInputs, SongConcept, BuilderTranslation, SongSection, ToastTranslation, DialogTranslation } from '../../../types';
+import { Layers, BookOpen, UserCog, Save, Terminal, Zap } from 'lucide-react';
+import { ExpertInputs, SongConcept, BuilderTranslation, SongSection, ToastTranslation, DialogTranslation, ProducerPersona } from '../../../types';
 import ExpertGlobalPanel from './ExpertGlobalPanel';
 import StructureBuilder from './StructureBuilder';
 import { cn } from '../../../lib/utils';
@@ -12,9 +12,11 @@ import VocalStyleDesigner from './inputs/VocalStyleDesigner';
 import SpecialTechniquesPanel from './inputs/SpecialTechniquesPanel';
 import InstrumentDesigner from './inputs/InstrumentDesigner';
 import AtmosphereDesigner from './inputs/AtmosphereDesigner';
+// Fix: Import missing GlassPanel component used in the layout
+import GlassPanel from '../../../components/shared/GlassPanel';
 import CustomSelect, { SelectOption } from '../../../components/shared/CustomSelect';
 import { useSettings } from '../../../contexts/SettingsContext';
-import { usePersonas } from '../../../hooks';
+import { usePersonas } from '../../../hooks/usePersonas';
 import Tooltip from '../../../components/Tooltip';
 import PersonaSelector from '../../../components/shared/PersonaSelector';
 
@@ -50,7 +52,6 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
   const handleApplyArc = (arcId: string) => {
     const arc = STORY_ARCS.find(a => a.id === arcId);
     if (arc) {
-      // Deep copy to ensure new IDs
       const newStructure = arc.structure.map(s => ({
         ...s,
         id: crypto.randomUUID()
@@ -63,25 +64,31 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
   const handleSavePersona = useCallback(() => {
     const prompt = expertInputs.customPersona?.trim();
     if (!prompt) {
-      showToast(tToast.personaEmpty || "Persona prompt is empty.", 'info');
+      showToast(tToast.personaEmpty || "Instruction matrix is empty.", 'info');
       return;
     }
-    const name = window.prompt(tDialog.savePersonaName || "Enter a name for this persona:");
+    const name = window.prompt(tDialog.savePersonaName || "Name this specialized intelligence:");
     if (name && name.trim()) {
       savePersona(name.trim(), prompt);
-      showToast(tToast.personaSaved || "Persona Saved", 'success');
+      showToast(tToast.personaSaved || "Agent Committed to Archive", 'success');
       sfx.play('success');
     }
   }, [expertInputs.customPersona, savePersona, showToast, tDialog.savePersonaName, tToast.personaSaved, tToast.personaEmpty]);
   
   const handleLoadPersona = useCallback((prompt: string) => {
     setExpertInputs(p => ({ ...p, customPersona: prompt }));
-    setIsPersonaManagerOpen(false);
-    showToast(tToast.personaLoaded || "Persona Loaded", 'success');
-    sfx.play('success');
+    showToast(tToast.personaLoaded || "Neural Sync Established", 'success');
+    sfx.play('secret');
   }, [setExpertInputs, showToast, tToast.personaLoaded]);
 
-  // Transform Story Arcs to Select Options using localized names
+  const handlePersonaChange = useCallback((persona: ProducerPersona, customPrompt?: string) => {
+      setInputs(prev => ({ ...prev, producerPersona: persona }));
+      if (customPrompt) {
+          setExpertInputs(prev => ({ ...prev, customPersona: customPrompt }));
+      }
+      sfx.play('click');
+  }, [setInputs, setExpertInputs]);
+
   const arcOptions: SelectOption[] = useMemo(() => {
       return STORY_ARCS.map(arc => ({
           label: lang === 'pl' ? arc.name.pl : arc.name.en,
@@ -91,12 +98,26 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
 
   return (
     <div className="space-y-6">
-      <ExpertGlobalPanel 
-        expertInputs={expertInputs}
-        setExpertInputs={setExpertInputs}
-        isPyriteMode={isPyriteMode}
-        t={t}
-      />
+      <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+              <ExpertGlobalPanel 
+                expertInputs={expertInputs}
+                setExpertInputs={setExpertInputs}
+                isPyriteMode={isPyriteMode}
+                t={t}
+              />
+          </div>
+          <div className="md:w-64 space-y-4">
+              <GlassPanel layer="card" variant={isPyriteMode ? 'pyrite' : 'default'} className="p-4">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Active Producer</label>
+                  <PersonaSelector 
+                    value={inputs.producerPersona || 'standard'} 
+                    onChange={handlePersonaChange}
+                    className="w-full"
+                  />
+              </GlassPanel>
+          </div>
+      </div>
       
       <VocalStyleDesigner 
         value={expertInputs.vocalStyle || ''}
@@ -130,24 +151,35 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
               value={inputs.intent}
               onChange={(e) => setInputs(p => ({ ...p, intent: e.target.value }))}
               className={cn(
-                "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 text-zinc-200 outline-none h-24 resize-none text-sm placeholder:text-zinc-600",
+                "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 text-zinc-200 outline-none h-32 resize-none text-sm placeholder:text-zinc-600 font-mono",
                 activeBorder
               )}
               placeholder={t.conceptPlaceholder}
             />
           </div>
-          <div>
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2 flex items-center justify-between">
+          <div className="flex flex-col">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] block mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                    <UserCog className="w-3 h-3" />
-                    {t.expert.customPersona}
-                    <Tooltip content="Overrides the AI's system prompt (e.g. 'You are a jazz expert'). NOT a Suno Vocal Persona." />
+                    <Terminal className="w-3 h-3" />
+                    Behavioral Instruction Matrix
+                    <Tooltip content="Directly overrides the system prompt for the generation engine. Define specialized logic here." />
                 </span>
                 <div className="flex gap-1">
-                    <button onClick={handleSavePersona} title={t.expert.savePersona} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors">
+                    <button 
+                        onClick={handleSavePersona} 
+                        title="Archive Current Logic" 
+                        className={cn(
+                            "p-1.5 rounded-lg border border-white/5 transition-all hover:border-white/10",
+                            isPyriteMode ? "text-purple-400 hover:text-purple-200" : "text-yellow-500 hover:text-yellow-200"
+                        )}
+                    >
                         <Save className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => setIsPersonaManagerOpen(true)} title={t.expert.loadPersona} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors">
+                    <button 
+                        onClick={() => setIsPersonaManagerOpen(true)} 
+                        title="Open Identity Archive" 
+                        className="p-1.5 rounded-lg border border-white/5 transition-all hover:bg-white/5 text-zinc-400 hover:text-white"
+                    >
                         <BookOpen className="w-3.5 h-3.5" />
                     </button>
                 </div>
@@ -156,10 +188,10 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
               value={expertInputs.customPersona || ''}
               onChange={(e) => setExpertInputs(p => ({ ...p, customPersona: e.target.value }))}
               className={cn(
-                "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 text-zinc-200 outline-none h-24 resize-none text-sm font-mono placeholder:text-zinc-600",
+                "w-full bg-black/40 border border-zinc-800 rounded-xl p-4 text-xs md:text-sm text-zinc-300 outline-none flex-1 min-h-[128px] resize-none font-mono placeholder:text-zinc-700 leading-relaxed",
                 activeBorder
               )}
-              placeholder={t.expert.customPersonaPlaceholder}
+              placeholder="e.g. You are a cynical industrial rock producer who hates commercial pop..."
             />
           </div>
       </div>

@@ -1,15 +1,15 @@
-
 import React, { useCallback, useMemo, Suspense, useState } from 'react';
 import { GeneratorState } from '../../types';
 import { translations } from '../../translations';
 import { exportBatchAsText } from '../../lib/export-utils';
-import { useSettings, useUI, useHistory, usePrompt } from '../../contexts';
+import { useSettings, useUI, useHistory, usePromptBuilder } from '../../contexts';
 import ExportPanel from './components/ExportPanel';
 import { ForgeLayout } from './layouts/ForgeLayout';
 import { StudioLayout } from './layouts/StudioLayout';
 import { useKeyboardShortcuts } from '../../lib/utils';
 import { generateRandomConcept } from './utils';
-import { usePromptActions, useGenerationWorkflow, useHistoryActions } from './hooks';
+import { useGenerationWorkflow } from './hooks/useGenerationWorkflow';
+import { useHistoryActions } from './hooks/useHistoryActions';
 
 const PyriteChat = React.lazy(() => import('../chat/PyriteChat'));
 
@@ -18,24 +18,36 @@ interface PromptBuilderProps {
 }
 
 const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => {
-  const { lang, isPyriteMode } = useSettings();
+  const { lang, isOverclockedMode: isPyriteMode } = useSettings();
   const { showToast, setGeneratorState, generatorState: globalGeneratorState } = useUI();
   const { history } = useHistory();
   
-  const { inputs, expertInputs, isExpertMode, result, variations } = usePrompt();
-  const { updateInput, updateExpertInput, reset } = usePromptActions();
+  const { 
+    inputs, 
+    expertInputs, 
+    isExpertMode, 
+    result, 
+    variations,
+    updateInput,
+    updateExpertInput,
+    reset,
+    activeAgent,
+    researchData,
+    error,
+    isGeneratingVariations,
+    // Fix: Removed updateResult from usePromptBuilder as it belongs to useGenerationWorkflow
+    setResult,
+    setState
+  } = usePromptBuilder();
 
   const { 
     generate, 
     refine, 
     enhance, 
-    updateResult, 
+    // Fix: Destructured updateResult here where it is actually provided
+    updateResult,
     generateVariations, 
     applyVariation, 
-    state: workflowState, 
-    error, 
-    activeAgent, 
-    researchData 
   } = useGenerationWorkflow(viewMode as 'forge' | 'studio');
   
   const { loadFromHistory } = useHistoryActions();
@@ -43,7 +55,6 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
   const [isExportPanelOpen, setIsExportPanelOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
 
-  // Use safer translation lookup with explicit fallbacks
   const currentTranslations = useMemo(() => translations[lang] || translations['en'], [lang]);
   const t = currentTranslations?.builder || translations['en'].builder;
   const tToast = currentTranslations?.toast || translations['en'].toast;

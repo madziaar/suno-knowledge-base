@@ -1,8 +1,15 @@
 
 import { Platform } from './core';
 
-export type AgentType = 'idle' | 'researcher' | 'generator' | 'critic' | 'refiner';
+export type AgentType = 'idle' | 'researcher' | 'generator' | 'critic' | 'refiner' | 'optimizer';
 export type ProducerPersona = 'standard' | 'pyrite' | 'shin' | 'twin_flames' | 'custom';
+
+// Fix: Added ModifierCategory interface used in expert protocol data
+export interface ModifierCategory {
+  id: string;
+  name: string;
+  options: string[];
+}
 
 export interface SongSection {
   id: string;
@@ -106,6 +113,8 @@ export interface PromptQualityScore {
     completeness: number;
     specificity: number;
     balance: number;
+    // Fix: Added coherence field to match sunoValidator output
+    coherence: number;
   };
   grade: string;
   issues: string[];

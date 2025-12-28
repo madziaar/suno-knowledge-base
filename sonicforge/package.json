@@ -1,29 +1,40 @@
+
 {
   "name": "sonic-forge-v5",
   "private": true,
-  "version": "0.0.0",
+  "version": "7.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.0.0",
     "lucide-react": "^0.554.0",
     "lz-string": "^1.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-window": "^1.8.10",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^3.4.0",
-    "zod": "^3.22.4",
-    "framer-motion": "^11.0.0"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/react-window": "^1.8.8",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^9.0.0",
+    "postcss": "^8.4.38",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5",
+    "vite": "^6.0.0"
   }
 }

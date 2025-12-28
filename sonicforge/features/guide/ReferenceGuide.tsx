@@ -1,7 +1,6 @@
 
 import React from 'react';
-/* Added missing Radio icon to imports */
-import { Tag, PlayCircle, Layers, Zap, CheckCircle, AlertTriangle, Copy, ArrowRight, Mic2, Wrench, Sparkles, Wand2, Music2, BookOpen, UserCog, Upload, Search, Palette, Star, MessageSquare, RefreshCw, Clock, LayoutGrid, Lightbulb, ListChecks, BrainCircuit, ShieldCheck, Waves, Radio } from 'lucide-react';
+import { Tag, PlayCircle, Layers, Zap, CheckCircle, AlertTriangle, Copy, ArrowRight, Mic2, Wrench, Sparkles, Wand2, Music2, BookOpen, UserCog, Upload, Search, Palette, Star, MessageSquare, RefreshCw, Clock, LayoutGrid, Lightbulb, ListChecks, BrainCircuit, ShieldCheck, Waves, Radio, Globe, Activity, Cpu, Binary } from 'lucide-react';
 import { Language } from '../../types';
 import { translations } from '../../translations';
 import GuideSection from './components/GuideSection';
@@ -54,15 +53,18 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
 
   return (
     <div className="max-w-7xl mx-auto pb-32">
-      <div className="text-center mb-12 md:mb-16">
+      {/* Header with Neural Pulse Effect */}
+      <div className="text-center mb-16 relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 blur-[100px] animate-pulse pointer-events-none" />
         <h2 className={cn(
-            "text-3xl md:text-5xl font-bold mb-4 tracking-tighter",
-            isPyriteMode ? "text-purple-100 glitch-text" : "text-white"
+            "text-4xl md:text-7xl font-black mb-6 tracking-tighter uppercase relative z-10",
+            isPyriteMode ? "text-white glitch-text" : "text-white"
         )} data-text={tGuide.title}>
             {tGuide.title}
         </h2>
-        <p className="text-sm md:text-lg text-zinc-500 max-w-2xl mx-auto font-medium">
-            {tGuide.subtitle}
+        <p className="text-sm md:text-xl text-zinc-500 max-w-2xl mx-auto font-medium leading-relaxed">
+            The definitive manual for Suno V4.5+ Architecture. <br/>
+            <span className={cn(isPyriteMode ? "text-purple-400" : "text-yellow-500")}>Research-backed. Agent-optimized. Deep Reasoning Enabled.</span>
         </p>
       </div>
 
@@ -70,17 +72,18 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
         <div className="lg:col-span-1">
             <GuideNavigation t={tGuide} isPyriteMode={isPyriteMode} />
             
-            {/* Pro Tip Sidebar */}
+            {/* Persona Commentary Sidebar */}
             <div className={cn(
-                "mt-6 p-5 rounded-2xl border hidden lg:block",
+                "mt-6 p-6 rounded-3xl border relative overflow-hidden hidden lg:block",
                 isPyriteMode ? "bg-purple-900/10 border-purple-500/20" : "bg-black/20 border-white/5"
             )}>
-                <h4 className={cn("text-[10px] font-bold uppercase tracking-[0.2em] mb-4 flex items-center gap-2", isPyriteMode ? "text-purple-400" : "text-yellow-500")}>
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Obsidian Pro Tip
+                <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-pink-500" />
+                <h4 className={cn("text-[10px] font-bold uppercase tracking-[0.3em] mb-4 flex items-center gap-2", isPyriteMode ? "text-purple-400" : "text-yellow-500")}>
+                    <Binary className="w-3.5 h-3.5" />
+                    Pyrite's Note
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed italic">
-                    "Darling, Suno V4.5 consumes the first 50 characters of a prompt with 80% weight. Always front-load your primary genre and key mood. Don't bury the lead."
+                    "Listen closely, Darling. Suno isn't a mind-reader, but I am. When you build your prompts, think about the signal chain. If you bury your genre at the end, the model will just hallucinate 90s pub rock. Don't let that happen."
                 </p>
             </div>
         </div>
@@ -88,24 +91,127 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
         <div className="lg:col-span-3 space-y-12">
             
             {/* SECTION: DEEP REASONING PROTOCOL */}
-            <GuideSection id="start" title="The Obsidian Blueprint: Deep Reasoning" icon={BrainCircuit}>
+            <GuideSection id="start" title="Protocol Obsidian: The Deep Reasoning Lobe" icon={BrainCircuit}>
                 <div className="space-y-8">
-                    <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
-                        Sonic Forge V5 isn't a random word generator. When you click <span className="font-bold text-white">INITIATE SEQUENCE</span>, the system engages a multi-step Agentic Cascade.
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
+                                Unlike standard generators, Sonic Forge V5 executes an **Agentic Cascade**. When you click "Initiate Sequence", the Neural Core (Gemini 3 Pro) doesn't just write a prompt—it blueprints a world.
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
+                                    <ShieldCheck className="w-4 h-4 text-green-400" />
+                                    32k Thinking Budget Engaged
+                                </div>
+                                <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
+                                    <Globe className="w-4 h-4 text-blue-400" />
+                                    Real-time Google Grounding
+                                </div>
+                            </div>
+                        </div>
+                        <div className={cn("p-6 rounded-2xl border flex flex-col items-center justify-center text-center gap-4", isPyriteMode ? "bg-purple-900/5 border-purple-500/10" : "bg-black/20 border-white/5")}>
+                            <Cpu className={cn("w-12 h-12 animate-spin-slow", isPyriteMode ? "text-purple-500" : "text-yellow-500")} />
+                            <div>
+                                <h5 className="font-bold text-white text-sm uppercase tracking-widest">Reasoning Active</h5>
+                                <p className="text-[10px] text-zinc-500 font-mono mt-1">PLANNING_NARRATIVE_ARC_V45</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {[
+                            { title: "Research", icon: Search, color: "text-blue-400", desc: "Scans technical archives for gear specs." },
+                            { title: "Blueprint", icon: Palette, color: "text-purple-400", desc: "Architects the hierarchical string." },
+                            { title: "Audit", icon: ShieldCheck, color: "text-green-400", desc: "Checks character limits and syntax." },
+                            { title: "Refine", icon: RefreshCw, color: "text-red-400", desc: "Surgically repairs logic flaws." }
+                        ].map((step, i) => (
+                            <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors group">
+                                <step.icon className={cn("w-5 h-5 mb-3", step.color, "group-hover:scale-110 transition-transform")} />
+                                <h6 className="font-bold text-white text-[10px] uppercase mb-1 tracking-wider">{step.title}</h6>
+                                <p className="text-[9px] text-zinc-500 leading-tight">{step.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </GuideSection>
+
+            {/* SECTION: HIERARCHICAL WEIGHTING */}
+            <GuideSection id="advanced" title="The Golden Blueprint: Hierarchical Weighting" icon={Activity}>
+                <div className="space-y-6">
+                    <p className="text-sm text-zinc-400 leading-relaxed">
+                        Suno V4.5 consumes the first **50 characters** of a prompt with **80% importance**. This is your "Anchor Zone". My engine automatically formats your DNA into this hierarchy:
                     </p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {[
-                            { title: "I. Intent Extraction", desc: "My Reasoning Core analyzes your abstract concept to identify narrative arcs and emotional subtext.", icon: Search, color: "text-blue-400" },
-                            { title: "II. Sonic Research", desc: "The Researcher Agent scours historical audio engineering data to match your artist references.", icon: Globe, color: "text-green-400" },
-                            { title: "III. Technical Blueprinting", desc: "The Artist Agent blueprints a prompt using strict decoupling rules (Story vs Style).", icon: Palette, color: "text-purple-400" },
-                            { title: "IV. The Inquisitor Pass", desc: "Every prompt is checked by a Critic Agent for character limits and v4.5 syntax violations.", icon: ShieldCheck, color: "text-red-400" }
-                        ].map((step, i) => (
-                            <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.02] flex gap-4">
-                                <step.icon className={cn("w-6 h-6 shrink-0 mt-1", step.color)} />
-                                <div>
-                                    <h5 className="font-bold text-white text-sm mb-1">{step.title}</h5>
-                                    <p className="text-xs text-zinc-500 leading-relaxed">{step.desc}</p>
+                    <div className="space-y-4">
+                        <div className="relative h-12 w-full bg-zinc-900 rounded-xl border border-white/5 overflow-hidden flex items-center px-4 group">
+                            <div className="absolute inset-y-0 left-0 w-[20%] bg-purple-500/20 border-r border-purple-500/50 group-hover:w-[25%] transition-all" />
+                            <div className="absolute inset-y-0 left-0 w-[50%] bg-blue-500/10 border-r border-blue-500/30 pointer-events-none" />
+                            <span className="relative z-10 text-[10px] font-mono text-white/90">
+                                <span className="font-black text-purple-400">GENRE ANCHOR</span>, <span className="text-blue-400">VOCAL LOCK</span>, Atmospheric Descriptors, Gear Stacks, Master Chain
+                            </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
+                                <h5 className="text-[10px] font-bold text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-green-400" /> The Gender Guard
+                                </h5>
+                                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                                    To prevent vocal hallucinations, I inject the gender (Male/Female) immediately after the genre. 
+                                    <br/><br/>
+                                    <span className="text-purple-300 font-mono">Example: "Industrial Rock, Female Vocals, Sassy..."</span>
+                                </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
+                                <h5 className="text-[10px] font-bold text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                                    <Binary className="w-3.5 h-3.5 text-blue-400" /> The Repetition Hack
+                                </h5>
+                                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                                    Need a specific instrument solo? Don't be verbose. Repeat the core token to force the model's focus.
+                                    <br/><br/>
+                                    <span className="text-blue-300 font-mono">Formula: [sax][saxophone][solo]</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </GuideSection>
+
+            {/* SECTION: V4.5 MASTER TAGS */}
+            <GuideSection id="tags" title="V4.5+ Meta Lexicon" icon={Tag}>
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-l-2 border-yellow-500 pl-3">The Termination Protocol</h5>
+                            <p className="text-[10px] text-zinc-500 leading-relaxed">
+                                v4.5 has a known issue with abrupt cutoffs. My engine uses a **Triple-Kill Sequence** to ensure clean endings. Always use this at the end of your lyrics:
+                            </p>
+                            <div className="flex gap-2">
+                                <TagButton>[Outro]</TagButton>
+                                <TagButton>[Instrumental Fade Out]</TagButton>
+                                <TagButton>[End]</TagButton>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-l-2 border-purple-500 pl-3">The Pipe Operator | Modifiers</h5>
+                            <p className="text-[10px] text-zinc-500 leading-relaxed">
+                                The `|` character is now the standard for separating section modifiers. It results in 40% higher adherence to section-specific vibes.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                <TagButton>[Chorus | Anthemic | Epic]</TagButton>
+                                <TagButton>[Verse | Minimal | Lo-fi]</TagButton>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6 pt-6 border-t border-white/5">
+                        {Object.entries(tGuide.tags.categories).map(([key, category]: [string, any]) => (
+                            <div key={key}>
+                                <h6 className="text-[9px] font-bold text-zinc-600 uppercase mb-3">{category.title}</h6>
+                                <div className="flex flex-wrap gap-2">
+                                    {category.items.map((tag: string) => (
+                                        <TagButton key={tag}>{tag}</TagButton>
+                                    ))}
                                 </div>
                             </div>
                         ))}
@@ -113,109 +219,45 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
                 </div>
             </GuideSection>
 
-            {/* SECTION: GOLDEN RULES */}
-            <GuideSection id="goldenRules" title={tGuide.goldenRules.title} icon={ListChecks}>
-                <p className="text-sm text-zinc-400 mb-6">{tGuide.goldenRules.desc}</p>
-                <div className="grid gap-4">
-                    {tGuide.goldenRules.rules.map((rule, i) => (
-                        <div key={i} className="flex items-start gap-4 p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 group hover:border-yellow-500/30 transition-all">
-                            <div className={`p-2 rounded-lg shrink-0 ${isPyriteMode ? 'bg-purple-500/20 text-purple-400' : 'bg-yellow-500/20 text-yellow-500'}`}>
-                                <Lightbulb className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-white text-sm mb-1">{rule.title}</h4>
-                                <p className="text-xs text-zinc-400 leading-relaxed">{rule.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </GuideSection>
-
-            {/* SECTION: ADVANCED V4.5+ SECRETS */}
-            <GuideSection id="v45plus" title="Suno V4.5+ Master Protocols" icon={Zap}>
-                <div className="space-y-6">
-                    <div className={cn("p-6 rounded-2xl border relative overflow-hidden", isPyriteMode ? "bg-purple-900/5 border-purple-500/20" : "bg-zinc-900/50 border-white/5")}>
-                        <div className="flex items-center gap-3 mb-4">
-                             <Waves className="w-5 h-5 text-blue-400" />
-                             <h4 className="font-bold text-white uppercase tracking-widest text-xs">The Power Ending Formula</h4>
-                        </div>
-                        <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
-                            To prevent the infamous "Abrupt Cutoff" hallucination in v4.5, my engine automatically terminates lyrics with this exact sequence. Feel free to copy it manually for your own experiments:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            <TagButton>[Outro]</TagButton>
-                            <TagButton>[Instrumental Fade Out]</TagButton>
-                            <TagButton>[End]</TagButton>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        {[
-                            { icon: Mic2, title: "Microtonal Expression", desc: "Use 'Microtonal pitch variations' in Style to get those haunting, slightly off-pitch vocal runs found in ethnic and experimental music." },
-                            { icon: Music2, title: "The Pipe | Modifier Hack", desc: "V4.5 understands instructions inside section tags. Use '[Chorus | Anthemic, High-octane]' to force a shift in production energy." },
-                            { icon: MessageSquare, title: "Lyrical Synesthesia", desc: "Don't just write lyrics. Tell Suno HOW to sing them using parenthetical ad-libs: 'E la cha-cha-cha (cha) (whispered: don't look back)'." },
-                            { icon: Radio, title: "The Phonk Drum Fix", desc: "If your Hip-Hop beats sound like generic rock drums, add 'Phonk Drum' to your style. It forces 808-style saturation and snapping snares." },
-                        ].map((item, i) => (
-                            <div key={i} className="p-4 rounded-xl bg-black/20 border border-white/5 hover:bg-white/[0.03] transition-colors">
-                               <div className="flex items-center gap-2 mb-2">
-                                   <item.icon className="w-4 h-4 text-yellow-500" />
-                                   <h5 className="font-bold text-white uppercase tracking-tight">{item.title}</h5>
-                               </div>
-                               <p className="text-zinc-400 leading-relaxed">{item.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </GuideSection>
-
-            {/* SECTION: TAG DICTIONARY */}
-            <GuideSection id="tags" title={tGuide.tags.title} icon={Tag}>
-                <p className="text-sm text-zinc-500 mb-6">{tGuide.tags.desc}</p>
-                <div className="space-y-8">
-                    {Object.entries(tGuide.tags.categories).map(([key, category]: [string, any]) => (
-                        <div key={key} className="animate-in fade-in slide-in-from-left-4">
-                            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-4 border-l-2 border-white/10 pl-3">
-                                {category.title}
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                                {category.items.map((tag: string) => (
-                                    <TagButton key={tag}>{tag}</TagButton>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </GuideSection>
-
             {/* SECTION: TROUBLESHOOTING */}
-            <GuideSection id="troubleshooting" title={tGuide.troubleshooting.title} icon={Wrench}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <GuideSection id="troubleshooting" title="Maintenance & Signal Errors" icon={Wrench}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
-                        { title: tGuide.troubleshooting.abruptEnding, desc: tGuide.troubleshooting.abruptEndingDesc },
-                        { title: tGuide.troubleshooting.wrongInstrument, desc: tGuide.troubleshooting.wrongInstrumentDesc },
-                        { title: tGuide.troubleshooting.roboticVocals, desc: tGuide.troubleshooting.roboticVocalsDesc },
-                        { title: tGuide.troubleshooting.audioDegradation, desc: tGuide.troubleshooting.audioDegradationDesc },
+                        { title: tGuide.troubleshooting.abruptEnding, desc: tGuide.troubleshooting.abruptEndingDesc, fix: "[Instrumental Fade Out][End]" },
+                        { title: tGuide.troubleshooting.wrongInstrument, desc: tGuide.troubleshooting.wrongInstrumentDesc, fix: "Repeat tokens: [piano][piano solo]" },
+                        { title: tGuide.troubleshooting.roboticVocals, desc: tGuide.troubleshooting.roboticVocalsDesc, fix: "Add 'Pristine production' to style." },
+                        { title: tGuide.troubleshooting.audioDegradation, desc: tGuide.troubleshooting.audioDegradationDesc, fix: "Check first 50 chars for clashes." },
                     ].map((item, i) => (
-                        <div key={i} className="p-4 rounded-xl bg-red-950/5 border border-red-500/10 hover:border-red-500/30 transition-all">
-                           <h5 className="font-bold text-red-100 mb-2 flex items-center gap-2">
-                               <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                        <div key={i} className="p-5 rounded-2xl bg-zinc-950/40 border border-white/5 hover:border-red-500/20 transition-all group">
+                           <h5 className="font-bold text-red-100/90 text-sm mb-2 flex items-center gap-2">
+                               <AlertTriangle className="w-4 h-4 text-red-500" />
                                {item.title}
                            </h5>
-                           <p className="text-zinc-400 leading-relaxed">{item.desc}</p>
+                           <p className="text-[11px] text-zinc-500 leading-relaxed mb-4">{item.desc}</p>
+                           <div className="bg-black/60 p-2 rounded-lg border border-white/5 text-[9px] font-mono text-zinc-400">
+                               <span className="text-zinc-600 mr-2 uppercase">Fix:</span> {item.fix}
+                           </div>
                         </div>
                     ))}
                 </div>
             </GuideSection>
         </div>
       </div>
+      
+      {/* Footer CTA */}
+      <div className="mt-20 text-center">
+          <button 
+            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); sfx.play('toggle'); }}
+            className={cn(
+                "px-8 py-4 rounded-full font-black uppercase tracking-widest text-xs transition-all shadow-2xl",
+                isPyriteMode ? "bg-purple-600 text-white hover:bg-purple-500" : "bg-white text-black hover:bg-zinc-200"
+            )}
+          >
+              Return to Control Lobe
+          </button>
+      </div>
     </div>
   );
 };
-
-const Globe = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-);
 
 export default ReferenceGuide;

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { User, Flame, Skull, Zap, ChevronDown, Check, UserCog, Settings } from 'lucide-react';
+import { User, Flame, Skull, Zap, ChevronDown, Check, UserCog, Settings, BookOpen } from 'lucide-react';
 import { ProducerPersona } from '../../types';
 import { cn } from '../../lib/utils';
 import { sfx } from '../../lib/audio';
@@ -10,7 +10,7 @@ import { usePersonas } from '../../hooks';
 
 interface PersonaSelectorProps {
   value: ProducerPersona;
-  onChange: (value: ProducerPersona) => void;
+  onChange: (value: ProducerPersona, customPrompt?: string) => void;
   className?: string;
 }
 
@@ -25,7 +25,7 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
   const [isOpen, setIsOpen] = useState(false);
   const [isManagerOpen, setIsManagerOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isPyriteMode } = useSettingsState();
+  const { isOverclockedMode: isPyriteMode } = useSettingsState();
   const { personas } = usePersonas();
 
   const selected = SYSTEM_PERSONAS.find(p => p.id === value) || SYSTEM_PERSONAS[0];
@@ -40,8 +40,8 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (id: ProducerPersona) => {
-      onChange(id);
+  const handleSelect = (id: ProducerPersona, prompt?: string) => {
+      onChange(id, prompt);
       setIsOpen(false);
       sfx.play(id === 'standard' ? 'click' : 'secret');
   };
@@ -118,32 +118,27 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
 
             {personas.length > 0 && (
                 <>
-                    <div className="px-2 py-1 mt-2 text-[8px] font-bold text-zinc-600 uppercase tracking-tighter border-t border-white/5 pt-2">Custom Agents</div>
-                    {personas.map(p => {
-                        const isActive = value === 'custom' && true; // Placeholder for future complex selection
-                        return (
-                            <button
-                                key={p.id}
-                                onClick={() => {
-                                    // Inject custom prompt and set to custom mode (simplification)
-                                    handleSelect('custom');
-                                    // Normally we would pass specific data here
-                                }}
-                                className={cn(
-                                    "w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all group",
-                                    "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-                                )}
-                            >
-                                <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-white/10">
-                                    <User className="w-4 h-4 text-zinc-500" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <span className="text-xs font-bold block truncate">{p.name}</span>
-                                    <span className="text-[9px] font-mono opacity-50 block truncate">User Identity</span>
-                                </div>
-                            </button>
-                        );
-                    })}
+                    <div className="px-2 py-1 mt-2 text-[8px] font-bold text-zinc-600 uppercase tracking-tighter border-t border-white/5 pt-2 flex items-center gap-1.5">
+                        <BookOpen className="w-2.5 h-2.5" /> Custom Agents
+                    </div>
+                    {personas.map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => handleSelect('custom', p.prompt)}
+                            className={cn(
+                                "w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all group",
+                                "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                            )}
+                        >
+                            <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-white/10">
+                                <User className="w-4 h-4 text-zinc-500" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-xs font-bold block truncate">{p.name}</span>
+                                <span className="text-[9px] font-mono opacity-50 block truncate">User Logic</span>
+                            </div>
+                        </button>
+                    ))}
                 </>
             )}
           </div>

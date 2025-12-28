@@ -56,6 +56,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     }
   };
 
+  // Fix: Cast 'ease' value to 'as const' to avoid string type mismatch in Framer Motion transitions
   const loadingPulse = {
     scale: [1, 0.98, 1],
     opacity: [1, 0.9, 1],
@@ -65,7 +66,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     transition: { 
       duration: 2, 
       repeat: Infinity, 
-      ease: "easeInOut" 
+      ease: "easeInOut" as const
     }
   };
 

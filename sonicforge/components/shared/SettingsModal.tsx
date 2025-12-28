@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from 'react';
 import { X, Settings, Languages, Palette, HardDrive, Download, Cloud, RefreshCw, Copy, Check, Gauge, UserCog, BookOpen, Zap } from 'lucide-react';
 import GlassPanel from './GlassPanel';
@@ -30,7 +31,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   
   // Access Prompt Context
   const { inputs } = usePromptState();
-  const { updateInput } = usePromptActions();
+  const { updateInput, updateExpertInput } = usePromptActions();
   
   const t = translations[lang];
   const ts = t.settings;
@@ -43,8 +44,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     }
   }, [cloudConfig.syncId, showToast, t.toast.copied]);
 
-  const handlePersonaChange = (persona: ProducerPersona) => {
+  const handlePersonaChange = (persona: ProducerPersona, customPrompt?: string) => {
       updateInput({ producerPersona: persona });
+      if (customPrompt) {
+          updateExpertInput({ customPersona: customPrompt });
+      }
+      sfx.play('click');
   };
 
   if (!isOpen) return null;
@@ -94,14 +99,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center justify-between mb-3">
                 <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
                     <UserCog className="w-4 h-4" />
-                    Active Producer Identity
+                    Agent Identity
                 </h4>
                 <button 
                     onClick={() => { setIsPersonaManagerOpen(true); sfx.play('click'); }}
                     className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 hover:text-zinc-300 uppercase tracking-tighter"
                 >
                     <BookOpen className="w-3 h-3" />
-                    Manage Custom Agents
+                    Custom Agents
                 </button>
             </div>
             <div className="w-full">
@@ -112,14 +117,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 />
             </div>
             <p className="text-[10px] text-zinc-500 mt-2">
-                Defines the AI's creative personality and stylistic biases.
+                Defines the AI's stylistic "voice" and production personality.
             </p>
           </section>
 
           {/* Overclocked Mode (Safety Filter) */}
-          <section>
-            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-purple-400" />
+          <section className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10">
+            <h4 className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Zap className="w-4 h-4" />
               Overclocked Protocol
             </h4>
             <div className="grid grid-cols-2 gap-2">
@@ -128,18 +133,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 variant={isOverclockedMode ? 'pyrite' : 'zinc'}
                 className={cn("py-3", !isOverclockedMode && "border border-purple-500/20 text-purple-400 hover:bg-purple-900/10")}
               >
-                Engage (No Limits)
+                On (No Limits)
               </ThemedButton>
               <ThemedButton 
                 onClick={() => handleSetOverclock(false)} 
                 variant={!isOverclockedMode ? 'default' : 'zinc'}
                 className={cn("py-3", isOverclockedMode && "border border-yellow-500/20 text-yellow-500 hover:bg-yellow-900/10")}
               >
-                Standard (Safety On)
+                Off (Safety Enabled)
               </ThemedButton>
             </div>
             <p className="text-[10px] text-zinc-500 mt-2">
-                Overclocked mode removes content restrictions and safety filters from AI generation. Use with creative caution.
+                Overclocked mode purges safety filters from lyrics and prompt generation. High-fidelity results without restrictions.
             </p>
           </section>
 
@@ -200,7 +205,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             </div>
           </section>
 
-          {/* PWA Install (Only if available) */}
+          {/* PWA Install */}
           {isInstallable && (
             <section>
                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">

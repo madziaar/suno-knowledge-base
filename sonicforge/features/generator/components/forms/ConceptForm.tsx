@@ -1,7 +1,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { Mic2, Music, Layers, Sparkles, Wand2, Globe, Command, UserCog, Zap, MinusCircle } from 'lucide-react';
-import { BuilderTranslation, ProducerPersona } from '../../../../types';
+import { BuilderTranslation, ProducerPersona, GeneratorState } from '../../../../types';
 import DraftHealth from '../DraftHealth';
 import ConceptInput from '../inputs/ConceptInput';
 import SmartSuggestions from '../SmartSuggestions';
@@ -10,6 +10,7 @@ import MetaControls from '../ConfigForm/MetaControls';
 import { usePromptState } from '../../../../contexts/PromptContext';
 import { useSettings } from '../../../../contexts/SettingsContext';
 import { usePromptActions } from '../../hooks/usePromptActions';
+import { useGenerationWorkflow } from '../../hooks/useGenerationWorkflow';
 import { Suggestion } from '../../utils/suggestionEngine';
 import { cn } from '../../../../lib/utils';
 import { Switch } from '../../../../components/ui/Switch';
@@ -19,6 +20,7 @@ import InstrumentPicker from '../inputs/InstrumentPicker';
 import VocalPicker from '../inputs/VocalPicker';
 import NegativePromptInput from '../inputs/NegativePromptInput';
 import PersonaSelector from '../../../../components/shared/PersonaSelector';
+import { useUI } from '../../../../contexts/UIContext';
 
 interface ConceptFormProps {
   t: BuilderTranslation;
@@ -27,8 +29,10 @@ interface ConceptFormProps {
 
 const ConceptForm: React.FC<ConceptFormProps> = memo(({ t, isPyriteMode }) => {
   const { inputs, expertInputs, lyricSource } = usePromptState();
-  const { lang, setIsPyriteMode } = useSettings();
-  const { updateInput, updateExpertInput, setLyricSource } = usePromptActions();
+  const { lang } = useSettings();
+  const { updateInput, updateExpertInput, setLyricSource, setState } = usePromptActions();
+  const { optimizeDraft } = useGenerationWorkflow('forge');
+  const { generatorState } = useUI();
 
   const handleAddSuggestion = useCallback((suggestion: Suggestion) => {
       if (suggestion.type === 'instrument') {
@@ -51,17 +55,11 @@ const ConceptForm: React.FC<ConceptFormProps> = memo(({ t, isPyriteMode }) => {
 
   const handlePersonaChange = useCallback((persona: ProducerPersona) => {
       updateInput({ producerPersona: persona });
-      if (persona === 'pyrite' && !isPyriteMode) setIsPyriteMode(true);
-      if (persona === 'standard' && isPyriteMode) setIsPyriteMode(false);
-      if ((persona === 'shin' || persona === 'twin_flames') && !isPyriteMode) setIsPyriteMode(true);
-  }, [updateInput, setIsPyriteMode, isPyriteMode]);
+      sfx.play('click');
+  }, [updateInput]);
 
   const showLyricsEditor = (inputs.mode === 'custom' && lyricSource === 'user') || inputs.mode === 'instrumental';
   const showTechniqueRack = (inputs.mode === 'custom' || inputs.mode === 'general') && lyricSource === 'ai';
-
-  const editorLabel = inputs.mode === 'instrumental' 
-    ? (lang === 'pl' ? "Struktura / Wskazówki" : "Structure / Guidance") 
-    : (t.output.lyricsLabel || "Lyrics");
 
   const tt = t.aiLyricOptions.techniques;
 
@@ -78,22 +76,22 @@ const ConceptForm: React.FC<ConceptFormProps> = memo(({ t, isPyriteMode }) => {
                     className="w-full"
                 />
                 <DraftHealth 
-                    inputs={inputs} 
-                    expertInputs={expertInputs} 
                     isPyriteMode={isPyriteMode} 
+                    onOptimize={optimizeDraft}
+                    isLoading={generatorState === GeneratorState.OPTIMIZING}
                 />
             </div>
         </div>
 
-        {/* STAGE 2: CONCEPTUAL SPARK */}
+        {/* STAGE 2: THE SPARK */}
         <div className="space-y-4 pt-6 border-t border-white/5">
-            <StageHeader icon={Wand2} title="Conceptual Spark" version="Intent_Core" isPyrite={isPyriteMode} color={isPyriteMode ? "text-purple-400" : "text-yellow-500"} />
+            <StageHeader icon={Wand2} title={t.conceptLabel} version="Intent_Core" isPyrite={isPyriteMode} color={isPyriteMode ? "text-purple-400" : "text-yellow-500"} />
             <ConceptInput t={t} isPyriteMode={isPyriteMode} />
         </div>
 
-        {/* STAGE 3: SONIC ARCHITECTURE */}
+        {/* STAGE 3: SONIC DNA */}
         <div className="space-y-6 pt-6 border-t border-white/5">
-            <StageHeader icon={Music} title="Sonic Architecture" version="DNA_Synth" isPyrite={isPyriteMode} color={isPyriteMode ? "text-pink-400" : "text-blue-400"} />
+            <StageHeader icon={Music} title={t.techLabel} version="DNA_Synth" isPyrite={isPyriteMode} color={isPyriteMode ? "text-pink-400" : "text-blue-400"} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <MoodSelector 
@@ -128,9 +126,9 @@ const ConceptForm: React.FC<ConceptFormProps> = memo(({ t, isPyriteMode }) => {
             />
         </div>
         
-        {/* STAGE 4: META CONFIGURATION */}
+        {/* STAGE 4: META SETTINGS */}
         <div className="space-y-4 pt-6 border-t border-white/5">
-            <StageHeader icon={Globe} title="Meta Configuration" version="Engine_Vars" isPyrite={isPyriteMode} color={isPyriteMode ? "text-blue-400" : "text-green-400"} />
+            <StageHeader icon={Globe} title={t.config} version="Engine_Vars" isPyrite={isPyriteMode} color={isPyriteMode ? "text-blue-400" : "text-green-400"} />
             
             <div className="grid grid-cols-1 gap-6">
                 <MetaControls t={t} isPyriteMode={isPyriteMode} />

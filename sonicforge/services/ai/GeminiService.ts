@@ -1,6 +1,6 @@
 
+import { GoogleGenAI, GenerateContentResponse, Type, Schema } from "@google/genai";
 import { getClient } from "./client";
-import { Type, Schema } from "@google/genai";
 import { SAFETY_SETTINGS, EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
 import { validateAndFixTags, sanitizeLyrics } from "./validators";
 import { GeneratedPrompt, ExpertInputs, SongConcept, IntentProfile } from "../../types";
@@ -9,10 +9,17 @@ import { runResearchAgent } from "./agents";
 import { parseJsonAsync } from "../../lib/json-repair";
 import { classifyIntent } from "./classifier";
 import { StyleComponents } from "../../features/generator/utils/styleBuilder";
-import { IGeneratorService, AgentContext } from "./types";
-import { retryWithBackoff, parseError } from "./utils";
 
-export class GeminiService implements IGeneratorService {
+export interface AgentContext {
+  id: string;
+  userInput: SongConcept;
+  expertInputs: ExpertInputs;
+  intentProfile: IntentProfile;
+  researchData: { text: string; sources: any[] };
+  generatedDraft: GeneratedPrompt | null;
+}
+
+export class GeminiService {
   private context: AgentContext;
   private isOverclockedMode: boolean = false;
   private lang: 'en' | 'pl' = 'en';
@@ -24,8 +31,7 @@ export class GeminiService implements IGeneratorService {
       expertInputs: {} as ExpertInputs,
       intentProfile: { tone: 'neutral', complexity: 'moderate', needsResearch: false },
       researchData: { text: '', sources: [] },
-      generatedDraft: null,
-      history: []
+      generatedDraft: null
     };
   }
 
@@ -38,8 +44,7 @@ export class GeminiService implements IGeneratorService {
       expertInputs,
       intentProfile: { tone: 'neutral', complexity: 'moderate', needsResearch: false },
       researchData: { text: '', sources: [] },
-      generatedDraft: null,
-      history: []
+      generatedDraft: null
     };
   }
 
@@ -57,16 +62,21 @@ export class GeminiService implements IGeneratorService {
     return research;
   }
 
+  /**
+   * THE ARTIST AGENT
+   * Generates high-fidelity prompts using Gemini 3 Pro's Thinking Logic.
+   */
   public async generate(isExpertMode: boolean, lyricSource: 'ai' | 'user', structuredStyle?: StyleComponents): Promise<GeneratedPrompt> {
     const { userInput, expertInputs, researchData, intentProfile } = this.context;
+    
     const schema: Schema = {
       type: Type.OBJECT,
       properties: {
-        analysis: { type: Type.STRING },
-        title: { type: Type.STRING },
-        tags: { type: Type.STRING },
-        style: { type: Type.STRING },
-        lyrics: { type: Type.STRING }
+        analysis: { type: Type.STRING, description: "Detailed thought process and production plan." },
+        title: { type: Type.STRING, description: "Creative song title." },
+        tags: { type: Type.STRING, description: "Strict 400 char limit, comma separated tags." },
+        style: { type: Type.STRING, description: "Strict 400 char limit, descriptive prose." },
+        lyrics: { type: Type.STRING, description: "Song lyrics with v4.5 structural tags." }
       },
       required: ["analysis", "title", "tags", "style", "lyrics"]
     };
@@ -88,23 +98,26 @@ export class GeminiService implements IGeneratorService {
       : GENERATE_SUNO_PROMPT(userInput.intent, userInput.mood, userInput.instruments, researchData.text, userInput.mode, lyricSource === 'user' ? userInput.lyricsInput : undefined, getFewShotExamples(userInput.intent), userInput.lyricsLanguage, undefined, this.isOverclockedMode, undefined, userInput.useReMi);
 
     const client = getClient();
-    const response = await retryWithBackoff(async () => {
-      return await client.models.generateContent({
-        model: intentProfile.complexity === 'complex' ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: schema,
-          systemInstruction,
-          safetySettings: SAFETY_SETTINGS,
-          thinkingConfig: { thinkingBudget: 4096 }
-        }
-      });
+    
+    // Using Gemini 3 Pro for complex reasoning and v4.5 architecture
+    const response = await client.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        systemInstruction,
+        safetySettings: SAFETY_SETTINGS,
+        // Engage maximum thinking budget for professional-grade architectural planning
+        thinkingConfig: { thinkingBudget: 32768 }
+      }
     });
 
     const json = await parseJsonAsync(response.text || "{}") as GeneratedPrompt;
     json.tags = validateAndFixTags(json.tags);
     json.lyrics = sanitizeLyrics(json.lyrics);
+    json.modelUsed = 'Gemini 3 Pro // Neural Architect';
+    
     return json;
   }
 
@@ -119,7 +132,38 @@ export class GeminiService implements IGeneratorService {
       config: {
         responseMimeType: "application/json",
         systemInstruction,
-        safetySettings: SAFETY_SETTINGS
+        safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 4096 }
+      }
+    });
+
+    return await parseJsonAsync(response.text || "{}");
+  }
+
+  public async optimizeDraft(currentDraft: Partial<ExpertInputs & SongConcept>): Promise<Partial<ExpertInputs & SongConcept>> {
+    const client = getClient();
+    const prompt = `
+      TASK: Optimize the following music project draft for Suno V4.5+.
+      DRAFT: ${JSON.stringify(currentDraft)}
+      
+      PROTOCOLS:
+      1. GENRE ANCHORING: Ensure Genre is specific and front-loaded.
+      2. GENDER GUARD: Explicitly state Male/Female/Duet in the vocal style.
+      3. REPETITION HACK: Use optimized lowercase instrumental tags like [sax][saxophone][solo].
+      4. BPM ALIGNMENT: Ensure BPM is appropriate for the chosen genre.
+      5. TECHNICAL POLISH: Add high-fidelity production terms.
+
+      OUTPUT: JSON matching the input draft structure with optimized values.
+    `;
+
+    const response = await client.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        systemInstruction: getSystemInstruction(this.isOverclockedMode, "Optimize music prompt architecture", undefined, undefined, undefined, this.lang, currentDraft.lyricsLanguage),
+        safetySettings: SAFETY_SETTINGS,
+        thinkingConfig: { thinkingBudget: 8192 }
       }
     });
 

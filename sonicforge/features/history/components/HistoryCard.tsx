@@ -30,7 +30,8 @@ const getIcon = (mode: string) => {
 };
 
 const HistoryCard: React.FC<HistoryCardProps> = React.memo(({ item, formatDate, onLoad, onDelete, onToggleFavorite, onSelect, isSelected, isCompareMode, t, style }) => {
-  const { isPyriteMode } = useSettingsState();
+  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
+  const { isOverclockedMode: isPyriteMode } = useSettingsState();
   const quality = useMemo(() => scorePrompt(item.result, 'suno'), [item.result]);
   
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number, y: number } | null>(null);

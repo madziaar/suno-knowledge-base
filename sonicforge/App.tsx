@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, Suspense, useState, useMemo } from 'react';
 import { Terminal, Sparkles, Loader2, Settings, Download } from 'lucide-react';
 import PromptBuilder from './features/generator/PromptBuilder'; 
@@ -10,7 +11,7 @@ import { translations } from './translations';
 import { useSettingsState, useSettingsDispatch, useUIState, useUIDispatch, useHistoryDispatch, usePrompt } from './contexts';
 import SettingsModal from './components/shared/SettingsModal';
 import { APP_VERSION } from './lib/constants';
-import { GenreTemplate } from './types';
+import { GenreTemplate, ProducerPersona } from './types';
 import { useKeyboardShortcuts, decompressState } from './lib/utils';
 import { useAudio } from './contexts/AudioContext';
 import { cn } from './lib/utils';
@@ -35,7 +36,7 @@ const App = () => {
   const { setActiveTab, showToast, dismissToast, openSettings, closeSettings } = useUIDispatch();
   
   const { loadFromHistory, loadFromTemplate, deleteFromHistory, clearHistory, exportHistory } = useHistoryDispatch();
-  const { undo, redo, setState: setPromptState } = usePrompt(); 
+  const { undo, redo, setState: setPromptState, inputs } = usePrompt(); 
 
   const { play } = useAudio();
   
@@ -44,6 +45,17 @@ const App = () => {
   
   const { isUpdateAvailable, updateApp } = usePWA();
   const [footerClicks, setFooterClicks] = useState(0);
+
+  // Sync Body Classes for Personas
+  useEffect(() => {
+    const personaClass = `persona-${inputs.producerPersona || 'standard'}`;
+    // Remove all previous persona classes
+    document.body.classList.forEach(cls => {
+      if (cls.startsWith('persona-')) document.body.classList.remove(cls);
+    });
+    document.body.classList.add(personaClass);
+    document.body.classList.toggle('pyrite-mode', isOverclockedMode);
+  }, [inputs.producerPersona, isOverclockedMode]);
 
   useEffect(() => {
     const initShare = async () => {
@@ -57,7 +69,6 @@ const App = () => {
             expertInputs: decoded.expertInputs, 
             isExpertMode: decoded.isExpertMode,
           });
-          // Fix: decoded is SharePayload, which has isPyriteMode, not isOverclockedMode
           setIsOverclockedMode(decoded.isPyriteMode);
           
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -131,36 +142,50 @@ const App = () => {
     { key: ',', ctrlKey: true, handler: handleOpenSettings, allowInInput: false },
   ]);
 
+  const personaThemeColors = useMemo(() => {
+    const p = inputs.producerPersona;
+    if (p === 'pyrite') return 'border-purple-500/30 bg-purple-900/10 shadow-[0_0_40px_rgba(168,85,247,0.1)]';
+    if (p === 'shin') return 'border-red-500/30 bg-red-950/10 shadow-[0_0_40px_rgba(220,38,38,0.1)]';
+    if (p === 'twin_flames') return 'border-pink-500/30 bg-pink-900/10 shadow-[0_0_40px_rgba(219,39,119,0.1)]';
+    return 'border-yellow-500/10 bg-gradient-to-b from-yellow-500/5 to-transparent';
+  }, [inputs.producerPersona]);
+
+  const personaLabelColors = useMemo(() => {
+    const p = inputs.producerPersona;
+    if (p === 'pyrite') return 'text-purple-400';
+    if (p === 'shin') return 'text-red-500';
+    if (p === 'twin_flames') return 'text-pink-400';
+    return 'text-yellow-500';
+  }, [inputs.producerPersona]);
+
   return (
     <div className={cn(
         "min-h-screen transition-colors duration-700 ease-in-out overflow-x-hidden relative flex flex-col",
-        isOverclockedMode ? 'bg-[#050505] pyrite-mode font-mono selection:bg-purple-500/30' : 'bg-zinc-950 selection:bg-yellow-500/30'
+        isOverclockedMode ? 'bg-[#050505]' : 'bg-zinc-950'
     )}>
-      <Background isOverclockedMode={isOverclockedMode} />
-      <OnboardingTour isOverclockedMode={isOverclockedMode} lang={lang} />
+      <Background isPyriteMode={isOverclockedMode} />
+      <OnboardingTour isPyriteMode={isOverclockedMode} lang={lang} />
       <Navbar />
 
       <main className="relative z-10 flex-1 pt-24 pb-48 md:pb-16 px-4 md:px-6 max-w-7xl mx-auto w-full">
         <div className={cn(
             "mb-6 p-1 rounded-2xl border backdrop-blur-md transition-all duration-500 max-w-4xl mx-auto animate-in fade-in slide-in-from-top-4",
-            isOverclockedMode 
-            ? 'border-purple-500/30 bg-purple-900/10 shadow-[0_0_40px_rgba(168,85,247,0.1)]' 
-            : 'border-yellow-500/10 bg-gradient-to-b from-yellow-500/5 to-transparent'
+            personaThemeColors
         )}>
           <div className={cn(
               "p-4 rounded-xl border",
-              isOverclockedMode ? 'border-purple-500/10 bg-black/40' : 'border-white/5 bg-zinc-900/40'
+              isOverclockedMode ? 'border-white/5 bg-black/40' : 'border-white/5 bg-zinc-900/40'
           )}>
             <h2 className={cn(
                 "font-bold flex items-center gap-2 text-xs md:text-sm mb-2 tracking-tight",
-                isOverclockedMode ? 'text-purple-400 font-mono' : 'text-yellow-500'
+                personaLabelColors
             )}>
                 <Terminal className="w-3 h-3 md:w-4 md:h-4" />
                 {isOverclockedMode ? t.nav.pyriteActive : t.system.title}
             </h2>
             <p className={cn(
                 "text-[10px] md:text-xs leading-relaxed",
-                isOverclockedMode ? 'text-purple-200/70 font-mono' : 'text-zinc-400'
+                isOverclockedMode ? 'text-zinc-200/70 font-mono' : 'text-zinc-400'
             )}>
                 {isOverclockedMode ? t.system.pyriteMsg : t.system.msg}
             </p>
@@ -172,8 +197,8 @@ const App = () => {
                 {(activeTab === 'forge' || activeTab === 'studio') && <PromptBuilder viewMode={activeTab} />}
                 {activeTab === 'guide' && <ReferenceGuide lang={lang} showToast={showToast} />}
                 {activeTab === 'history' && <History />}
-                {activeTab === 'docs' && <DocsViewer isOverclockedMode={isOverclockedMode} />}
-                {activeTab === 'templates' && <GenreExplorer lang={lang} isOverclockedMode={isOverclockedMode} onLoadTemplate={handleLoadTemplate} />}
+                {activeTab === 'docs' && <DocsViewer isPyriteMode={isOverclockedMode} />}
+                {activeTab === 'templates' && <GenreExplorer lang={lang} isPyriteMode={isOverclockedMode} onLoadTemplate={handleLoadTemplate} />}
             </Suspense>
         </div>
       </main>
@@ -195,7 +220,7 @@ const App = () => {
 
       <Toast 
         toast={toast} 
-        isOverclockedMode={isOverclockedMode} 
+        isPyriteMode={isOverclockedMode} 
         onDismiss={() => {
             if (isUpdateAvailable) updateApp();
             dismissToast();

@@ -1,7 +1,8 @@
 
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useMemo } from 'react';
 import { useAudio } from '../../contexts/AudioContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { usePromptState } from '../../contexts/PromptContext';
 
 interface AudioVisualizerProps {
   isPyriteMode: boolean;
@@ -11,6 +12,16 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = memo(({ isPyriteMode }) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { getAnalyser } = useAudio();
   const { performanceMode } = useSettings();
+  const { inputs } = usePromptState();
+  
+  const persona = inputs.producerPersona || 'standard';
+
+  const visualizerColors = useMemo(() => {
+    if (persona === 'pyrite') return { r: 168, g: 85, b: 247 };
+    if (persona === 'shin') return { r: 239, g: 68, b: 68 };
+    if (persona === 'twin_flames') return { r: 219, g: 39, b: 119 };
+    return { r: 234, g: 179, b: 8 };
+  }, [persona]);
 
   useEffect(() => {
     if (performanceMode === 'low') return;
@@ -68,14 +79,16 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = memo(({ isPyriteMode }) 
       const hasSignal = dataArray[0] > 0 || dataArray[10] > 0 || dataArray[20] > 0;
 
       if (hasSignal) {
-        if (isPyriteMode) {
+        if (persona !== 'standard') {
           const barWidth = (canvas.width / dataArray.length) * 2.5;
           let x = 0;
           for (let i = 0; i < dataArray.length; i++) {
             const value = dataArray[i];
             if (value > 0) {
               const barHeight = value * 2.0;
-              ctx.fillStyle = `rgba(${120 + (value / 2)}, 50, 255, ${value / 512})`;
+              // Mix in persona-specific color base
+              const mixR = Math.min(255, visualizerColors.r + (value / 2));
+              ctx.fillStyle = `rgba(${mixR}, ${visualizerColors.g}, ${visualizerColors.b}, ${value / 512})`;
               ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
               ctx.fillRect(x, 0, barWidth, barHeight * 0.5);
             }
@@ -85,7 +98,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = memo(({ isPyriteMode }) 
           const sliceWidth = canvas.width / dataArray.length;
           let x = 0;
           const opacity = performanceMode === 'medium' ? 0.08 : 0.12;
-          ctx.fillStyle = `rgba(234, 179, 8, ${opacity})`;
+          ctx.fillStyle = `rgba(${visualizerColors.r}, ${visualizerColors.g}, ${visualizerColors.b}, ${opacity})`;
           for (let i = 0; i < dataArray.length; i++) {
             const v = dataArray[i] / 255.0;
             const barHeight = v * (canvas.height / 3);
@@ -100,7 +113,7 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = memo(({ isPyriteMode }) 
 
     render();
     return () => cancelAnimationFrame(animationId);
-  }, [isPyriteMode, getAnalyser, performanceMode]);
+  }, [persona, visualizerColors, getAnalyser, performanceMode]);
 
   if (performanceMode === 'low') return null;
 

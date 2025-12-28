@@ -15,7 +15,8 @@ export const scorePrompt = (prompt: GeneratedPrompt, platform: Platform = 'suno'
 
   // Map grade based on total score
   let grade: string;
-  const s = validatorResult.score;
+  // Fix: Property 'score' does not exist on type 'PromptQualityScore'. Use 'totalScore' instead.
+  const s = validatorResult.totalScore;
   
   if (s >= 95) grade = 'S';
   else if (s >= 90) grade = 'A+';
@@ -25,8 +26,10 @@ export const scorePrompt = (prompt: GeneratedPrompt, platform: Platform = 'suno'
   else grade = 'D';
 
   return {
-    totalScore: validatorResult.score,
-    breakdown: validatorResult.details,
+    // Fix: Property 'score' does not exist on type 'PromptQualityScore'. Use 'totalScore' instead.
+    totalScore: validatorResult.totalScore,
+    // Fix: Property 'details' does not exist on type 'PromptQualityScore'. Use 'breakdown' instead.
+    breakdown: validatorResult.breakdown,
     grade,
     suggestions: validatorResult.suggestions,
     issues: validatorResult.issues,

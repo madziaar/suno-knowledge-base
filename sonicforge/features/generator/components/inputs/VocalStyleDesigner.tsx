@@ -12,7 +12,7 @@ import {
 import { sfx } from '../../../../lib/audio';
 import { BuilderTranslation, DesignersTranslation } from '../../../../types';
 import Tooltip from '../../../../components/Tooltip';
-import { Fader } from '@/components/ui/Fader';
+import { Fader } from '../../../../components/ui/Fader';
 
 interface VocalStyleDesignerProps {
   value: string;

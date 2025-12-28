@@ -3,8 +3,8 @@ import React, { memo } from 'react';
 import { Sparkles, PenTool, Zap, BrainCircuit } from 'lucide-react';
 import Tooltip from '../../../../components/Tooltip';
 import { BuilderTranslation } from '../../../../types';
-import { Switch } from '@/components/ui/Switch';
-import { cn } from '@/lib/utils';
+import { Switch } from '../../../../components/ui/Switch';
+import { cn } from '../../../../lib/utils';
 
 interface ModeSelectorProps {
   mode: 'custom' | 'general' | 'instrumental' | 'easy';
