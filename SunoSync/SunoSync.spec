@@ -16,6 +16,7 @@ def get_resource_path(relative_path):
 # Format: (source_path, dest_folder)
 added_files = [
     ('resources', 'resources'),
+    ('assets', 'assets'),
     ('config.json', '.'),  # Default config template if needed, or rely on app creating it
     ('window_state.json', '.'),
 ]
@@ -28,7 +29,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=added_files,
-    hiddenimports=['PIL', 'PIL._tkinter_finder', 'babel.numbers', 'vlc'],
+    hiddenimports=['PIL', 'PIL._tkinter_finder', 'babel.numbers', 'vlc', 'requests', 'mutagen', 'sentry_sdk', 'qrcode', 'plyer'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

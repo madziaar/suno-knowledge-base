@@ -2,8 +2,8 @@ import requests
 import threading
 
 # Configuration
-VERSION_URL = "https://raw.githubusercontent.com/sunsetsacoustic/SunoSyncV2/main/version.json"
-CURRENT_VERSION = "2.0.0"
+VERSION_URL = "https://gist.githubusercontent.com/sunsetsacoustic/8e1e343e6c99b7487e5aa293f9b1e16a/raw/63690aa6f6d0a7e5b03256504453c3c20ab23450/version.json"
+CURRENT_VERSION = "2.1.1"
 
 class Updater:
     @staticmethod
@@ -21,8 +21,7 @@ class Updater:
                     download_url = data.get("download_url")
                     
                     if latest_version and latest_version != CURRENT_VERSION:
-                         # Simple version comparison check (inexact if versions aren't simple strings, but works for !=)
-                         # A better semantic check could be added if needed.
+                         # Simple version comparison check
                          callback(latest_version, download_url)
             except Exception as e:
                 print(f"[Updater] Check failed: {e}")

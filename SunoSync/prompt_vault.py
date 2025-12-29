@@ -38,7 +38,7 @@ class PromptManager:
         self.prompts[uid] = {
             "title": title,
             "text": text,
-            "tags": tags.split(",") if isinstance(tags, str) else tags,
+            "tags": [t.strip() for t in tags.split(",")] if isinstance(tags, str) else tags,
             "created_at": time.time()
         }
         self.save()

@@ -21,24 +21,40 @@ os.makedirs(RADIO_REQUESTS_DIR, exist_ok=True)
 os.makedirs(LIBRARY_DIR, exist_ok=True)
 
 # Logger setup
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+log_file = os.path.join(os.getcwd(), "radio_debug.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file, mode='w'),
+        logging.StreamHandler() # Will go to NullWriter in frozen, but good for dev
+    ]
+)
 logger = logging.getLogger("SunoRadio")
 
 class RadioHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         global CURRENT_TRACK
         
-        if self.path == "/":
+        # Robust path normalization
+        # Remove query string
+        clean_path = self.path.split('?')[0]
+        # Remove trailing slash if present (but not for root)
+        if len(clean_path) > 1 and clean_path.endswith("/"):
+            clean_path = clean_path.rstrip("/")
+            
+        logger.info(f"GET Request: Raw='{self.path}' Clean='{clean_path}'")
+        
+        if clean_path == "/":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
             self.wfile.write(self.get_html().encode("utf-8"))
             
-        elif self.path.startswith("/stream.mp3"):
+        elif clean_path == "/stream.mp3":
             if CURRENT_TRACK and os.path.exists(CURRENT_TRACK["path"]):
                 self.send_response(200)
                 self.send_header("Content-type", "audio/mpeg")
-                # Add headers to tell browser not to cache too aggressively
                 self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("Pragma", "no-cache")
                 self.send_header("Expires", "0")
@@ -51,7 +67,7 @@ class RadioHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_error(404, "No track playing")
                 
-        elif self.path == "/status":
+        elif clean_path == "/status":
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
@@ -82,11 +98,15 @@ class RadioHandler(http.server.SimpleHTTPRequestHandler):
                 "artist": artist,
                 "user": user,
                 "id": track_id,
-                "listeners": threading.active_count() - 2
+                "listeners": max(0, threading.active_count() - 2)
             }
-            self.wfile.write(json.dumps(status).encode("utf-8"))
+            try:
+                self.wfile.write(json.dumps(status).encode("utf-8"))
+            except Exception as e:
+                logger.error(f"Error writing status: {e}")
             
         else:
+            logger.warning(f"404 Not Found: {clean_path}")
             self.send_error(404)
 
     def do_POST(self):
@@ -283,9 +303,18 @@ class RadioStation:
             PLAYLIST_QUEUE.insert(0, track)
             self.skip_event.set()
             
+    def set_library_path(self, path):
+        if os.path.exists(path):
+            self.library_path = path
+            logger.info(f"Radio Library Path set to: {path}")
+
     def dj_loop(self):
         global CURRENT_TRACK
         
+        # Default if not set
+        if not hasattr(self, 'library_path'):
+            self.library_path = "Suno_Downloads"
+            
         while self.running:
             self.skip_event.clear()
             
@@ -295,10 +324,12 @@ class RadioStation:
                     CURRENT_TRACK["id"] = str(uuid.uuid4())
                 else:
                     local_songs = []
-                    for root, dirs, files in os.walk(LIBRARY_DIR):
-                        for file in files:
-                            if file.lower().endswith('.mp3'):
-                                local_songs.append(os.path.join(root, file))
+                    # Use self.library_path dynamically
+                    if os.path.exists(self.library_path):
+                        for root, dirs, files in os.walk(self.library_path):
+                            for file in files:
+                                if file.lower().endswith('.mp3'):
+                                    local_songs.append(os.path.join(root, file))
                     
                     if local_songs:
                         path = random.choice(local_songs)

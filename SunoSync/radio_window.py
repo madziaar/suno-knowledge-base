@@ -82,6 +82,17 @@ class RadioWindow(ctk.CTkToplevel):
     def toggle_broadcast(self):
         if not station.running:
             self.btn_broadcast.configure(state="disabled", text="Starting...")
+            
+            # Configure Library Path from App Settings
+            try:
+                # Access ConfigManager from the main app (self.master)
+                # Note: self.master is typically the SunoSyncApp instance
+                download_path = self.master.config_manager.get("download_path")
+                if download_path:
+                    station.set_library_path(download_path)
+            except Exception as e:
+                print(f"Error setting radio path: {e}")
+                
             def run_start():
                 url = station.start_broadcast()
                 self.after(0, lambda: self.on_broadcast_started(url))

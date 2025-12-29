@@ -8,6 +8,46 @@ import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
+import logging
+
+# --- Logging Setup ---
+LOG_FILE = "debug.log"
+handlers = [logging.FileHandler(LOG_FILE, mode='w', encoding='utf-8')]
+if sys.stdout is not None:
+    handlers.append(logging.StreamHandler(sys.stdout))
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=handlers
+)
+
+# Redirect stdout/stderr to logging
+class StreamToLogger(object):
+    def __init__(self, logger, log_level=logging.INFO):
+        self.logger = logger
+        self.log_level = log_level
+        self.linebuf = ''
+
+    def write(self, buf):
+        for line in buf.rstrip().splitlines():
+            self.logger.log(self.log_level, line.rstrip())
+    
+    def flush(self):
+        pass
+
+sys.stdout = StreamToLogger(logging.getLogger('STDOUT'), logging.INFO)
+sys.stderr = StreamToLogger(logging.getLogger('STDERR'), logging.ERROR)
+
+logging.info("Logging initialized. Starting application...")
+
+# FIX: Prevent crash in frozen noconsole mode where sys.stdout/stderr are None
+# This typically affects http.server which tries to log to stderr
+if getattr(sys, 'frozen', False):
+    # If frozen, we've already redirected to logger, so we might not need NulLWriter check
+    # But just in case logging setup failed or something resets it:
+    pass
+
 from suno_widgets import WorkspaceBrowser
 from config_manager import ConfigManager
 from suno_downloader import SunoDownloader
@@ -165,37 +205,27 @@ class SunoSyncApp(ctk.CTk):
 
     def _create_update_bar(self, version, url):
         self.update_bar = ctk.CTkFrame(self, fg_color="#22c55e", height=30, corner_radius=0)
-        self.update_bar.grid(row=0, column=0, columnspan=2, sticky="ew") # Placed at logic row 0?
         
-        # NOTE: Our main layout is Row 0 for content. We might need to shift things down or verify layout.
-        # Ideally, we pack this at the top if using pack, but we use grid.
-        # Let's adjust grid: 
-        # Shift existing content (Row 0) to Row 1?
-        # Or just overlay?
-        # Better: use pack/place for notification? Or adjust weights.
-        
-        # Let's try inserting it as Row 0 and shifting everything else.
-        # Current Layout:
-        # Row 0: Content Area + Sidebar
-        # Row 1: Player
-        
-        # We will shift Row 1 to Row 2, Row 0 to Row 1, and put update bar at Row 0.
-        
-        # Unmap existing
+        # Unmap existing to shift them down
         self.sidebar.grid_forget()
         self.content_area.grid_forget()
         if hasattr(self, 'lyrics_panel'): self.lyrics_panel.grid_forget()
         self.player.grid_forget()
         
-        # Configure New Row 0
+        # Configure New Row 0 for Update Bar
         self.update_bar.grid(row=0, column=0, columnspan=3, sticky="ew")
         
         lbl = ctk.CTkLabel(self.update_bar, text=f"✨ New version v{version} available!", text_color="white", font=("Segoe UI", 12, "bold"))
         lbl.pack(side="left", padx=20, pady=2)
         
+        # Close Button (Rightmost)
+        close_btn = ctk.CTkButton(self.update_bar, text="✕", width=30, height=20, fg_color="transparent", 
+                                  text_color="white", hover_color="#16a34a", command=self._close_update_bar)
+        close_btn.pack(side="right", padx=(5, 20), pady=2)
+
         btn = ctk.CTkButton(self.update_bar, text="Download", width=80, height=20, fg_color="white", text_color="#22c55e", 
                             hover_color="#f0fdf4", command=lambda: webbrowser.open(url))
-        btn.pack(side="right", padx=20, pady=2)
+        btn.pack(side="right", padx=5, pady=2)
         
         # Re-grid others at +1 Row
         self.sidebar.grid(row=1, column=0, sticky="nsew")
@@ -208,6 +238,32 @@ class SunoSyncApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=0) # Bar fixed
         self.grid_rowconfigure(1, weight=1) # Main content expands
         self.grid_rowconfigure(2, weight=0) # Player fixed
+
+    def _close_update_bar(self):
+        """Close the update bar and restore layout."""
+        if hasattr(self, 'update_bar'):
+            self.update_bar.destroy()
+            del self.update_bar
+            
+        # Unmap logic to prevent visual glitches during shift
+        self.sidebar.grid_forget()
+        self.content_area.grid_forget()
+        if hasattr(self, 'lyrics_panel'): self.lyrics_panel.grid_forget()
+        self.player.grid_forget()
+        
+        # Restore Original Layout (Row 0 Content, Row 1 Player)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.content_area.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
+        
+        if hasattr(self, 'lyrics_panel') and self.lyrics_panel.is_visible:
+             self.lyrics_panel.grid(row=0, column=2, rowspan=2, sticky="ns")
+        
+        self.player.grid(row=1, column=0, columnspan=2, sticky="ew")
+        
+        # Reset Grid Weights
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0) # Clear weight for row 2
 
     def _setup_ui(self):
 
@@ -366,7 +422,7 @@ class SunoSyncApp(ctk.CTk):
     
     def check_changelog(self):
         """Show changelog on first launch of new version."""
-        current_version = "2.0"
+        current_version = "2.1.1"
         last_version = None
         state_file = "window_state.json"
         data = {}

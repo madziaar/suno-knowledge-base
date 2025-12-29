@@ -386,7 +386,7 @@ class LibraryTab(ctk.CTkFrame):
             
         # 4. Update UI Controls
         self.count_label.configure(text=f"{total} songs")
-        self.page_label.configure(text=f"{self.current_page + 1} / {max_page + 1}")
+        self.page_label.configure(text=f"{self.current_page} / {max_page}")
         
         self.prev_btn.configure(state="normal" if self.current_page > 0 else "disabled")
         self.next_btn.configure(state="normal" if self.current_page < max_page else "disabled")
