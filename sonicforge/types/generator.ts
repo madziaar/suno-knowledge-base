@@ -2,7 +2,8 @@
 import { Platform } from './core';
 
 export type AgentType = 'idle' | 'researcher' | 'generator' | 'critic' | 'refiner' | 'optimizer';
-export type ProducerPersona = 'standard' | 'pyrite' | 'shin' | 'twin_flames' | 'custom';
+export type ProducerPersona = 'standard' | 'pyrite' | 'shin' | 'twin_flames' | 'studio_engineer' | 'legal_eagle' | 'orion' | 'custom';
+export type SunoVersion = 'v3.5' | 'v4' | 'v4.5' | 'v4.5+' | 'v5';
 
 // Fix: Added ModifierCategory interface used in expert protocol data
 export interface ModifierCategory {
@@ -22,6 +23,14 @@ export interface StemWeights {
   drums: number;
   bass: number;
   melody: number;
+  guitar: number;
+  piano: number;
+  strings: number;
+  synth: number;
+  fx: number;
+  texture: number;
+  percussion: number;
+  choir: number;
 }
 
 export interface ExpertInputs {
@@ -40,6 +49,7 @@ export interface ExpertInputs {
   isRawMode?: boolean; // Bypass creative expansion
   aiModel?: 'gemini-3-pro' | 'gemini-2.5-flash';
   customPersona?: string;
+  duration?: number; // Desired duration in seconds (v4.5+ supports up to 480)
 }
 
 export interface SongConcept {
@@ -61,6 +71,7 @@ export interface SongConcept {
   lyricsLanguage?: string;
   useReMi?: boolean; // Advanced Lyric Logic
   producerPersona?: ProducerPersona;
+  sunoVersion?: SunoVersion; // Target Suno Version
   // Advanced Lyric Techniques
   useVowelExtension?: boolean;
   useBackingVocals?: boolean;
@@ -101,10 +112,16 @@ export interface GenreDef {
   characteristics: string[];
 }
 
+export interface SectionGuideline {
+  lineCount: number;
+  description: string;
+}
+
 export interface StructureTemplate {
   name: string;
   description: string;
   structure: string[];
+  guidelines?: Record<string, SectionGuideline>;
 }
 
 export interface PromptQualityScore {

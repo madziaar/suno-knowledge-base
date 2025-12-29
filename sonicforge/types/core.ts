@@ -3,7 +3,8 @@ export type Language = 'en' | 'pl';
 
 export type Platform = 'suno';
 
-export type PerformanceMode = 'high' | 'medium' | 'low';
+// Fix: Added 'balanced' to PerformanceMode to match SettingsModal and solve comparison overlap errors
+export type PerformanceMode = 'high' | 'balanced' | 'low';
 
 export enum GeneratorState {
   IDLE = 'idle',

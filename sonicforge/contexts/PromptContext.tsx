@@ -30,7 +30,11 @@ const DEFAULT_EXPERT_INPUTS: ExpertInputs = {
   key: '',
   timeSignature: '',
   structure: [],
-  stemWeights: { vocals: 50, drums: 50, bass: 50, melody: 50 }
+  stemWeights: { 
+    vocals: 50, drums: 50, bass: 50, melody: 50,
+    guitar: 50, piano: 50, strings: 50, synth: 50,
+    fx: 50, texture: 50, percussion: 50, choir: 50
+  }
 };
 
 export type EnhancementLevel = 'light' | 'medium' | 'heavy';

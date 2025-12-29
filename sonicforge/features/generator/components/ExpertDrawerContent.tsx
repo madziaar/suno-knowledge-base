@@ -6,13 +6,12 @@ import ExpertGlobalPanel from './ExpertGlobalPanel';
 import StructureBuilder from './StructureBuilder';
 import { cn } from '../../../lib/utils';
 import { STORY_ARCS } from '../data/storyArcs';
-import PersonaManager from './PersonaManager';
+import PersonaManagerModal from '../../../components/shared/PersonaManagerModal';
 import { sfx } from '../../../lib/audio';
 import VocalStyleDesigner from './inputs/VocalStyleDesigner';
 import SpecialTechniquesPanel from './inputs/SpecialTechniquesPanel';
 import InstrumentDesigner from './inputs/InstrumentDesigner';
 import AtmosphereDesigner from './inputs/AtmosphereDesigner';
-// Fix: Import missing GlassPanel component used in the layout
 import GlassPanel from '../../../components/shared/GlassPanel';
 import CustomSelect, { SelectOption } from '../../../components/shared/CustomSelect';
 import { useSettings } from '../../../contexts/SettingsContext';
@@ -232,13 +231,13 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
         />
       </div>
 
-      <PersonaManager
-        isOpen={isPersonaManagerOpen}
-        onClose={() => setIsPersonaManagerOpen(false)}
-        onLoad={handleLoadPersona}
-        isPyriteMode={isPyriteMode}
-        t={t}
-      />
+      {isPersonaManagerOpen && (
+        <PersonaManagerModal
+          isOpen={isPersonaManagerOpen}
+          onClose={() => setIsPersonaManagerOpen(false)}
+          onLoad={handleLoadPersona}
+        />
+      )}
     </div>
   );
 };

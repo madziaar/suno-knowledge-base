@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Mic2, Drum, Music, Activity, Waves } from 'lucide-react';
+import { Mic2, Drum, Music, Activity, Waves, Guitar, Piano, Siren, Cloud, Hammer, Radio, Zap } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
 import { sfx } from '../../../../lib/audio';
 import { StemWeights } from '../../../../types';
@@ -16,8 +16,16 @@ interface StemTerminalProps {
 const STEMS: { id: keyof StemWeights; label: string; icon: React.ElementType; color: string; glow: string }[] = [
   { id: 'vocals', label: 'Vocal Stem', icon: Mic2, color: 'text-pink-400', glow: 'shadow-pink-500/20' },
   { id: 'drums', label: 'Percussion', icon: Drum, color: 'text-yellow-400', glow: 'shadow-yellow-500/20' },
-  { id: 'bass', label: 'Low Frequency', icon: Activity, color: 'text-blue-400', glow: 'shadow-blue-500/20' },
-  { id: 'melody', label: 'Lead Synth', icon: Music, color: 'text-purple-400', glow: 'shadow-purple-500/20' }
+  { id: 'bass', label: 'Low Freq', icon: Activity, color: 'text-blue-400', glow: 'shadow-blue-500/20' },
+  { id: 'melody', label: 'Lead Synth', icon: Music, color: 'text-purple-400', glow: 'shadow-purple-500/20' },
+  { id: 'guitar', label: 'Guitar', icon: Guitar, color: 'text-orange-400', glow: 'shadow-orange-500/20' },
+  { id: 'piano', label: 'Keys', icon: Piano, color: 'text-cyan-400', glow: 'shadow-cyan-500/20' },
+  { id: 'strings', label: 'Orchestral', icon: Waves, color: 'text-emerald-400', glow: 'shadow-emerald-500/20' },
+  { id: 'synth', label: 'Synth Pad', icon: Radio, color: 'text-indigo-400', glow: 'shadow-indigo-500/20' },
+  { id: 'fx', label: 'SFX', icon: Zap, color: 'text-red-400', glow: 'shadow-red-500/20' },
+  { id: 'texture', label: 'Atmosphere', icon: Cloud, color: 'text-gray-400', glow: 'shadow-gray-500/20' },
+  { id: 'percussion', label: 'Aux Perc', icon: Hammer, color: 'text-amber-400', glow: 'shadow-amber-500/20' },
+  { id: 'choir', label: 'Choir/Backing', icon: Siren, color: 'text-rose-400', glow: 'shadow-rose-500/20' },
 ];
 
 const StemTerminal: React.FC<StemTerminalProps> = memo(({ isPyriteMode, weights, onWeightChange }) => {
@@ -51,18 +59,18 @@ const StemTerminal: React.FC<StemTerminalProps> = memo(({ isPyriteMode, weights,
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
             <Waves className={cn("w-4 h-4", isPyriteMode ? "text-purple-400" : "text-yellow-500")} />
-            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Neural Stem Focus Matrix</h3>
+            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Neural 12-Stem Matrix</h3>
         </div>
-        <div className="text-[8px] font-mono text-zinc-600">V4.5_STEM_API: ONLINE</div>
+        <div className="text-[8px] font-mono text-zinc-600">V5.0_STEM_API: ONLINE</div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 h-48">
+      <div className="grid grid-cols-4 md:grid-cols-6 gap-2 md:gap-3 h-auto">
         {STEMS.map((stem) => {
-          const val = localWeights[stem.id];
+          const val = localWeights[stem.id] || 0;
           const height = `${val}%`;
 
           return (
-            <div key={stem.id} className="flex flex-col items-center gap-3 group">
+            <div key={stem.id} className="flex flex-col items-center gap-2 group h-32">
               <div className="flex-1 w-full bg-zinc-900/50 rounded-lg relative overflow-hidden border border-white/5">
                 <motion.div 
                   className={cn(
@@ -85,13 +93,13 @@ const StemTerminal: React.FC<StemTerminalProps> = memo(({ isPyriteMode, weights,
                 />
 
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 group-hover:opacity-60 transition-opacity">
-                    <stem.icon className={cn("w-6 h-6", stem.color)} />
+                    <stem.icon className={cn("w-5 h-5", stem.color)} />
                 </div>
               </div>
 
-              <div className="text-center">
-                  <p className={cn("text-[8px] font-bold uppercase truncate w-full", stem.color)}>{stem.label}</p>
-                  <p className="text-[9px] font-mono text-zinc-500">{val}%</p>
+              <div className="text-center w-full">
+                  <p className={cn("text-[7px] font-bold uppercase truncate w-full", stem.color)}>{stem.label}</p>
+                  <p className="text-[8px] font-mono text-zinc-500">{val}%</p>
               </div>
             </div>
           );
@@ -100,7 +108,7 @@ const StemTerminal: React.FC<StemTerminalProps> = memo(({ isPyriteMode, weights,
 
       <div className="p-2 rounded-lg bg-white/5 border border-white/5">
           <p className="text-[9px] text-zinc-500 leading-relaxed italic">
-              "Higher focus values inject weighted production tags, forcing the model to allocate more compute to that specific stem's fidelity."
+              "v5 Stem weighting allows precise control over mix density. Lowering drums while boosting 'Atmosphere' creates ambient-focused generations."
           </p>
       </div>
     </div>

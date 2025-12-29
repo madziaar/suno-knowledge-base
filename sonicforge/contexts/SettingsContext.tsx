@@ -9,12 +9,14 @@ interface SettingsState {
   lang: Language;
   isOverclockedMode: boolean;
   performanceMode: PerformanceMode;
+  warnerOptIn: boolean;
 }
 // Dispatch
 type SettingsDispatch = {
   setLang: (value: Language | ((val: Language) => Language)) => void;
   setIsOverclockedMode: (value: boolean | ((val: boolean) => boolean)) => void;
   setPerformanceMode: (value: PerformanceMode) => void;
+  setWarnerOptIn: (value: boolean | ((val: boolean) => boolean)) => void;
 };
 
 const SettingsStateContext = createContext<SettingsState | undefined>(undefined);
@@ -24,6 +26,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [lang, setLang] = useLocalStorage<Language>('pyrite_lang', 'pl');
   const [isOverclockedMode, setIsOverclockedMode] = useLocalStorage<boolean>('pyrite_overclock_mode', false);
   const [performanceMode, setPerformanceMode] = useLocalStorage<PerformanceMode>('pyrite_perf', 'low');
+  const [warnerOptIn, setWarnerOptIn] = useLocalStorage<boolean>('pyrite_warner_optin', false);
   
   const { setPyriteMode: setAudioPyriteMode } = useAudio();
 
@@ -42,12 +45,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [performanceMode]);
 
   const state = useMemo(() => ({
-    lang, isOverclockedMode, performanceMode
-  }), [lang, isOverclockedMode, performanceMode]);
+    lang, isOverclockedMode, performanceMode, warnerOptIn
+  }), [lang, isOverclockedMode, performanceMode, warnerOptIn]);
 
   const dispatch = useMemo(() => ({
-    setLang, setIsOverclockedMode, setPerformanceMode
-  }), [setLang, setIsOverclockedMode, setPerformanceMode]);
+    setLang, setIsOverclockedMode, setPerformanceMode, setWarnerOptIn
+  }), [setLang, setIsOverclockedMode, setPerformanceMode, setWarnerOptIn]);
 
   return (
     <SettingsStateContext.Provider value={state}>

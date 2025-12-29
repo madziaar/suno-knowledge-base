@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tag, PlayCircle, Layers, Zap, CheckCircle, AlertTriangle, Copy, ArrowRight, Mic2, Wrench, Sparkles, Wand2, Music2, BookOpen, UserCog, Upload, Search, Palette, Star, MessageSquare, RefreshCw, Clock, LayoutGrid, Lightbulb, ListChecks, BrainCircuit, ShieldCheck, Waves, Radio, Globe, Activity, Cpu, Binary } from 'lucide-react';
 import { Language } from '../../types';
@@ -53,7 +52,7 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
 
   return (
     <div className="max-w-7xl mx-auto pb-32">
-      {/* Header with Neural Pulse Effect */}
+      {/* Header */}
       <div className="text-center mb-16 relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 blur-[100px] animate-pulse pointer-events-none" />
         <h2 className={cn(
@@ -63,8 +62,8 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
             {tGuide.title}
         </h2>
         <p className="text-sm md:text-xl text-zinc-500 max-w-2xl mx-auto font-medium leading-relaxed">
-            The definitive manual for Suno V4.5+ Architecture. <br/>
-            <span className={cn(isPyriteMode ? "text-purple-400" : "text-yellow-500")}>Research-backed. Agent-optimized. Deep Reasoning Enabled.</span>
+            The definitive manual for Suno V4.5+ & v5.0 Architecture. <br/>
+            <span className={cn(isPyriteMode ? "text-purple-400" : "text-yellow-500")}>Studio Quality. Agent-optimized. Deep Reasoning Enabled.</span>
         </p>
       </div>
 
@@ -72,7 +71,7 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
         <div className="lg:col-span-1">
             <GuideNavigation t={tGuide} isPyriteMode={isPyriteMode} />
             
-            {/* Persona Commentary Sidebar */}
+            {/* Persona Commentary */}
             <div className={cn(
                 "mt-6 p-6 rounded-3xl border relative overflow-hidden hidden lg:block",
                 isPyriteMode ? "bg-purple-900/10 border-purple-500/20" : "bg-black/20 border-white/5"
@@ -83,29 +82,29 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
                     Pyrite's Note
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed italic">
-                    "Listen closely, Darling. Suno isn't a mind-reader, but I am. When you build your prompts, think about the signal chain. If you bury your genre at the end, the model will just hallucinate 90s pub rock. Don't let that happen."
+                    "Listen closely, Darling. v5 is studio-quality. We're not just generating 'songs' anymore—we're architecting masters. Front-load your genre, lock your vocals, and for heaven's sake, don't forget the power ending."
                 </p>
             </div>
         </div>
 
         <div className="lg:col-span-3 space-y-12">
             
-            {/* SECTION: DEEP REASONING PROTOCOL */}
-            <GuideSection id="start" title="Protocol Obsidian: The Deep Reasoning Lobe" icon={BrainCircuit}>
+            {/* SECTION: PROTOCOL OBSIDIAN */}
+            <GuideSection id="start" title="Protocol Obsidian: The Reasoning Engine" icon={BrainCircuit}>
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <p className="text-sm md:text-base text-zinc-300 leading-relaxed">
-                                Unlike standard generators, Sonic Forge V5 executes an **Agentic Cascade**. When you click "Initiate Sequence", the Neural Core (Gemini 3 Pro) doesn't just write a prompt—it blueprints a world.
+                                V7.2 executes an **Agentic Cascade**. The Neural Core (Gemini 3 Pro) doesn't just write a prompt—it blueprints a world.
                             </p>
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <ShieldCheck className="w-4 h-4 text-green-400" />
-                                    32k Thinking Budget Engaged
+                                    32,768 Thinking Token Budget
                                 </div>
                                 <div className="flex items-center gap-3 text-xs font-bold text-zinc-500">
                                     <Globe className="w-4 h-4 text-blue-400" />
-                                    Real-time Google Grounding
+                                    Real-time Metadata Ingestion
                                 </div>
                             </div>
                         </div>
@@ -113,16 +112,16 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
                             <Cpu className={cn("w-12 h-12 animate-spin-slow", isPyriteMode ? "text-purple-500" : "text-yellow-500")} />
                             <div>
                                 <h5 className="font-bold text-white text-sm uppercase tracking-widest">Reasoning Active</h5>
-                                <p className="text-[10px] text-zinc-500 font-mono mt-1">PLANNING_NARRATIVE_ARC_V45</p>
+                                <p className="text-[10px] text-zinc-500 font-mono mt-1">NARRATIVE_ARCH_V5_STUDIO</p>
                             </div>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {[
-                            { title: "Research", icon: Search, color: "text-blue-400", desc: "Scans technical archives for gear specs." },
-                            { title: "Blueprint", icon: Palette, color: "text-purple-400", desc: "Architects the hierarchical string." },
-                            { title: "Audit", icon: ShieldCheck, color: "text-green-400", desc: "Checks character limits and syntax." },
+                            { title: "Research", icon: Search, color: "text-blue-400", desc: "Scans WMG & database specs." },
+                            { title: "Blueprint", icon: Palette, color: "text-purple-400", desc: "Architects hierarchical strings." },
+                            { title: "Audit", icon: ShieldCheck, color: "text-green-400", desc: "Checks character limits (400)." },
                             { title: "Refine", icon: RefreshCw, color: "text-red-400", desc: "Surgically repairs logic flaws." }
                         ].map((step, i) => (
                             <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] transition-colors group">
@@ -135,56 +134,55 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
                 </div>
             </GuideSection>
 
-            {/* SECTION: HIERARCHICAL WEIGHTING */}
-            <GuideSection id="advanced" title="The Golden Blueprint: Hierarchical Weighting" icon={Activity}>
+            {/* SECTION: SUNO STUDIO */}
+            <GuideSection id="advanced" title="Suno Studio: The Generative DAW" icon={LayoutGrid}>
                 <div className="space-y-6">
                     <p className="text-sm text-zinc-400 leading-relaxed">
-                        Suno V4.5 consumes the first **50 characters** of a prompt with **80% importance**. This is your "Anchor Zone". My engine automatically formats your DNA into this hierarchy:
+                        Suno Studio (v5) introduces world-first multi-track generative capabilities. V7.2 of the Forge is designed to feed this engine perfectly with 12-stem compatibility.
                     </p>
                     
-                    <div className="space-y-4">
-                        <div className="relative h-12 w-full bg-zinc-900 rounded-xl border border-white/5 overflow-hidden flex items-center px-4 group">
-                            <div className="absolute inset-y-0 left-0 w-[20%] bg-purple-500/20 border-r border-purple-500/50 group-hover:w-[25%] transition-all" />
-                            <div className="absolute inset-y-0 left-0 w-[50%] bg-blue-500/10 border-r border-blue-500/30 pointer-events-none" />
-                            <span className="relative z-10 text-[10px] font-mono text-white/90">
-                                <span className="font-black text-purple-400">GENRE ANCHOR</span>, <span className="text-blue-400">VOCAL LOCK</span>, Atmospheric Descriptors, Gear Stacks, Master Chain
-                            </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
-                                <h5 className="text-[10px] font-bold text-zinc-500 uppercase mb-3 flex items-center gap-2">
-                                    <ShieldCheck className="w-3.5 h-3.5 text-green-400" /> The Gender Guard
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                            { title: "12-Stem Extraction", desc: "Separate vocals, drums, and lead synths with clinical precision." },
+                            { title: "MIDI Export", desc: "Export generated melodies to your local DAW for full control." },
+                            { title: "Multi-Track", desc: "Layer generated audio with your own stems seamlessly." }
+                        ].map((item, i) => (
+                            <div key={i} className="p-4 rounded-xl bg-black/40 border border-white/5">
+                                <h5 className="text-[10px] font-bold text-blue-400 uppercase mb-2 flex items-center gap-2">
+                                    <Sparkles className="w-3.5 h-3.5" /> {item.title}
                                 </h5>
-                                <p className="text-[10px] text-zinc-400 leading-relaxed">
-                                    To prevent vocal hallucinations, I inject the gender (Male/Female) immediately after the genre. 
-                                    <br/><br/>
-                                    <span className="text-purple-300 font-mono">Example: "Industrial Rock, Female Vocals, Sassy..."</span>
-                                </p>
+                                <p className="text-[10px] text-zinc-500 leading-relaxed">{item.desc}</p>
                             </div>
-                            <div className="p-4 rounded-xl bg-black/40 border border-white/5">
-                                <h5 className="text-[10px] font-bold text-zinc-500 uppercase mb-3 flex items-center gap-2">
-                                    <Binary className="w-3.5 h-3.5 text-blue-400" /> The Repetition Hack
-                                </h5>
-                                <p className="text-[10px] text-zinc-400 leading-relaxed">
-                                    Need a specific instrument solo? Don't be verbose. Repeat the core token to force the model's focus.
-                                    <br/><br/>
-                                    <span className="text-blue-300 font-mono">Formula: [sax][saxophone][solo]</span>
-                                </p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </GuideSection>
 
-            {/* SECTION: V4.5 MASTER TAGS */}
-            <GuideSection id="tags" title="V4.5+ Meta Lexicon" icon={Tag}>
+            {/* SECTION: THE GOLDEN RULES */}
+            <GuideSection id="riffusion" title="The Golden Protocols (V5)" icon={Lightbulb}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {tGuide.goldenRules.rules.map((rule: any, i: number) => (
+                        <div key={i} className="flex gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                            <div className={cn("shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs", isPyriteMode ? "bg-purple-600 text-white" : "bg-yellow-500 text-black")}>
+                                {i + 1}
+                            </div>
+                            <div>
+                                <h5 className="font-bold text-white text-sm mb-1">{rule.title}</h5>
+                                <p className="text-xs text-zinc-500 leading-relaxed">{rule.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </GuideSection>
+
+            {/* SECTION: V4.5+ MASTER TAGS */}
+            <GuideSection id="tags" title="V4.5+ / v5.0 Meta Lexicon" icon={Tag}>
                 <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-l-2 border-yellow-500 pl-3">The Termination Protocol</h5>
                             <p className="text-[10px] text-zinc-500 leading-relaxed">
-                                v4.5 has a known issue with abrupt cutoffs. My engine uses a **Triple-Kill Sequence** to ensure clean endings. Always use this at the end of your lyrics:
+                                v5 has incredible quality but still risks abrupt cutoffs. My engine uses a **Triple-Kill Sequence** to ensure clean endings.
                             </p>
                             <div className="flex gap-2">
                                 <TagButton>[Outro]</TagButton>
@@ -195,7 +193,7 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
                         <div className="space-y-4">
                             <h5 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-l-2 border-purple-500 pl-3">The Pipe Operator | Modifiers</h5>
                             <p className="text-[10px] text-zinc-500 leading-relaxed">
-                                The `|` character is now the standard for separating section modifiers. It results in 40% higher adherence to section-specific vibes.
+                                The `|` character is the gold standard for separating section modifiers in the 2025 models.
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 <TagButton>[Chorus | Anthemic | Epic]</TagButton>
@@ -220,13 +218,13 @@ const ReferenceGuide = ({ lang, showToast }: { lang: Language, showToast: (msg: 
             </GuideSection>
 
             {/* SECTION: TROUBLESHOOTING */}
-            <GuideSection id="troubleshooting" title="Maintenance & Signal Errors" icon={Wrench}>
+            <GuideSection id="troubleshooting" title="Signal Maintenance" icon={Wrench}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
-                        { title: tGuide.troubleshooting.abruptEnding, desc: tGuide.troubleshooting.abruptEndingDesc, fix: "[Instrumental Fade Out][End]" },
-                        { title: tGuide.troubleshooting.wrongInstrument, desc: tGuide.troubleshooting.wrongInstrumentDesc, fix: "Repeat tokens: [piano][piano solo]" },
-                        { title: tGuide.troubleshooting.roboticVocals, desc: tGuide.troubleshooting.roboticVocalsDesc, fix: "Add 'Pristine production' to style." },
-                        { title: tGuide.troubleshooting.audioDegradation, desc: tGuide.troubleshooting.audioDegradationDesc, fix: "Check first 50 chars for clashes." },
+                        { title: tGuide.troubleshooting.abruptEnding, desc: tGuide.troubleshooting.abruptEndingDesc, fix: "[Outro Instrumental fade outEnd]" },
+                        { title: tGuide.troubleshooting.wrongInstrument, desc: tGuide.troubleshooting.wrongInstrumentDesc, fix: "Repeat tokens: [sax][saxophone][solo]" },
+                        { title: "Vocal Glitches", desc: "Beta v5 models can glitch on complex words.", fix: "Add 'Natural phrasing' to style." },
+                        { title: "Muddy Mix", desc: "v5 fixes this, but legacy tracks may suffer.", fix: "Use 'Studio mastered' and 'Crisp mix'." },
                     ].map((item, i) => (
                         <div key={i} className="p-5 rounded-2xl bg-zinc-950/40 border border-white/5 hover:border-red-500/20 transition-all group">
                            <h5 className="font-bold text-red-100/90 text-sm mb-2 flex items-center gap-2">

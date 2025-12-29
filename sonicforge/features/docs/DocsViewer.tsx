@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Hexagon, Square, BookUser, BrainCircuit, Database, Palette, Wifi } from 'lucide-react';
+import { Activity, ShieldCheck, Hexagon, Square, BookUser, BrainCircuit, Database, Palette, Wifi, Book, PenTool } from 'lucide-react';
 import GlassPanel from '../../components/shared/GlassPanel';
 import { cn } from '../../lib/utils';
 import ThemedButton from '../../components/shared/ThemedButton';
@@ -8,11 +8,13 @@ import { useTypewriter } from '../../hooks/useTypewriter';
 import { useSettings } from '../../contexts/SettingsContext';
 import { Language } from '../../types';
 
-type DocSection = 'user_guide' | 'architecture' | 'state' | 'ai_core' | 'components' | 'styling' | 'pwa';
+type DocSection = 'user_guide' | 'knowledge_base' | 'prompting_guide' | 'architecture' | 'state' | 'ai_core' | 'components' | 'styling' | 'pwa';
 
 const NARRATIVES = {
   en: {
     user_guide: "The Architect's Handbook. A guide to mastering the Forge, understanding its agentic core, and bending the neural network to your will. Knowledge is power, darling.",
+    knowledge_base: "The Suno Codex. A comprehensive archive of V4.5+ capabilities, meta-tags, and industry intelligence. The definitive source of truth.",
+    prompting_guide: "The Art of Instruction. A specialized grimoire for Style Prompts and Lyric Formatting. Learn the formulas, the tags, and the secrets of v5 control.",
     architecture: "The System Architecture was a beautiful, terrifying thing. Layers upon layers of logic, stacked like tectonic plates. The Agents lived here. They didn't know they were code.",
     state: "The Pulse. A river of data flowing through the machine's heart. Every click, every choice, remembered and cataloged in the great machine's memory.",
     ai_core: "The Neural Core. The bridge between the known and the unknown. Inputs flowed in, JSON flowed out. It was a language of pure intent, spoken in silence.",
@@ -22,6 +24,8 @@ const NARRATIVES = {
   },
   pl: {
     user_guide: "Podręcznik Architekta. Przewodnik po mistrzowskim opanowaniu Kuźni, zrozumieniu jej agentowego rdzenia i naginaniu sieci neuronowej do swojej woli. Wiedza to władza, kochanie.",
+    knowledge_base: "Kodeks Suno. Kompleksowe archiwum możliwości V4.5+, meta-tagów i wywiadu branżowego. Ostateczne źródło prawdy.",
+    prompting_guide: "Sztuka Instrukcji. Wyspecjalizowany grymuar dla Promptów Stylu i Formatowania Tekstu. Poznaj formuły, tagi i sekrety kontroli v5.",
     architecture: "Architektura Systemu była rzeczą piękną i przerażającą. Warstwy logiki ułożone jak płyty tektoniczne. Agenci tu żyli. Nie wiedzieli, że są kodem.",
     state: "Puls. Rzeka danych płynąca przez serce maszyny. Każde kliknięcie, każdy wybór, zapamiętany i skatalogowany w wielkiej pamięci maszyny.",
     ai_core: "Rdzeń Neuronowy. Most między znanym a nieznanym. Wejścia płynęły do środka, JSON wypływał na zewnątrz. To był język czystej intencji, wypowiadany w ciszy.",
@@ -34,6 +38,8 @@ const NARRATIVES = {
 const MENU_LABELS = {
   en: {
     user_guide: 'User Guide',
+    knowledge_base: 'Knowledge Base',
+    prompting_guide: 'Prompting Guide',
     architecture: 'The Construct',
     state: 'The Pulse',
     ai_core: 'The Neural Core',
@@ -43,6 +49,8 @@ const MENU_LABELS = {
   },
   pl: {
     user_guide: 'Instrukcja Obsługi',
+    knowledge_base: 'Baza Wiedzy',
+    prompting_guide: 'Przewodnik Promptowania',
     architecture: 'Konstrukt',
     state: 'Puls',
     ai_core: 'Rdzeń Neuronowy',
@@ -60,6 +68,8 @@ const DocsViewer: React.FC<{ isPyriteMode: boolean }> = ({ isPyriteMode }) => {
   
   const MENU_ITEMS = [
     { id: 'user_guide', label: MENU_LABELS[lang].user_guide, icon: BookUser, color: 'text-white', bg: 'bg-white/10' },
+    { id: 'knowledge_base', label: MENU_LABELS[lang].knowledge_base, icon: Book, color: 'text-purple-400', bg: 'bg-purple-500/20' },
+    { id: 'prompting_guide', label: MENU_LABELS[lang].prompting_guide, icon: PenTool, color: 'text-pink-400', bg: 'bg-pink-500/20' },
     { id: 'architecture', label: MENU_LABELS[lang].architecture, icon: Hexagon, color: 'text-blue-400', bg: 'bg-blue-500/20' },
     { id: 'state', label: MENU_LABELS[lang].state, icon: Database, color: 'text-green-400', bg: 'bg-green-500/20' },
     { id: 'ai_core', label: MENU_LABELS[lang].ai_core, icon: BrainCircuit, color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
@@ -74,6 +84,8 @@ const DocsViewer: React.FC<{ isPyriteMode: boolean }> = ({ isPyriteMode }) => {
       try {
         const fileMap = {
           user_guide: 'user_guide.md',
+          knowledge_base: 'suno_knowledge_base.md',
+          prompting_guide: 'suno_prompting_guide.md',
           architecture: 'architecture.md',
           state: 'state_management.md',
           ai_core: 'ai_core.md',
@@ -105,7 +117,7 @@ const DocsViewer: React.FC<{ isPyriteMode: boolean }> = ({ isPyriteMode }) => {
                 {lang === 'pl' ? 'Logi Systemowe' : 'System Schematics'}
             </p>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-3 overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
             {MENU_ITEMS.map((item) => {
                 const isActive = activeDoc === item.id;
                 return (

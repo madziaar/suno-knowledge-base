@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, GenerateContentResponse, Type, Schema } from "@google/genai";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { getClient } from "./client";
 import { SAFETY_SETTINGS, EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
 import { validateAndFixTags, sanitizeLyrics } from "./validators";
@@ -62,21 +61,17 @@ export class GeminiService {
     return research;
   }
 
-  /**
-   * THE ARTIST AGENT
-   * Generates high-fidelity prompts using Gemini 3 Pro's Thinking Logic.
-   */
   public async generate(isExpertMode: boolean, lyricSource: 'ai' | 'user', structuredStyle?: StyleComponents): Promise<GeneratedPrompt> {
     const { userInput, expertInputs, researchData, intentProfile } = this.context;
     
     const schema: Schema = {
       type: Type.OBJECT,
       properties: {
-        analysis: { type: Type.STRING, description: "Detailed thought process and production plan." },
-        title: { type: Type.STRING, description: "Creative song title." },
-        tags: { type: Type.STRING, description: "Strict 400 char limit, comma separated tags." },
-        style: { type: Type.STRING, description: "Strict 400 char limit, descriptive prose." },
-        lyrics: { type: Type.STRING, description: "Song lyrics with v4.5 structural tags." }
+        analysis: { type: Type.STRING, description: "Deep Reasoning Trace: 1. Sonic Anchor, 2. Narrative Arc, 3. Hardware Gear, 4. Signal Chain." },
+        title: { type: Type.STRING, description: "Evocative song title." },
+        tags: { type: Type.STRING, description: "Max 400 char technical keywords, comma separated." },
+        style: { type: Type.STRING, description: "Max 400 char descriptive sound design spec." },
+        lyrics: { type: Type.STRING, description: "V4.5 structured lyrics with brackets and melisma hyphens." }
       },
       required: ["analysis", "title", "tags", "style", "lyrics"]
     };
@@ -94,12 +89,12 @@ export class GeminiService {
     ) + (isExpertMode ? "\n" + EXPERT_SYSTEM_PROMPT : "");
 
     const prompt = isExpertMode 
-      ? GENERATE_EXPERT_PROMPT(userInput.intent, userInput.mood, userInput.instruments, researchData.text, expertInputs, "", userInput.lyricsLanguage, this.isOverclockedMode)
-      : GENERATE_SUNO_PROMPT(userInput.intent, userInput.mood, userInput.instruments, researchData.text, userInput.mode, lyricSource === 'user' ? userInput.lyricsInput : undefined, getFewShotExamples(userInput.intent), userInput.lyricsLanguage, undefined, this.isOverclockedMode, undefined, userInput.useReMi);
+      ? GENERATE_EXPERT_PROMPT(userInput.intent, userInput.mood, userInput.instruments, researchData.text, expertInputs, "", userInput.lyricsLanguage, this.isOverclockedMode, userInput.producerPersona)
+      : GENERATE_SUNO_PROMPT(userInput.intent, userInput.mood, userInput.instruments, researchData.text, userInput.mode, lyricSource === 'user' ? userInput.lyricsInput : undefined, getFewShotExamples(userInput.intent), userInput.lyricsLanguage, undefined, this.isOverclockedMode, userInput.producerPersona, userInput.useReMi);
 
     const client = getClient();
     
-    // Using Gemini 3 Pro for complex reasoning and v4.5 architecture
+    // ENGAGE GEMINI 3 PRO WITH MAXIMUM THINKING BUDGET (32k) FOR V5 DEEP REASONING
     const response = await client.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
@@ -108,15 +103,14 @@ export class GeminiService {
         responseSchema: schema,
         systemInstruction,
         safetySettings: SAFETY_SETTINGS,
-        // Engage maximum thinking budget for professional-grade architectural planning
-        thinkingConfig: { thinkingBudget: 32768 }
+        thinkingConfig: { thinkingBudget: 32768 } 
       }
     });
 
     const json = await parseJsonAsync(response.text || "{}") as GeneratedPrompt;
     json.tags = validateAndFixTags(json.tags);
     json.lyrics = sanitizeLyrics(json.lyrics);
-    json.modelUsed = 'Gemini 3 Pro // Neural Architect';
+    json.modelUsed = 'Gemini 3 Pro // Obsidian Core v5.0';
     
     return json;
   }
@@ -143,17 +137,10 @@ export class GeminiService {
   public async optimizeDraft(currentDraft: Partial<ExpertInputs & SongConcept>): Promise<Partial<ExpertInputs & SongConcept>> {
     const client = getClient();
     const prompt = `
-      TASK: Optimize the following music project draft for Suno V4.5+.
+      TASK: Optimize this music project draft for Suno V4.5+.
       DRAFT: ${JSON.stringify(currentDraft)}
-      
-      PROTOCOLS:
-      1. GENRE ANCHORING: Ensure Genre is specific and front-loaded.
-      2. GENDER GUARD: Explicitly state Male/Female/Duet in the vocal style.
-      3. REPETITION HACK: Use optimized lowercase instrumental tags like [sax][saxophone][solo].
-      4. BPM ALIGNMENT: Ensure BPM is appropriate for the chosen genre.
-      5. TECHNICAL POLISH: Add high-fidelity production terms.
-
-      OUTPUT: JSON matching the input draft structure with optimized values.
+      PROTOCOLS: 50-CHAR RULE, GENDER GUARD, REPETITION HACK, POWER ENDING.
+      OUTPUT: Optimized JSON matching input schema.
     `;
 
     const response = await client.models.generateContent({
@@ -161,7 +148,7 @@ export class GeminiService {
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        systemInstruction: getSystemInstruction(this.isOverclockedMode, "Optimize music prompt architecture", undefined, undefined, undefined, this.lang, currentDraft.lyricsLanguage),
+        systemInstruction: getSystemInstruction(this.isOverclockedMode, "Optimization", undefined, undefined, undefined, this.lang, currentDraft.lyricsLanguage),
         safetySettings: SAFETY_SETTINGS,
         thinkingConfig: { thinkingBudget: 8192 }
       }

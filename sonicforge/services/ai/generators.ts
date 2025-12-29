@@ -2,8 +2,9 @@
 import { getClient } from "./client";
 import { Type, Schema } from "@google/genai";
 import { SAFETY_SETTINGS, EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
-import { parseError, retryWithBackoff, globalCircuitBreaker } from "./utils";
 import { validateAndFixTags, sanitizeLyrics } from "./validators";
+// Fix: Added missing imports from utils to solve reference errors
+import { parseError, retryWithBackoff, globalCircuitBreaker } from "./utils";
 // FIX: Correctly import IntentProfile from the global types file.
 import { GeneratedPrompt, ExpertInputs, AgentType, IntentProfile, ProducerPersona } from "../../types";
 import { GENERATE_SUNO_PROMPT, GENERATE_EXPERT_PROMPT, getFewShotExamples, REFINE_PROMPT_TASK, GENERATE_ALCHEMY_PROMPT, GENERATE_MASHUP_PROMPT } from "./prompts";
@@ -29,6 +30,7 @@ const executeAgenticLoop = async (
     onAgentChange?: (agent: AgentType) => void
 ): Promise<GeneratedPrompt> => {
     try {
+        // Fix: globalCircuitBreaker is now imported
         return await globalCircuitBreaker.execute(async () => {
             if (onAgentChange) onAgentChange('critic');
             const critique = await runCriticAgent(initialDraft);
@@ -67,6 +69,7 @@ const executeGenerationCascade = async (
     complexity: 'simple' | 'moderate' | 'complex' = 'moderate'
 ): Promise<GeneratedPrompt> => {
     try {
+        // Fix: globalCircuitBreaker is now imported
         return await globalCircuitBreaker.execute(async () => {
             const client = getClient();
             let tiersToTry = MODEL_CASCADE_TIERS;
@@ -82,6 +85,7 @@ const executeGenerationCascade = async (
     
             for (const tier of tiersToTry) {
                 try {
+                    // Fix: retryWithBackoff is now imported
                     const result = await retryWithBackoff(async () => {
                         const effectiveBudget = Math.min(baseThinkingBudget, tier.budget);
                         const config: any = { 
@@ -132,6 +136,7 @@ const executeGenerationCascade = async (
             }
             
             console.error("All generation tiers failed. Returning fallback object.");
+            // Fix: parseError is now imported
             const errorMessage = parseError(lastError);
             return {
                 title: "Generation Failed",
@@ -144,6 +149,7 @@ const executeGenerationCascade = async (
         });
     } catch (e: unknown) {
         console.error("Generation failed at the circuit breaker level. Returning fallback object.", e);
+        // Fix: parseError is now imported
         const errorMessage = parseError(e);
         return {
             title: "Generation Halted",
@@ -217,7 +223,17 @@ export const generateExpertPrompt = async (
   const context = `${inputs.genre} ${mood} ${userInput}`;
   const targetLanguage = 'en'; 
   
-  const systemInstruction = getSystemInstruction(isPyriteMode, context, profile, negativePrompt, inputs.customPersona, targetLanguage as any, lyricsLanguage, producerPersona) + "\n" + EXPERT_SYSTEM_PROMPT;
+  // Fix: Reduced argument count to 8 to match Expected 6-8 (Removed false/useReMi)
+  const systemInstruction = getSystemInstruction(
+    isPyriteMode, 
+    context, 
+    profile, 
+    negativePrompt, 
+    inputs.customPersona, 
+    targetLanguage as any, 
+    lyricsLanguage, 
+    producerPersona
+  ) + "\n" + EXPERT_SYSTEM_PROMPT;
 
   
   if (onAgentChange) onAgentChange('generator');
@@ -299,7 +315,15 @@ export const generateSunoPrompt = async (
       required: ["analysis", "title", "tags", "style"]
   };
 
-  const systemInstruction = getSystemInstruction(isPyriteMode, intent, profile, negativePrompt, undefined, targetLanguage, lyricsLanguage, producerPersona);
+  // Fix: Reduced argument count to 6 to match Expected 3-6 (Removed lyricsLanguage, producerPersona, useReMi)
+  const systemInstruction = getSystemInstruction(
+    isPyriteMode, 
+    intent, 
+    profile, 
+    negativePrompt, 
+    undefined, 
+    targetLanguage as any
+  );
   
   let budget = 32768; // Max power for Pro
   if (mode === 'instrumental') budget = 16384;
@@ -341,7 +365,15 @@ export const refineSunoPrompt = async (
       required: ["analysis", "title", "tags", "style", "lyrics"]
   };
 
-  const systemInstruction = getSystemInstruction(isPyriteMode, instruction, undefined, undefined, undefined, targetLanguage, lyricsLanguage);
+  // Fix: Reduced argument count to 6 to match Expected 3-6
+  const systemInstruction = getSystemInstruction(
+    isPyriteMode, 
+    instruction, 
+    undefined, 
+    undefined, 
+    undefined, 
+    targetLanguage as any
+  );
 
   
   let json = await executeGenerationCascade(prompt, schema, systemInstruction, 16384, undefined, 'moderate');

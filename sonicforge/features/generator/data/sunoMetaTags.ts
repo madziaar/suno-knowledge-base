@@ -50,7 +50,6 @@ export const sunoMetaTags: SunoTag[] = [
   { id: 'g_funk', name: 'funk', category: 'genre', description: { en: 'Groove-based, syncopated bass', pl: 'Oparty na groovie, synkopowany bas' }, impact: 'high', frequency: 60 },
   { id: 'g_ambient', name: 'ambient', category: 'genre', description: { en: 'Atmospheric, focusing on timbre', pl: 'Atmosferyczny, skupiony na barwie' }, impact: 'high', frequency: 45 },
   { id: 'g_cinematic', name: 'cinematic', category: 'genre', description: { en: 'Movie soundtrack style, epic', pl: 'Styl ścieżki dźwiękowej, epicki' }, impact: 'high', frequency: 60 },
-  { id: 'g_techno_metal', name: 'techno metal fusion', category: 'genre', description: { en: 'Hybrid of electronic techno beats and heavy metal guitars', pl: 'Hybryda techno i ciężkiego metalu' }, impact: 'high', frequency: 40 },
 
   // --- 2. SUBGENRE / STYLE ---
   { id: 's_memphis', name: 'memphis trap', category: 'subgenre', description: { en: 'Dark, lo-fi, southern rap style', pl: 'Mroczny, lo-fi, południowy rap' }, impact: 'high', frequency: 80 },
@@ -71,7 +70,6 @@ export const sunoMetaTags: SunoTag[] = [
   { id: 's_grunge', name: 'grunge', category: 'subgenre', description: { en: 'Sludge sound, distorted rock, angsty', pl: 'Brudne brzmienie, przesterowany rock, pełen niepokoju' }, impact: 'high', frequency: 60 },
   { id: 's_punk', name: 'punk rock', category: 'subgenre', description: { en: 'Fast, aggressive, anti-establishment', pl: 'Szybki, agresywny, anty-systemowy' }, impact: 'high', frequency: 65 },
   { id: 's_phonk', name: 'phonk', category: 'subgenre', description: { en: 'Gritty, cowbell-heavy hip hop, distorted', pl: 'Szorstki hip hop z cowbellami, przesterowany' }, impact: 'high', frequency: 60 },
-  { id: 's_happy_hardcore', name: 'happy hardcore', category: 'subgenre', description: { en: 'Fast, euphoric dance music with high energy', pl: 'Szybka, euforia, wysoka energia' }, impact: 'high', frequency: 30 },
 
   // --- 3. VOCAL CHARACTERISTICS (KB Expanded) ---
   { id: 'v_female', name: 'female vocal', category: 'vocals', description: { en: 'Sung by a woman', pl: 'Wokal żeński' }, impact: 'high', frequency: 95 },
@@ -80,7 +78,6 @@ export const sunoMetaTags: SunoTag[] = [
   { id: 'v_powerful', name: 'powerful male vocals', category: 'vocals', description: { en: 'Strong, energetic delivery', pl: 'Silny, energiczny wokal' }, impact: 'high', frequency: 60 },
   { id: 'v_whispered', name: 'whispered', category: 'vocals', description: { en: 'Very quiet, intimate delivery', pl: 'Szeptany, intymny' }, impact: 'medium', frequency: 30 },
   { id: 'v_scream', name: 'screaming', category: 'vocals', description: { en: 'Aggressive metal/hardcore vocals', pl: 'Krzyk, agresywny wokal' }, impact: 'high', frequency: 70 },
-  { id: 'v_comedic_scream', name: 'comedic screaming', category: 'vocals', description: { en: 'Exaggerated, humorous aggressive vocals', pl: 'Przesadzone, zabawne krzyki' }, impact: 'medium', frequency: 15 },
   { id: 'v_clean', name: 'clean vocals', category: 'vocals', description: { en: 'Non-distorted singing', pl: 'Czysty śpiew' }, impact: 'high', frequency: 60 },
   { id: 'v_harsh', name: 'harsh vocals', category: 'vocals', description: { en: 'Aggressive, distorted vocals', pl: 'Agresywny, przesterowany wokal' }, impact: 'high', frequency: 60 },
   { id: 'v_guttural', name: 'guttural vocals', category: 'vocals', description: { en: 'Deep, throaty death metal vocals', pl: 'Głęboki, gardłowy wokal' }, impact: 'high', frequency: 50 },
@@ -90,15 +87,13 @@ export const sunoMetaTags: SunoTag[] = [
   { id: 'v_southern', name: 'southern flow', category: 'vocals', description: { en: 'US Southern rap accent', pl: 'Południowy akcent rapu' }, impact: 'high', frequency: 50 },
   { id: 'v_westcoast_accent', name: 'west coast accent', category: 'vocals', description: { en: 'Laid back California rap style', pl: 'Wyluzowany styl kalifornijski' }, impact: 'medium', frequency: 40 },
 
-  // --- 4. PRODUCTION & INSTRUMENTS (v4.5 Expanded) ---
+  // --- 4. PRODUCTION & INSTRUMENTS (KB Expanded) ---
   { id: 'p_phonk', name: 'phonk drum', category: 'production', description: { en: 'Essential for modern trap/hiphop authenticity', pl: 'Kluczowe dla autentyczności trapu' }, impact: 'high', frequency: 80 },
   { id: 'p_gated', name: 'gated reverb', category: 'production', description: { en: '80s drum sound, sharp decay', pl: 'Brzmienie perkusji z lat 80.' }, impact: 'high', frequency: 70 },
   { id: 'p_tape', name: 'tape saturation', category: 'production', description: { en: 'Analog warmth, slight distortion', pl: 'Analogowe ciepło' }, impact: 'high', frequency: 80 },
   { id: 'p_vinyl', name: 'vinyl crackle', category: 'production', description: { en: 'Vintage texture, surface noise', pl: 'Tekstura vintage' }, impact: 'high', frequency: 85 },
   { id: 'p_wide', name: 'wide stereo field', category: 'production', description: { en: 'Spacious, panoramic soundstage', pl: 'Przestrzenna scena' }, impact: 'high', frequency: 75 },
-  { id: 'p_hypercompressed', name: 'hyper-compressed wall of sound', category: 'production', description: { en: 'Extremely loud, dense mix with zero dynamic range', pl: 'Ekstremalnie głośny, gęsty miks' }, impact: 'medium', frequency: 20 },
   { id: 'i_808', name: '808 bass', category: 'instruments', description: { en: 'Deep sub bass from TR-808', pl: 'Głęboki bas 808' }, impact: 'high', frequency: 90 },
-  { id: 'i_flamenco_dist', name: 'distorted flamenco guitar', category: 'instruments', description: { en: 'Classical nylon strings played with heavy high-gain distortion', pl: 'Przesterowana gitara flamenco' }, impact: 'medium', frequency: 10 },
   { id: 'i_guitar_solo', name: 'guitar solo', category: 'instruments', description: { en: 'Electric guitar lead section', pl: 'Solo gitarowe' }, impact: 'high', frequency: 85 },
   { id: 'i_sax_solo', name: 'saxophone solo', category: 'instruments', description: { en: 'Saxophone lead section', pl: 'Solo saksofonowe' }, impact: 'high', frequency: 60 },
   { id: 'i_piano_solo', name: 'piano solo', category: 'instruments', description: { en: 'Piano lead section', pl: 'Solo fortepianowe' }, impact: 'high', frequency: 65 },

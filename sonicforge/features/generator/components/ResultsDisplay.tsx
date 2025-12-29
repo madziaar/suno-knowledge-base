@@ -1,6 +1,6 @@
 
 import React, { useState, memo, useMemo } from 'react';
-import { BrainCircuit, Copy, Send, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Terminal, Sparkles, MessageSquare, Globe, ExternalLink, Activity, Info } from 'lucide-react';
+import { BrainCircuit, Copy, Send, Star, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Terminal, Sparkles, MessageSquare, Globe, ExternalLink, Activity, Target, ShieldCheck, Cpu, Music } from 'lucide-react';
 import { GeneratedPrompt, GeneratorState, BuilderTranslation, ToastTranslation, BatchConstraints, GroundingChunk } from '../../../types';
 import GlassPanel from '../../../components/shared/GlassPanel';
 import BatchGenerator from './BatchGenerator';
@@ -15,16 +15,16 @@ const QualityBadge = memo(({ score, grade, status }: { score: number, grade: str
     return (
         <div className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono transition-all",
-            isOptimal ? "bg-green-500/10 border-green-500/30 text-green-400" : "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+            isOptimal ? "bg-green-500/10 border-green-500/30 text-green-400 shadow-[0_0_15px_rgba(74,222,128,0.1)]" : "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
         )}>
             <div className="flex flex-col items-center">
-                <span className="text-[10px] uppercase font-bold leading-none opacity-50 mb-0.5">Grade</span>
-                <span className="text-sm font-bold leading-none">{grade}</span>
+                <span className="text-[9px] uppercase font-black leading-none opacity-50 mb-0.5 tracking-tighter">FIDELITY</span>
+                <span className="text-sm font-black leading-none">{grade}</span>
             </div>
             <div className="w-px h-6 bg-current opacity-20" />
             <div className="flex flex-col items-center">
-                <span className="text-[10px] uppercase font-bold leading-none opacity-50 mb-0.5">Audit</span>
-                <span className="text-sm font-bold leading-none">{score}%</span>
+                <span className="text-[9px] uppercase font-black leading-none opacity-50 mb-0.5 tracking-tighter">AUDIT</span>
+                <span className="text-sm font-black leading-none">{score}%</span>
             </div>
         </div>
     );
@@ -56,7 +56,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   variations = [], isGeneratingVariations = false, onGenerateVariations, onApplyVariation, onExportBatch,
   researchData
 }) => {
-  const [showAnalysis, setShowAnalysis] = useState(true); 
+  const [showAnalysis, setShowAnalysis] = useState(false); // Default closed to focus on outputs
   const [refinementInput, setRefinementInput] = useState('');
   const [isRefining, setIsRefining] = useState(false);
 
@@ -74,21 +74,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       setIsRefining(false);
   };
 
-  const handleQuickFix = (fixType: 'end' | 'pipe' | 'vocal') => {
-      if (!result) return;
-      sfx.play('success');
-      
-      let updated = { ...result };
-      if (fixType === 'end') {
-          updated.lyrics = (result.lyrics || '') + "\n[Instrumental Fade Out]\n[End]";
-      } else if (fixType === 'pipe') {
-          updated.lyrics = (result.lyrics || '').replace(/\[([^\]|]+)\]/g, (match, p1) => `[${p1.trim()} | High Energy]`);
-      } else if (fixType === 'vocal') {
-          updated.style = "Sassy Female Vocals, Mature Timbre, " + result.style;
-      }
-      
-      onUpdateResult(updated);
-      showToast?.("Quick-Fix Applied", "success");
+  const handleCopy = (text: string, label: string) => {
+      navigator.clipboard.writeText(text);
+      showToast?.(`${label} Copied`, 'success');
+      sfx.play('light');
   };
 
   const outputT = t?.output || { 
@@ -99,11 +88,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
       analysisTitle: "Deep Reasoning Trace"
   };
 
-  const isWorking = state === GeneratorState.RESEARCHING || state === GeneratorState.ANALYZING || state === GeneratorState.GENERATING;
+  const isWorking = state === GeneratorState.RESEARCHING || state === GeneratorState.ANALYZING || state === GeneratorState.GENERATING || state === GeneratorState.OPTIMIZING;
 
   if (!result && state !== GeneratorState.COMPLETE) {
     return (
-      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" className="h-full min-h-[500px] flex flex-col items-center justify-center text-zinc-600 p-8 text-center border-dashed border-2 border-white/5 relative group">
+      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" className="h-full min-h-[600px] flex flex-col items-center justify-center text-zinc-600 p-8 text-center border-dashed border-2 border-white/5 relative group overflow-hidden">
         <AnimatePresence mode="wait">
           {isWorking ? (
             <motion.div 
@@ -116,7 +105,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               <NeuralSpinner 
                 isPyriteMode={isPyriteMode} 
                 size="lg" 
-                label={state === GeneratorState.RESEARCHING ? "Researching Sonic DNA" : state === GeneratorState.ANALYZING ? "Spectral Deconstruction" : "Architecting Blueprint"} 
+                label={state === GeneratorState.RESEARCHING ? "Neural DNA Search" : state === GeneratorState.ANALYZING ? "Architectural Logic" : "Synthesizing Core"} 
               />
             </motion.div>
           ) : (
@@ -126,33 +115,42 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               animate={{ opacity: 1 }}
               className="flex flex-col items-center"
             >
-              <Sparkles className="w-12 h-12 mb-4 opacity-20 group-hover:scale-110 transition-transform" />
-              <h3 className="text-lg font-bold text-zinc-400 tracking-widest uppercase">{outputT.waiting}</h3>
-              <p className="text-xs max-w-xs mt-2 font-mono">{outputT.waitingDesc}</p>
+              <Target className="w-16 h-16 mb-4 opacity-20 group-hover:scale-110 transition-transform text-white" />
+              <h3 className="text-xl font-black text-zinc-400 tracking-[0.2em] uppercase">{outputT.waiting}</h3>
+              <p className="text-xs max-w-xs mt-3 font-mono leading-relaxed">{outputT.waitingDesc}</p>
             </motion.div>
           )}
         </AnimatePresence>
+        
+        <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
+            <svg width="100%" height="100%">
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                </pattern>
+                <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+        </div>
       </GlassPanel>
     );
   }
 
-  const issues = quality?.issues || [];
-  const sources = researchData?.sources || [];
-
   return (
     <div className="flex flex-col h-full space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
       
-      {/* HEADER SECTION WITH QUALITY AUDIT */}
-      <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-              <div className={cn("p-2 rounded-xl", isPyriteMode ? "bg-purple-600/20 text-purple-400" : "bg-blue-600/20 text-blue-400")}>
-                  <BrainCircuit className="w-5 h-5 animate-pulse" />
+      {/* HEADER SECTION */}
+      <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-4">
+              <div className={cn("p-2.5 rounded-2xl border bg-black/40", isPyriteMode ? "border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]" : "border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]")}>
+                  <BrainCircuit className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                  <h3 className="text-xs font-bold text-white uppercase tracking-widest leading-none mb-1">Blueprint Finalized</h3>
-                  <p className="text-[9px] text-zinc-500 font-mono">
-                      {result?.modelUsed ? `ENGINE: ${result.modelUsed.toUpperCase()}` : 'ENCRYPTED_STREAM_V45'}
-                  </p>
+                  <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none mb-1.5">{result.title || "Untitled Blueprint"}</h3>
+                  <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                      <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter">
+                        {result?.modelUsed || 'Neural_Core_v5.0'}
+                      </p>
+                  </div>
               </div>
           </div>
           {quality && (
@@ -160,157 +158,124 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           )}
       </div>
 
-      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" noPadding className="flex-1 flex flex-col overflow-hidden border-white/10 bg-zinc-950/80 shadow-2xl relative">
+      <GlassPanel variant={isPyriteMode ? 'pyrite' : 'default'} layer="surface" noPadding className="flex-1 flex flex-col overflow-hidden border-white/10 bg-zinc-950/80 shadow-2xl relative min-h-[700px]">
         
-        {/* RESEARCH ANCHORS (Google Search Grounding) */}
-        {sources.length > 0 && (
-            <div className="px-5 py-3 border-b border-white/5 bg-blue-500/5 flex flex-col gap-2 shrink-0">
-                <div className="flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest">Neural DNA Anchors ({sources.length})</span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-                    {sources.map((source, i) => (
-                        <a 
-                            key={i} 
-                            href={source.web?.uri} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-white/10 text-[8px] text-zinc-400 hover:text-white transition-colors whitespace-nowrap group"
-                        >
-                            <span className="max-w-[120px] truncate">{source.web?.title}</span>
-                            <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </a>
-                    ))}
-                </div>
-            </div>
-        )}
-
-        {/* Quick-Fix Terminal */}
-        {issues.length > 0 && (
-            <div className="px-5 py-3 border-b border-white/5 bg-amber-500/5 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <span className="text-[9px] font-bold text-amber-500/80 uppercase">Detected structural weaknesses ({issues.length})</span>
-                </div>
-                <div className="flex gap-2">
-                    {issues.some(i => i.includes('ending')) && (
-                        <button onClick={() => handleQuickFix('end')} className="text-[9px] font-bold text-amber-200 hover:text-white bg-amber-500/20 px-2 py-1 rounded border border-amber-500/30 transition-all">Fix Ending</button>
-                    )}
-                    {issues.some(i => i.includes('Vocal')) && (
-                        <button onClick={() => handleQuickFix('vocal')} className="text-[9px] font-bold text-amber-200 hover:text-white bg-amber-500/20 px-2 py-1 rounded border border-amber-500/30 transition-all">Lock Voice</button>
-                    )}
-                </div>
-            </div>
-        )}
-
         {/* REFINEMENT BAR */}
-        <div className="p-3 border-b border-white/5 bg-white/[0.02]">
+        <div className="p-4 border-b border-white/5 bg-white/[0.02]">
             <div className="relative flex items-center">
-                <MessageSquare className="absolute left-3 w-4 h-4 text-zinc-500" />
+                <MessageSquare className="absolute left-4 w-4 h-4 text-zinc-500" />
                 <input 
                     value={refinementInput}
                     onChange={(e) => setRefinementInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleRefineSubmit()}
-                    placeholder={isPyriteMode ? "Give me an order, darling... (e.g. 'Make it faster')" : "Enter refinement instruction... (e.g. 'Add more bass')"}
+                    placeholder={isPyriteMode ? "Whisper your desires, Darling..." : "Instruct the Refiner Agent..."}
                     disabled={isRefining}
                     className={cn(
-                        "w-full bg-black/40 border rounded-lg pl-10 pr-10 py-2.5 text-xs text-white outline-none focus:ring-1 transition-all",
+                        "w-full bg-black/60 border rounded-xl pl-12 pr-12 py-3 text-xs md:text-sm text-white outline-none focus:ring-1 transition-all font-medium",
                         isPyriteMode ? "border-purple-500/30 focus:border-purple-500 focus:ring-purple-500/20" : "border-white/10 focus:border-white/30 focus:ring-white/10"
                     )}
                 />
                 <button 
                     onClick={handleRefineSubmit}
                     disabled={!refinementInput.trim() || isRefining}
-                    className="absolute right-2 p-1.5 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+                    className="absolute right-3 p-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
                 >
-                    {isRefining ? <span className="animate-spin text-xs">⟳</span> : <Send className="w-3.5 h-3.5" />}
+                    {isRefining ? <span className="animate-spin text-xs">⟳</span> : <Send className="w-4 h-4" />}
                 </button>
             </div>
         </div>
 
-        {/* NEURAL LOGIC CORE (Reasoning Display) */}
-        {result?.analysis && (
-            <div className="border-b border-white/5 shrink-0 bg-black/40">
-                <button 
-                    onClick={() => setShowAnalysis(!showAnalysis)}
-                    className={cn(
-                        "w-full flex items-center justify-between px-5 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-colors",
-                        isPyriteMode ? "text-purple-400" : "text-blue-400"
-                    )}
-                >
-                    <span className="flex items-center gap-2">
-                        <Terminal className="w-3.5 h-3.5" />
-                        {outputT.analysisTitle || "Deep Reasoning Trace"}
-                    </span>
-                    {showAnalysis ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-                <AnimatePresence>
-                    {showAnalysis && (
-                        <motion.div 
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                        >
-                            <div className="px-5 pb-4">
-                                <div className={cn(
-                                    "p-4 rounded-lg border text-xs font-mono leading-relaxed whitespace-pre-wrap relative overflow-hidden",
-                                    isPyriteMode ? "bg-purple-950/20 border-purple-500/20 text-purple-100/90" : "bg-blue-950/20 border-blue-500/20 text-blue-100/90"
-                                )}>
-                                    <div className="absolute top-0 left-0 px-2 py-1 bg-white/5 text-[8px] font-bold uppercase tracking-wider rounded-br-lg text-white/50">
-                                        Agentic Thought stream
-                                    </div>
-                                    <div className="pt-4 opacity-90">
-                                        {result.analysis}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-            <div className="group">
-              <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500 mb-2"><Star className="w-3 h-3" />{outputT.titleLabel}</span>
-              <div className="font-mono text-xl md:text-2xl font-bold text-white tracking-tight">{result?.title}</div>
-            </div>
+        {/* RESULTS FEED */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
             
-            <div className="group">
-              <div className="flex justify-between mb-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500">Style DNA</span>
-                <button onClick={() => result?.style && onEnhance('style', result.style)} className="text-[9px] text-purple-400 hover:underline">Auto-Refine</button>
+            {/* Field 1: Style of Music (The Style Prompt) */}
+            <div className="group space-y-3 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-zinc-400">
+                    <Activity className="w-3.5 h-3.5 text-blue-400" />
+                    Field 1: Style of Music
+                </span>
+                <button 
+                    onClick={() => result?.style && handleCopy(result.style, 'Style Prompt')} 
+                    className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5"
+                >
+                    <Copy className="w-3 h-3" />
+                    Copy
+                </button>
               </div>
-              <div className="p-4 rounded-xl border border-white/5 bg-black/40 text-blue-100/90 font-mono text-xs leading-relaxed select-all">
+              <div className="p-4 rounded-xl border border-white/10 bg-black/40 text-blue-100/90 font-mono text-xs md:text-sm leading-relaxed select-all relative group-hover:border-blue-500/30 transition-colors shadow-inner">
                 {result?.style}
               </div>
             </div>
 
-            <div className="group">
-              <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500 mb-2">Meta Tags</span>
+            {/* Field 2: Lyrics (The Structured Content) */}
+            {showLyrics && (
+              <div className="group space-y-3 animate-in fade-in slide-in-from-left-4 duration-500 delay-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-zinc-400">
+                      <Music className="w-3.5 h-3.5 text-purple-400" />
+                      Field 2: Lyrics
+                  </span>
+                  <div className="flex gap-2">
+                     <button 
+                        onClick={() => result?.lyrics && handleCopy(result.lyrics, 'Lyrics')} 
+                        className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/5"
+                    >
+                        <Copy className="w-3 h-3" />
+                        Copy
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-black/40 p-6 rounded-xl border border-white/10 text-zinc-300 font-mono text-xs md:text-sm leading-[1.8] whitespace-pre-wrap select-all relative shadow-inner group-hover:border-purple-500/30 transition-colors max-h-[500px] overflow-y-auto custom-scrollbar">
+                    {result?.lyrics}
+                </div>
+              </div>
+            )}
+
+            {/* Tags (Supplemental) */}
+            <div className="group animate-in fade-in slide-in-from-left-4 duration-500 delay-200 pt-4 border-t border-white/5">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-zinc-600 mb-3">
+                  <Terminal className="w-3.5 h-3.5" />
+                  Meta Tags Detected
+              </span>
               <div className="flex flex-wrap gap-2">
                   {result?.tags?.split(',').map((tag, i) => (
-                      <span key={i} className="px-2.5 py-1 text-[10px] font-mono font-medium rounded-md border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 transition-colors cursor-default">
+                      <span key={i} className="px-2 py-1 text-[10px] font-mono font-medium rounded border border-white/5 bg-white/5 text-zinc-500 uppercase">
                           {tag.trim()}
                       </span>
                   ))}
               </div>
             </div>
 
-            {showLyrics && (
-              <div className="group pt-4 border-t border-white/5">
-                <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 text-zinc-500 mb-3">Structured Lyrical Narrative</span>
-                <div className="bg-black/40 p-6 rounded-xl border border-white/5 text-zinc-300 font-mono text-xs leading-loose whitespace-pre-wrap select-all relative overflow-hidden">
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-purple-500/5 to-transparent h-6 top-1/2 -mt-3 opacity-20" />
-                    {result?.lyrics}
+            {/* Reasoning Trace (Collapsible) */}
+            {result?.analysis && (
+                <div className="pt-4 border-t border-white/5">
+                     <button 
+                        onClick={() => setShowAnalysis(!showAnalysis)}
+                        className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors"
+                     >
+                        {showAnalysis ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                        {outputT.analysisTitle || "Deep Reasoning Trace"}
+                     </button>
+                     <AnimatePresence>
+                        {showAnalysis && (
+                            <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden mt-3"
+                            >
+                                <div className="p-4 rounded-xl bg-black/20 border border-white/5 text-[10px] font-mono text-zinc-400 leading-relaxed whitespace-pre-wrap">
+                                    {result.analysis}
+                                </div>
+                            </motion.div>
+                        )}
+                     </AnimatePresence>
                 </div>
-              </div>
             )}
 
-            {/* BATCH GENERATOR INTEGRATION */}
-            <div className="pt-6 border-t border-white/5">
+            {/* BATCH GENERATOR */}
+            <div className="pt-8 border-t border-white/5">
                 <BatchGenerator 
                     basePrompt={result!}
                     variations={variations}
@@ -324,26 +289,28 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
             </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="p-4 border-t border-white/5 bg-white/[0.02] flex items-center gap-3 shrink-0">
+        {/* ACTION BAR */}
+        <div className="p-6 border-t border-white/10 bg-black/60 flex items-center gap-4 shrink-0">
             <button 
                 onClick={onOpenExport}
                 className={cn(
-                    "flex-1 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all",
-                    isPyriteMode ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20" : "bg-zinc-800 text-white"
+                    "flex-1 py-4 rounded-xl font-black text-xs md:text-sm uppercase tracking-[0.3em] transition-all relative overflow-hidden group/btn",
+                    isPyriteMode ? "bg-purple-600 text-white shadow-[0_0_30px_rgba(168,85,247,0.3)]" : "bg-white text-black shadow-xl"
                 )}
             >
-                {outputT.exportSuno}
+                <span className="relative z-10">{outputT.exportSuno}</span>
+                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
             </button>
             <button 
                 onClick={() => {
-                    navigator.clipboard.writeText(`${result?.title}\n\n${result?.style}\n\n${result?.tags}\n\n${result?.lyrics}`);
-                    showToast?.("Architecture Copied", "success");
+                    navigator.clipboard.writeText(`${result?.title}\n\nStyle: ${result?.style}\n\nTags: ${result?.tags}\n\n${result?.lyrics}`);
+                    showToast?.("Full Composite Copied", "success");
                     sfx.play('light');
                 }}
-                className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 transition-colors"
+                className="p-4 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all border border-white/5 active:scale-95"
+                title="Full Composite Copy"
             >
-                <Copy className="w-5 h-5" />
+                <Copy className="w-6 h-6" />
             </button>
         </div>
       </GlassPanel>

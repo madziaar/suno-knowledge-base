@@ -2,7 +2,7 @@
 import React, { useCallback, useMemo, Suspense, useState } from 'react';
 import { GeneratorState } from '../../types';
 import { translations } from '../../translations';
-import { exportBatchAsText } from '../../lib/export-utils';
+import { exportBatchAsText, exportAsSunoText } from '../../lib/export-utils';
 import { useSettings, useUI, useHistory, usePrompt } from '../../contexts';
 import ExportPanel from './components/ExportPanel';
 import { ForgeLayout } from './layouts/ForgeLayout';
@@ -11,6 +11,7 @@ import StatusLog from './StatusLog/index';
 import { useKeyboardShortcuts } from '../../lib/utils';
 import { generateRandomConcept } from './utils';
 import { usePromptActions, useGenerationWorkflow, useHistoryActions } from './hooks';
+import { sfx } from '../../lib/audio';
 
 const PyriteChat = React.lazy(() => import('../chat/PyriteChat'));
 
@@ -33,7 +34,6 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
     updateResult, 
     generateVariations, 
     applyVariation, 
-    state: workflowState, 
     error, 
     activeAgent, 
     researchData 
@@ -44,7 +44,6 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
   const [isExportPanelOpen, setIsExportPanelOpen] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(0);
 
-  // Use safer translation lookup with explicit fallbacks
   const currentTranslations = useMemo(() => translations[lang] || translations['en'], [lang]);
   const t = currentTranslations?.builder || translations['en'].builder;
   const tToast = currentTranslations?.toast || translations['en'].toast;
@@ -79,13 +78,28 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
     }
   }, [variations, result, showToast]);
 
+  const handleGlobalCopy = useCallback(() => {
+      if (result) {
+          navigator.clipboard.writeText(exportAsSunoText(result));
+          showToast(tToast.copied, 'success');
+          sfx.play('light');
+      }
+  }, [result, showToast, tToast.copied]);
+
+  const injectTagAtEnd = useCallback((tag: string) => {
+      const current = inputs.lyricsInput || '';
+      updateInput({ lyricsInput: `${current}\n[${tag}]\n` });
+      showToast(`Injected [${tag}]`, 'info');
+      sfx.play('click');
+  }, [inputs.lyricsInput, updateInput, showToast]);
+
+  // REGISTER GLOBAL SHORTCUTS
   useKeyboardShortcuts([
-    { 
-      key: 'Enter', 
-      ctrlKey: true, 
-      handler: () => { generate(); }, 
-      allowInInput: true 
-    }
+    { key: 'Enter', ctrlKey: true, handler: () => generate(), allowInInput: true },
+    { key: 'b', ctrlKey: true, handler: () => injectTagAtEnd('Verse'), allowInInput: true },
+    { key: 'h', ctrlKey: true, handler: () => injectTagAtEnd('Chorus'), allowInInput: true },
+    { key: 'c', ctrlKey: true, handler: () => handleGlobalCopy(), allowInInput: false },
+    { key: 'e', ctrlKey: true, handler: () => setIsExportPanelOpen(true), allowInInput: false },
   ]);
 
   const historySummary = useMemo(() => {

@@ -97,7 +97,8 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = memo(({ isPyriteMode }) 
         } else {
           const sliceWidth = canvas.width / dataArray.length;
           let x = 0;
-          const opacity = performanceMode === 'medium' ? 0.08 : 0.12;
+          // Fix: Updated 'medium' to 'balanced' to match new core types
+          const opacity = performanceMode === 'balanced' ? 0.08 : 0.12;
           ctx.fillStyle = `rgba(${visualizerColors.r}, ${visualizerColors.g}, ${visualizerColors.b}, ${opacity})`;
           for (let i = 0; i < dataArray.length; i++) {
             const v = dataArray[i] / 255.0;

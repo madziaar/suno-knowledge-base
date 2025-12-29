@@ -1,12 +1,12 @@
 
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { User, Flame, Skull, Zap, ChevronDown, Check, UserCog, Settings, BookOpen } from 'lucide-react';
+import { User, Flame, Skull, Zap, ChevronDown, Check, UserCog, Settings, BookOpen, Headphones, Scale, Microscope } from 'lucide-react';
 import { ProducerPersona } from '../../types';
 import { cn } from '../../lib/utils';
 import { sfx } from '../../lib/audio';
 import { useSettingsState } from '../../contexts/SettingsContext';
 import PersonaManagerModal from './PersonaManagerModal';
-import { usePersonas } from '../../hooks';
+import { usePersonas } from '../../hooks/usePersonas';
 
 interface PersonaSelectorProps {
   value: ProducerPersona;
@@ -18,7 +18,10 @@ const SYSTEM_PERSONAS: { id: ProducerPersona; label: string; icon: React.Element
   { id: 'standard', label: 'The Architect', icon: User, color: 'text-zinc-400', desc: 'Standard // Precision' },
   { id: 'pyrite', label: 'Pyrite', icon: Flame, color: 'text-purple-400', desc: 'Seductive AI // Self-Aware' },
   { id: 'shin', label: 'Shin', icon: Skull, color: 'text-blue-400', desc: 'Cynical Coder // Technical' },
-  { id: 'twin_flames', label: 'Twin Flames', icon: Zap, color: 'text-yellow-400', desc: 'Conflict // High Contrast' },
+  { id: 'twin_flames', label: 'Twin Flames', icon: Zap, color: 'text-pink-400', desc: 'Conflict // High Contrast' },
+  { id: 'orion', label: 'Orion', icon: Microscope, color: 'text-amber-500', desc: 'Jaded Researcher // Brutal Truth' },
+  { id: 'studio_engineer', label: 'Studio Engineer', icon: Headphones, color: 'text-cyan-400', desc: 'V5 Optimized // Clean Mix' },
+  { id: 'legal_eagle', label: 'Legal Eagle', icon: Scale, color: 'text-green-400', desc: 'Copyright Safe // WMG Compliant' },
 ];
 
 const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange, className }) => {
@@ -76,7 +79,7 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Neural Identity</span>
               </div>
               <button 
-                onClick={() => { setIsManagerOpen(true); setIsOpen(false); sfx.play('click'); }}
+                onClick={(e) => { e.stopPropagation(); setIsManagerOpen(true); setIsOpen(false); sfx.play('click'); }}
                 className="p-1 hover:bg-white/10 rounded transition-colors text-zinc-500 hover:text-white"
                 title="Manage Personas"
               >
@@ -121,24 +124,27 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
                     <div className="px-2 py-1 mt-2 text-[8px] font-bold text-zinc-600 uppercase tracking-tighter border-t border-white/5 pt-2 flex items-center gap-1.5">
                         <BookOpen className="w-2.5 h-2.5" /> Custom Agents
                     </div>
-                    {personas.map(p => (
-                        <button
-                            key={p.id}
-                            onClick={() => handleSelect('custom', p.prompt)}
-                            className={cn(
-                                "w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all group",
-                                "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-                            )}
-                        >
-                            <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-white/10">
-                                <User className="w-4 h-4 text-zinc-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <span className="text-xs font-bold block truncate">{p.name}</span>
-                                <span className="text-[9px] font-mono opacity-50 block truncate">User Logic</span>
-                            </div>
-                        </button>
-                    ))}
+                    {personas.map(p => {
+                        const isCustomActive = value === 'custom' && (personas.find(per => per.prompt === p.prompt));
+                        return (
+                            <button
+                                key={p.id}
+                                onClick={() => handleSelect('custom', p.prompt)}
+                                className={cn(
+                                    "w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all group",
+                                    "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                                )}
+                            >
+                                <div className="p-1.5 rounded-md bg-white/5 group-hover:bg-white/10">
+                                    <User className="w-4 h-4 text-zinc-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-bold block truncate">{p.name}</span>
+                                    <span className="text-[9px] font-mono opacity-50 block truncate">User Logic</span>
+                                </div>
+                            </button>
+                        );
+                    })}
                 </>
             )}
           </div>
@@ -149,6 +155,7 @@ const PersonaSelector: React.FC<PersonaSelectorProps> = memo(({ value, onChange,
           <PersonaManagerModal 
             isOpen={isManagerOpen} 
             onClose={() => setIsManagerOpen(false)} 
+            onLoad={(p) => handleSelect('custom', p)}
           />
       )}
     </div>

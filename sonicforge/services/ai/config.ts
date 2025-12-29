@@ -1,6 +1,6 @@
 
 import { HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/genai";
-// Fixed: Added PYRITE_SIGNATURE_DNA to imports from prompts
+// Fixed: Ensure all imported members exist in the prompts/system.ts file.
 import { getSystemInstruction, EXPERT_RULES_BLOCK, SYNTAX_BLOCK, IDENTITY_BLOCKS, CONSTRAINTS_BLOCK, NEGATIVE_CONSTRAINTS_BLOCK, REASONING_BLOCK, PYRITE_SIGNATURE_DNA } from "./prompts";
 import { getHighImpactTagsString } from "../../data";
 
@@ -15,8 +15,8 @@ export const SAFETY_SETTINGS: SafetySetting[] = [
 export const TAG_DATABASE = getHighImpactTagsString();
 
 // Re-export for backward compatibility
-// Fixed: Added PYRITE_SIGNATURE_DNA to exports
-export { getSystemInstruction, PYRITE_SIGNATURE_DNA };
+// Fixed: Re-exporting members explicitly.
+export { getSystemInstruction, PYRITE_SIGNATURE_DNA, EXPERT_RULES_BLOCK, SYNTAX_BLOCK, IDENTITY_BLOCKS, CONSTRAINTS_BLOCK, NEGATIVE_CONSTRAINTS_BLOCK, REASONING_BLOCK };
 
 // Inject Reasoning Block into Identities for safety
 export const STANDARD_IDENTITY = IDENTITY_BLOCKS.STANDARD + REASONING_BLOCK + CONSTRAINTS_BLOCK + NEGATIVE_CONSTRAINTS_BLOCK;

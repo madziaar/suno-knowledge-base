@@ -45,7 +45,7 @@ export const usePersonas = () => {
           if (Array.isArray(imported)) {
             setPersonas(prev => {
                 const existingIds = new Set(prev.map(p => p.id));
-                const newItems = imported.filter(p => p.id && p.name && p.prompt && !existingIds.has(p.id));
+                const newItems = imported.filter((p: any) => p.id && p.name && p.prompt && !existingIds.has(p.id));
                 return [...prev, ...newItems];
             });
             resolve(true);

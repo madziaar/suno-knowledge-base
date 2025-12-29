@@ -11,7 +11,7 @@ export interface HistoryItem {
   result: GeneratedPrompt;
   lyricSource: 'ai' | 'user';
   researchData: { text: string; sources: GroundingChunk[] } | null;
-  isFavorite?: boolean; // New: Favorite status
+  isFavorite?: boolean;
 }
 
 export interface Preset {
@@ -48,27 +48,27 @@ export interface Persona {
 
 export interface TemplateVariation {
   name: string;
-  modifications: string; // Description of changes
-  apply?: (base: GenreTemplate) => Partial<GenreTemplate>; // Optional logic override
+  modifications: string;
+  apply?: (base: GenreTemplate) => Partial<GenreTemplate>;
 }
 
 export interface GenreTemplate {
   id: string;
   name: { en: string, pl: string };
   category: string;
-  stylePrompt: string; // The "Golden" style string
+  stylePrompt: string;
   bpmRange: [number, number];
   recommendedKeys: string[];
-  commonStructure: string[]; // e.g. ["Intro", "Verse", "Chorus"]
-  metaTags: string[]; // e.g. ["[Solo]", "[Drop]"]
+  commonStructure: string[];
+  metaTags: string[];
   tips: string[];
   variations: TemplateVariation[];
-  exampleOutput: string; // For preview
+  exampleOutput: string;
 }
 
 export interface StoryArc {
   id: string;
-  name: { en: string; pl: string }; // Localized name
+  name: { en: string; pl: string };
   description: { en: string; pl: string };
   structure: SongSection[];
 }

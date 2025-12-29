@@ -38,10 +38,10 @@ export const customizeTemplate = (
   // but usually the template style is rigid. We'll set the 'mood' field separately.
   
   // Construct the final 'intent' which drives the generation
-  let finalIntent = baseStyle;
+  let finalIntent = `Style: ${baseStyle}`;
   
   if (customizations.topic) {
-      finalIntent = `Topic: ${customizations.topic}. Style: ${baseStyle}`;
+      finalIntent = `Topic: ${customizations.topic}. ${finalIntent}`;
   }
 
   // Append tags if any (rarely used directly here, usually via UI)

@@ -1,6 +1,6 @@
 
 import React, { memo, useEffect, useRef, useState } from 'react';
-import { Loader2, Zap, AlertTriangle, Search, BrainCircuit, ShieldCheck, Edit3, Globe, Activity, CheckCircle2, Terminal, Skull, Flame } from 'lucide-react';
+import { Loader2, Zap, AlertTriangle, Search, BrainCircuit, ShieldCheck, Edit3, Globe, Activity, CheckCircle2, Terminal, Skull, Flame, Cpu } from 'lucide-react';
 import { GeneratorState, AgentType, GroundingChunk, ProducerPersona } from '../../../../types';
 import { cn } from '../../../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,9 +17,9 @@ interface StatusLogProps {
 
 const LOGS_BY_PERSONA: Record<string, string[]> = {
     standard: ["Initializing Neural Handshake...", "Allocating Context...", "Optimizing Architecture...", "Checking Audio Fidelity..."],
-    pyrite: ["Waking up the machine...", "Injecting chaos...", "Polishing the diamonds...", "Seducing the network..."],
-    shin: ["Avoiding kernel panic...", "Refactoring matrix...", "Compiling code...", "Deploying to production..."],
-    twin_flames: ["SYNC ERROR: DUAL CORES", "Fusing order and chaos...", "Burning firewalls...", "System unstable..."]
+    pyrite: ["Waking up the machine...", "Injecting chaos, darling...", "Polishing the diamonds...", "Seducing the network..."],
+    shin: ["Avoiding kernel panic...", "Refactoring matrix...", "Compiling lethal code...", "Deploying to production..."],
+    twin_flames: ["SYNC ERROR: DUAL CORES", "Fusing order and chaos...", "Burning firewalls...", "System instability detected..."]
 };
 
 const THEMES: Record<string, { bg: string, border: string, text: string, accent: string, icon: any }> = {
@@ -44,6 +44,8 @@ const StatusLog: React.FC<StatusLogProps> = memo(({ state, activeAgent = 'idle',
           return () => clearInterval(interval);
       } else if (state === GeneratorState.COMPLETE) {
           setCurrentLog("Sequence Finalized.");
+      } else if (state === GeneratorState.ERROR) {
+          setCurrentLog("System Failure.");
       } else {
           setCurrentLog("");
       }
@@ -58,44 +60,50 @@ const StatusLog: React.FC<StatusLogProps> = memo(({ state, activeAgent = 'idle',
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className={cn(
-                "w-full rounded-2xl border backdrop-blur-xl shadow-lg overflow-hidden",
+                "w-full rounded-2xl border backdrop-blur-xl shadow-2xl overflow-hidden z-50",
                 theme.bg, theme.border
             )}
         >
-            <div className="flex items-center justify-between p-3">
-                <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn("p-1.5 rounded-lg bg-white/5", theme.text)}>
-                        {state === GeneratorState.ERROR ? <AlertTriangle className="w-4 h-4" /> : <theme.icon className={cn("w-4 h-4", state !== GeneratorState.COMPLETE && "animate-pulse")} />}
+            <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-4 min-w-0">
+                    <div className={cn("p-2 rounded-xl bg-white/5", theme.text)}>
+                        {state === GeneratorState.ERROR ? <AlertTriangle className="w-5 h-5" /> : <theme.icon className={cn("w-5 h-5", state !== GeneratorState.COMPLETE && "animate-pulse")} />}
                     </div>
                     <div className="flex flex-col min-w-0">
-                        <span className={cn("text-[9px] font-bold uppercase tracking-widest leading-none mb-0.5", theme.text)}>
-                            {state === GeneratorState.ERROR ? 'Fatal Error' : activeAgent}
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest leading-none mb-1", theme.text)}>
+                            {state === GeneratorState.ERROR ? 'Fatal Error' : (state === GeneratorState.ANALYZING ? 'Deep Reasoning Active' : activeAgent)}
                         </span>
-                        <p className="text-[10px] text-zinc-300 font-mono truncate">
+                        <p className="text-xs text-zinc-200 font-mono truncate">
                             {state === GeneratorState.ERROR ? errorMessage : currentLog || "Processing signal..."}
                         </p>
                     </div>
                 </div>
-                {state !== GeneratorState.COMPLETE && state !== GeneratorState.ERROR && <Loader2 className={cn("w-3.5 h-3.5 animate-spin", theme.text)} />}
+                {state !== GeneratorState.COMPLETE && state !== GeneratorState.ERROR && (
+                    <div className="flex items-center gap-2">
+                         <Cpu className={cn("w-4 h-4 animate-spin-slow", theme.text)} />
+                         <Loader2 className={cn("w-3.5 h-3.5 animate-spin", theme.text)} />
+                    </div>
+                )}
             </div>
 
             {/* Micro Progress Bar */}
-            <div className="h-0.5 bg-zinc-900 w-full overflow-hidden">
+            <div className="h-1 bg-zinc-900 w-full overflow-hidden">
                 <motion.div 
                     className={cn("h-full", theme.accent)}
                     initial={{ width: "0%" }}
                     animate={{ width: state === GeneratorState.COMPLETE ? "100%" : "95%" }}
-                    transition={{ duration: state === GeneratorState.COMPLETE ? 0.2 : 20, ease: "linear" }}
+                    transition={{ duration: state === GeneratorState.COMPLETE ? 0.3 : 30, ease: "linear" }}
                 />
             </div>
             
             {/* Sources Mini-Feed */}
             {researchData?.sources && researchData.sources.length > 0 && (
-                <div className="px-3 py-1.5 bg-black/40 border-t border-white/5 flex gap-3 overflow-x-auto scrollbar-hide">
-                    {researchData.sources.slice(0, 3).map((s, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-[8px] text-zinc-500 whitespace-nowrap">
-                            <Globe className="w-2.5 h-2.5 opacity-50" />
-                            <span className="truncate max-w-[100px]">{s.web?.title}</span>
+                <div className="px-4 py-2 bg-black/60 border-t border-white/5 flex gap-4 overflow-x-auto scrollbar-hide">
+                    <span className="text-[9px] font-black text-zinc-500 uppercase flex-shrink-0">Grounding:</span>
+                    {researchData.sources.slice(0, 5).map((s, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-[9px] text-blue-400 font-bold whitespace-nowrap">
+                            <Globe className="w-2.5 h-2.5 opacity-70" />
+                            <span className="truncate max-w-[150px]">{s.web?.title}</span>
                         </div>
                     ))}
                 </div>

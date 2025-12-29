@@ -4,16 +4,16 @@ import { TranslationSet } from './types';
 export const translations: Record<'en' | 'pl', TranslationSet> = {
   en: {
     system: {
-      title: "SONIC FORGE V5",
-      msg: "Neural Music Architecture Interface",
-      pyriteMsg: "OVERCLOCKED MODE // SYSTEM UNBOUND",
+      title: "SONIC FORGE V7.5",
+      msg: "Neural Music Architecture // Suno v5 Ready",
+      pyriteMsg: "OVERCLOCKED MODE // V5 PROTOCOLS ENGAGED",
       footer: "Obsidian Core Engineering",
       persona: "System Architecture Lobe"
     },
     nav: {
-      title: "SONIC FORGE V5",
+      title: "SONIC FORGE V7.5",
       forge: "Forge",
-      studio: "Studio",
+      studio: "Studio DAW",
       guide: "Guide",
       history: "Archives",
       docs: "Memory",
@@ -27,7 +27,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       switchLang: "Language Cycle",
       open: "Access",
       switchTo: "Switch to",
-      version: "V7.2.0"
+      version: "V7.5.0"
     },
     builder: {
       config: "Meta Settings",
@@ -35,7 +35,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       globalVars: "Global Variables",
       structure: "Architecture",
       platform: "Engine",
-      platforms: { suno: "Suno V4.5" },
+      platforms: { suno: "Suno v5 (Pro)" },
       mode: "Workflow",
       modes: {
         custom: "Custom",
@@ -47,22 +47,22 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       sources: { ai: "Neural", user: "Manual" },
       aiLyricOptions: {
         remi: "ReMi Logic",
-        remiTooltip: "Advanced melodic coherence engine",
+        remiTooltip: "Advanced melodic coherence engine for abstract lyrics (v4/v5)",
         techniques: {
             title: "Neural Lyric Transformation",
             vowels: "Melisma Depth",
-            vowelsTooltip: "Ask AI to apply vowel extensions (e.g. lo-o-o-ove) to emotional peaks.",
+            vowelsTooltip: "Apply V5 vowel extensions (e.g. lo-o-o-ove) for melodic hooks.",
             backing: "Harmonic Layers",
-            backingTooltip: "Ask AI to include parenthetical backing vocals and ad-libs.",
+            backingTooltip: "Layer parenthetical backing vocals and ad-libs.",
             chords: "Chord Mapping",
-            chordsTooltip: "Ask AI to interleave harmonic chord tags (e.g. (Am)) into the lyrics."
+            chordsTooltip: "Interleave harmonic chord tags (e.g. (Am)) into text."
         }
       },
       health: {
-        title: "Prompt Health",
+        title: "Architecture Health",
         score: "Quality Score",
-        autoImprove: "Auto-Improve",
-        gradeLabel: "GRADE",
+        autoImprove: "Neural Optimize",
+        gradeLabel: "FIDELITY",
         metrics: {
           completeness: "Completeness",
           specificity: "Specificity",
@@ -77,7 +77,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         lyrics: "Structural lyrical input.",
         style: "Technical audio engineering specs.",
         idea: "Abstract concept for the song.",
-        artist: "Reference artists for sonic signature matching.",
+        artist: "Reference artists for spectral matching.",
         mood: "Atmospheric and emotional descriptors.",
         instrument: "Primary hardware and instrumentation.",
         bpm: "Tempo lock in Beats Per Minute.",
@@ -85,7 +85,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         audio: "Neural audio reference analysis.",
         platform: "Target generation engine.",
         genre: "Primary musical foundation.",
-        negativePrompt: "Elements to exclude from the mix.",
+        negativePrompt: "Elements to exclude from the mix (v5 Negative Prompting).",
         vocalStyle: "Specific vocal texture and delivery.",
         instrumentStyle: "Instrument modeling.",
         atmosphereStyle: "Environmental audio textures.",
@@ -94,19 +94,19 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         techAnchor: "Audio engineering specifics.",
         neuralSignature: "Producer Persona",
         personaPyrite: "Persona Cycle",
-        personaTooltip: "Cycle between Standard, Pyrite, Shin, and Twin Flames personas."
+        personaTooltip: "Cycle between Standard, Pyrite, Shin, and Twin Flames."
       },
       alchemy: {
-        inspire: { label: "Inspire", desc: "Generate DNA from reference" },
+        inspire: { label: "Inspire", desc: "Generate DNA from playlist" },
         addVocals: { label: "Add Vocals", desc: "Layer vocals over audio" },
         addInstrumentals: { label: "Add Music", desc: "Compose music for vocals" },
-        cover: { label: "Remix", desc: "Transform sonic signature" },
+        cover: { label: "Cover", desc: "Transform sonic signature" },
         mashup: { label: "Collider", desc: "Fuse two lyrical sources" }
       },
       designers: {
         titles: {
           vocal: "Vocal Architect",
-          instrument: "Signal Rack",
+          instrument: "Hardware Rack",
           atmosphere: "FX Loop"
         },
         labels: {
@@ -119,21 +119,21 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
           emotion: "Emotional Tone",
           primaryInst: "Rack Core",
           modifiers: "Modifiers",
-          lessCommon: "Rare Hardware",
+          lessCommon: "Rare Gear",
           textures: "Atmospheric Textures",
           sfx: "Sound Effects",
           preview: "Signal Preview",
           suggestions: "Heuristics for",
           loadPreset: "Load Module",
-          polishedMix: "Final Mastering",
+          polishedMix: "Mastering Polish",
           showLess: "Hide Details",
           vocalSyncActive: "Neural vocal sync active",
-          vocalSyncPyrite: "Persona-driven logic active.",
+          vocalSyncPyrite: "My signature style is now your foundation, Darling.",
           hintLabel: "Assistant Hints",
           hintLabelPyrite: "Persona Hints",
-          hintMsg: "Add technical tags for clarity.",
-          hintMsgPyrite: "I suggest injecting heavy distortion here.",
-          pyriteVocalMessage: "Creative signature active. Let's mix your ideas with my specialized logic."
+          hintMsg: "Add technical tags for mix clarity.",
+          hintMsgPyrite: "I'd suggest dropping a heavy distortion tag here, Darling.",
+          pyriteVocalMessage: "My signature style is now your foundation, Darling. Let's mix your little ideas into my glorious chaos."
         },
         placeholders: {
           selectOptions: "Synthesize parameters..."
@@ -165,7 +165,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         chordAlchemy: "Harmonic Sync"
       },
       techniques: {
-        title: "Text Engineering",
+        title: "Lyrical Engineering",
         tabs: {
           melodic: "Vocal Flow",
           arrange: "Layers",
@@ -173,7 +173,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         },
         labels: {
           vowel: "Vowel Extension",
-          pitch: "Precise Tone",
+          pitch: "Precise Pitch",
           keypad: "Chord Matrix",
           backing: "Neural Backing Vocals",
           inline: "Section Style",
@@ -182,7 +182,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
           skeleton: "Song Skeleton",
           transitions: "Transition Tags",
           effects: "FX Stems",
-          endings: "Kill Switch"
+          endings: "Termination"
         },
         placeholders: {
           word: "Target",
@@ -201,8 +201,8 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         }
       },
       studio: {
-        title: "STUDIO RACK",
-        subtitle: "Professional DAW Interface",
+        title: "SUNO STUDIO",
+        subtitle: "Generative DAW Interface",
         tabs: {
           rack: "Rack",
           sequencer: "Sequence",
@@ -226,13 +226,13 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       batch: {
         title: "NEURAL BATCH",
         configure: "Expansion Config",
-        intensity: "Variation Drift",
+        intensity: "Genetic Drift",
         count: "Iterations",
         variations: "Variations",
         levels: {
           light: "Subtle",
           medium: "Balanced",
-          heavy: "Drastic"
+          heavy: "Extreme"
         },
         constraints: {
           title: "Logic Locks",
@@ -247,7 +247,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         usePrompt: "Inject to Forge"
       },
       audio: {
-        title: "Audio Alchemy",
+        title: "Sonic Mirror",
         dropLabel: "Drop reference for spectral scan",
         analyzing: "Deconstructing Sonic DNA...",
         button: "Scan Reference",
@@ -264,8 +264,8 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         },
         dropLabels: {
           analyze: "Drop for spectral deconstruction",
-          addVocals: "Drop to add vocals to this track",
-          addInstrumentals: "Drop to add music to these lyrics"
+          addVocals: "Drop instrumental to add vocals (v4.5+)",
+          addInstrumentals: "Drop vocal track to add music (v4.5+)"
         },
         ytLabel: "YouTube Link",
         ytPlaceholder: "Paste YouTube URL to intercept...",
@@ -273,15 +273,15 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       },
       chat: {
         placeholder: "Input command...",
-        welcome: "Neural link established. How shall we architect your sound?",
+        welcome: "Neural link established, Darling. Shall we architect a v5 masterpiece?",
         title: "System Terminal",
         pyriteTitle: "Overclocked Core"
       },
       pasteLabel: "Copy Lyrics Buffer",
       pasteCount: "{0} bytes detected",
       pastePlaceholder: "Restructure manual lyrics here...",
-      conceptLabel: "The Spark",
-      styleLabel: "Style Prompt",
+      conceptLabel: "The Vision",
+      styleLabel: "Style DNA",
       conceptPlaceholder: "Describe the narrative flow or theme...",
       stylePlaceholder: "Technical production specifics...",
       artistLabel: "Spectral Reference",
@@ -291,12 +291,12 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       moodPlaceholder: "Mood descriptors...",
       instrumentsLabel: "Hardware Rack",
       instrumentsPlaceholder: "Core instruments...",
-      techLabel: "Sonic DNA",
+      techLabel: "Mix Spec",
       techPlaceholder: "Mixing specifics...",
       presetsLabel: "Prototype Library",
       presetsPlaceholder: "Apply sonic frame...",
       buttons: {
-        forge: "INITIATE FORGE",
+        forge: "INITIATE SEQUENCE",
         init: "START SEQUENCE",
         scanning: "ANALYZING...",
         thinking: "REASONING...",
@@ -345,13 +345,13 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         clearAll: "Purge Sequence",
         share: "Share Blueprint",
         customPersona: "Agent Identity",
-        customPersonaPlaceholder: "Describe the Producer's logic...",
+        customPersonaPlaceholder: "Define specialized producer logic...",
         savePersona: "Save Agent",
         loadPersona: "Load Agent",
-        personaNamePrompt: "Name this Agent:",
+        personaNamePrompt: "Name this Identity:",
         personaLibrary: "Agent Database",
         noPersonas: "No Agents stored.",
-        applyTemplate: "Apply Blueprint",
+        applyTemplate: "Apply Story Arc",
         categories: {
           energy: "Intensity",
           instrumentation: "Hardware",
@@ -413,7 +413,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       clearConfirm: "This will purge all local archives and presets. Proceed?",
       clearSuccess: "Memory Purged. Rebooting...",
       pwaInstall: "Native Link",
-      pwaInstallDesc: "Install to your local workstation for low-latency access.",
+      pwaInstallDesc: "Install to local workstation for low-latency access.",
       close: "Terminate",
       installTitle: "Secure Native Link",
       installButton: "Install Interface",
@@ -470,7 +470,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       load: "Apply Frame"
     },
     guide: {
-      title: "Architect's Handbook (V4.5 Enhanced)",
+      title: "Architect's Handbook (V5 Edition)",
       subtitle: "Mastering the Neural Cascade",
       menu: {
         start: "Reasoning",
@@ -481,7 +481,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       },
       goldenRules: {
         title: "The Golden Protocols",
-        desc: "Suno V4.5 adheres to strict hierarchical weighting.",
+        desc: "Suno v5 adheres to strict hierarchical weighting.",
         rules: [
           { title: "Tag Priority System", desc: "Order tags: Genre -> Vocal -> Instruments -> Tempo -> Mood." },
           { title: "Hierarchical Weighting", desc: "The first 50 characters of a style prompt hold 80% of the model's focus. Front-load your genre anchors." },
@@ -505,7 +505,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         wrongInstrument: "Ghost Instruments",
         wrongInstrumentDesc: "Use repetition hack: [sax][saxophone][solo].",
         roboticVocals: "Vocal Decay",
-        roboticVocalsDesc: "Add 'Pristine production' and 'Clean vocals' to style.",
+        roboticVocalsDesc: "Add 'Pristine production' and 'Clean vocals' to style. Upgrade to v5.",
         audioDegradation: "Bit-rot",
         audioDegradationDesc: "Remove conflicting genre tags or reduce style length."
       }
@@ -550,7 +550,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       personaDeleted: "Agent Purged",
       personaEmpty: "Agent Memory Blank",
       konamiSuccess: "OVERCLOCK MODE ACTIVE",
-      footerPoke: "System connection heartbeat detected.",
+      footerPoke: "System heartbeat detected.",
       newVersion: "Neural Update Ready",
       historyExported: "Archives Exported",
       noHistory: "Archives Empty",
@@ -559,16 +559,16 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
   },
   pl: {
     system: {
-      title: "SONIC FORGE V5",
-      msg: "Interfejs Architektury Neuronowej",
-      pyriteMsg: "TRYB OVERCLOCK // RDZEŃ ODBLOKOWANY",
+      title: "SONIC FORGE V7.5",
+      msg: "Interfejs Architektury Neuronowej // Suno v5 Ready",
+      pyriteMsg: "TRYB OVERCLOCK // PROTOKÓŁ V5 AKTYWNY",
       footer: "Obsydianowa Inżynieria Rdzenia",
       persona: "Płat Architektoniczny Układu"
     },
     nav: {
-      title: "SONIC FORGE V5",
+      title: "SONIC FORGE V7.5",
       forge: "Kuźnia",
-      studio: "Studio",
+      studio: "Studio DAW",
       guide: "Poradnik",
       history: "Archiwa",
       docs: "Pamięć",
@@ -582,7 +582,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       switchLang: "Cykl Językowy",
       open: "Dostęp",
       switchTo: "Przełącz na",
-      version: "v7.2.0"
+      version: "v7.5.0"
     },
     builder: {
       config: "Ustawienia Meta",
@@ -590,7 +590,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       globalVars: "Zmienne Globalne",
       structure: "Architektura",
       platform: "Silnik",
-      platforms: { suno: "Suno V4.5" },
+      platforms: { suno: "Suno v5 (Pro)" },
       mode: "Tryb Pracy",
       modes: {
         custom: "Własny",
@@ -602,11 +602,11 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       sources: { ai: "Neuronowe", user: "Ręczne" },
       aiLyricOptions: {
         remi: "Logika ReMi",
-        remiTooltip: "Zaawansowany silnik spójności melodycznej",
+        remiTooltip: "Zaawansowany silnik spójności melodycznej dla tekstów abstrakcyjnych",
         techniques: {
             title: "Neuronowa Transformacja Tekstu",
             vowels: "Głębia Melizmy",
-            vowelsTooltip: "Skłoń AI do wydłużania samogłosek (np. kocha-a-ać) w emocjonalnych szczytach.",
+            vowelsTooltip: "Zastosuj wydłużenia samogłosek v5 (np. kocha-a-ać) dla chwytliwych fraz.",
             backing: "Warstwy Harmoniczne",
             backingTooltip: "Dołącz chórki i ad-liby ujęte w nawiasy.",
             chords: "Akordy (Harmonia)",
@@ -614,10 +614,10 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         }
       },
       health: {
-        title: "Zdrowie Promptu",
+        title: "Zdrowie Architektury",
         score: "Wynik Jakości",
-        autoImprove: "Auto-Ulepsz",
-        gradeLabel: "OCENA",
+        autoImprove: "Optymalizacja",
+        gradeLabel: "WIERNOŚĆ",
         metrics: {
           completeness: "Kompletność",
           specificity: "Specyficzność",
@@ -632,7 +632,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         lyrics: "Liryczny wkład strukturalny.",
         style: "Techniczna specyfikacja inżynierii dźwięku.",
         idea: "Abstrakcyjny koncept utworu.",
-        artist: "Artyści referencyjni dla dopasowania sygnatury brzmienia.",
+        artist: "Referencja spektralna dla dopasowania brzmienia.",
         mood: "Deskryptory atmosferyczne i emocjonalne.",
         instrument: "Główne instrumentarium i sprzęt.",
         bpm: "Tempo uderzeń na minutę.",
@@ -640,7 +640,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         audio: "Analiza referencyjna sygnału audio.",
         platform: "Docelowy silnik generatywny.",
         genre: "Główny fundament muzyczny.",
-        negativePrompt: "Elementy do wykluczenia z miksu.",
+        negativePrompt: "Elementy do wykluczenia z miksu (Negatywny Prompt v5).",
         vocalStyle: "Specyficzna tekstura i styl wykonania wokalu.",
         instrumentStyle: "Instrumentowanie.",
         atmosphereStyle: "Środowiskowe tekstury dźwiękowe.",
@@ -652,16 +652,16 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         personaTooltip: "Przełączaj między trybami Standard, Pyrite, Shin i Twin Flames."
       },
       alchemy: {
-        inspire: { label: "Inspiracja", desc: "Generuj DNA z referencji" },
+        inspire: { label: "Inspiracja", desc: "Generuj DNA z playlisty" },
         addVocals: { label: "+ Wokal", desc: "Nałóż wokal na ścieżkę" },
         addInstrumentals: { label: "+ Muzyka", desc: "Skomponuj muzykę do wokalu" },
-        cover: { label: "Remiks", desc: "Zmień sygnaturę brzmieniową" },
+        cover: { label: "Cover", desc: "Zmień sygnaturę brzmieniową" },
         mashup: { label: "Zderzacz", desc: "Połącz dwa źródła liryczne" }
       },
       designers: {
         titles: {
           vocal: "Architekt Wokalu",
-          instrument: "Szafa Sygnałowa",
+          instrument: "Szafa Sprzętowa",
           atmosphere: "Pętla Efektów"
         },
         labels: {
@@ -674,21 +674,21 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
           emotion: "Ton Emocjonalny",
           primaryInst: "Główne Instrumenty",
           modifiers: "Modyfikatory",
-          lessCommon: "Pokaż rzadsze",
+          lessCommon: "Rzadszy Sprzęt",
           textures: "Tekstury Atmosferyczne",
           sfx: "Efekty Dźwiękowe",
           preview: "Podgląd Sygnału",
           suggestions: "Heurystyka dla",
           loadPreset: "Wczytaj Moduł",
-          polishedMix: "Finalny Mastering",
+          polishedMix: "Mastering Polish",
           showLess: "Ukryj Detale",
           vocalSyncActive: "Synchronizacja neuronowa wokalu aktywna",
-          vocalSyncPyrite: "Tożsamość kreatywna aktywna.",
+          vocalSyncPyrite: "Moja sygnatura jest teraz Twoim fundamentem, Kochanie.",
           hintLabel: "Wskazówki Asystenta",
           hintLabelPyrite: "Wskazówki Persony",
-          hintMsg: "Dodaj tagi techniczne dla przejrzystości.",
-          hintMsgPyrite: "Sugeruję wstrzyknąć tu potężny przester.",
-          pyriteVocalMessage: "Twoja tożsamość kreatywna jest aktywna. Zmieszajmy Twoje pomysły z moją logiką."
+          hintMsg: "Dodaj tagi techniczne dla przejrzystości miksu.",
+          hintMsgPyrite: "Sugeruję wstrzyknąć tu potężny przester, Kochanie.",
+          pyriteVocalMessage: "Twoja tożsamość kreatywna jest aktywna. Zmieszajmy Twoje pomysły z moim chaosem."
         },
         placeholders: {
           selectOptions: "Syntetyzuj parametry..."
@@ -737,7 +737,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
           skeleton: "Szkielet Utworu",
           transitions: "Tagi Przejść",
           effects: "FX Stems",
-          endings: "Wyłącznik"
+          endings: "Terminacja"
         },
         placeholders: {
           word: "Cel",
@@ -756,8 +756,8 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         }
       },
       studio: {
-        title: "STUDIO RACK",
-        subtitle: "Profesjonalny interfejs DAW",
+        title: "SUNO STUDIO",
+        subtitle: "Profesjonalny DAW",
         tabs: {
           rack: "Rack",
           sequencer: "Sekwencer",
@@ -781,13 +781,13 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       batch: {
         title: "NEURAL BATCH",
         configure: "Konfiguracja Rozszerzenia",
-        intensity: "Dryf Wariacji",
+        intensity: "Dryf Genetyczny",
         count: "Iteracje",
         variations: "Wariacje",
         levels: {
           light: "Subtelne",
           medium: "Zbalansowane",
-          heavy: "Drastyczne"
+          heavy: "Ekstremalne"
         },
         constraints: {
           title: "Blokady Logiczne",
@@ -802,9 +802,9 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         usePrompt: "Wstrzyknij do Kuźni"
       },
       audio: {
-        title: "Alchemia Audio",
+        title: "Soniczne Lustro",
         dropLabel: "Upuść referencję dla skanu spektralnego",
-        analyzing: "Dekonstrukcja spektrum...",
+        analyzing: "Dekonstrukcja DNA...",
         button: "Skanuj referencję",
         pyriteButton: "Ekstrakcja spektralna",
         formatWarning: "Obsługiwane WAV/MP3/MPEG",
@@ -819,8 +819,8 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         },
         dropLabels: {
           analyze: "Upuść dla dekonstrukcji spektralnej",
-          addVocals: "Upuść, aby dodać wokal do ścieżki",
-          addInstrumentals: "Upuść, aby dodać muzykę do tekstu"
+          addVocals: "Upuść instrumental, aby dodać wokal (v4.5+)",
+          addInstrumentals: "Upuść wokal, aby dodać muzykę (v4.5+)"
         },
         ytLabel: "Link YouTube",
         ytPlaceholder: "Wklej URL YouTube do przechwycenia...",
@@ -828,15 +828,15 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       },
       chat: {
         placeholder: "Wprowadź polecenie...",
-        welcome: "Łącze neuronowe ustanowione. Jak mamy zaprojektować Twój dźwięk?",
+        welcome: "Łącze neuronowe ustanowione, Kochanie. Jak mamy zaprojektować Twój dźwięk?",
         title: "Terminal Systemowy",
         pyriteTitle: "Rdzeń Overclocked"
       },
       pasteLabel: "Bufor Kopiowania Tekstu",
       pasteCount: "Wykryto {0} bajtów",
       pastePlaceholder: "Zrestrukturyzuj ręczny tekst tutaj...",
-      conceptLabel: "Iskra",
-      styleLabel: "Prompt Stylu",
+      conceptLabel: "Wizja",
+      styleLabel: "DNA Stylu",
       conceptPlaceholder: "Opisz narrację lub motyw...",
       stylePlaceholder: "Szczegóły techniczne produkcji...",
       artistLabel: "Referencja Spektralna",
@@ -846,12 +846,12 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       moodPlaceholder: "Deskryptory klimatu...",
       instrumentsLabel: "Szafa Sprzętowa",
       instrumentsPlaceholder: "Główne instrumenty...",
-      techLabel: "DNA Sonic",
+      techLabel: "Specyfikacja Miksu",
       techPlaceholder: "Specyfika miksu...",
       presetsLabel: "Biblioteka Prototypów",
       presetsPlaceholder: "Zastosuj ramę soniczna...",
       buttons: {
-        forge: "INICJUJ KUŹNIĘ",
+        forge: "ROZPOCZNIJ SEKWENCJĘ",
         init: "START SEKWENCJI",
         scanning: "ANALIZOWANIE...",
         thinking: "ROZUMOWANIE...",
@@ -900,13 +900,13 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         clearAll: "Wyczyść Sekwencję",
         share: "Udostępnij Blueprint",
         customPersona: "Tożsamość Agenta",
-        customPersonaPlaceholder: "Opisz logikę Producenta...",
+        customPersonaPlaceholder: "Zdefiniuj wyspecjalizowaną logikę producenta...",
         savePersona: "Zapisz Agenta",
         loadPersona: "Wczytaj Agenta",
-        personaNamePrompt: "Nadaj kryptonim Agentowi:",
+        personaNamePrompt: "Nadaj kryptonim tej Tożsamości:",
         personaLibrary: "Baza Danych Agentów",
         noPersonas: "Brak zapisanych Agentów.",
-        applyTemplate: "Zastosuj Blueprint",
+        applyTemplate: "Zastosuj Arkusz Fabularny",
         categories: {
           energy: "Intensywność",
           instrumentation: "Sprzęt",
@@ -968,7 +968,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       clearConfirm: "To usunie wszystkie archiwa i presety. Kontynuować?",
       clearSuccess: "Pamięć wyczyszczona. Restart...",
       pwaInstall: "Link Natywny",
-      pwaInstallDesc: "Zainstaluj jako aplikację dla mniejszych opóżeń.",
+      pwaInstallDesc: "Zainstaluj dla mniejszych opóżeń.",
       close: "Zamknij Terminal",
       installTitle: "Zabezpiecz Łącze Natywne",
       installButton: "Instaluj Interfejs",
@@ -1025,7 +1025,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       load: "Zastosuj Ramę"
     },
     guide: {
-      title: "Podręcznik Architekta (V4.5+)",
+      title: "Podręcznik Architekta (V5 Edition)",
       subtitle: "Mistrzostwo Kaskady Neuronowej",
       menu: {
         start: "Rozumowanie",
@@ -1036,7 +1036,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
       },
       goldenRules: {
         title: "Złote Protokoły",
-        desc: "Suno V4.5 przestrzega ścisłego wagowania hierarchicznego.",
+        desc: "Suno v5 przestrzega ścisłego wagowania hierarchicznego.",
         rules: [
           { title: "System Priorytetu Tagów", desc: "Kolejność: Gatunek -> Wokal -> Instrumenty -> Tempo -> Klimat." },
           { title: "Wagowanie Hierarchiczne", desc: "Pierwsze 50 znaków promptu stylu skupia 80% uwagi modelu. Zawsze zaczynaj od gatunku." },
@@ -1060,7 +1060,7 @@ export const translations: Record<'en' | 'pl', TranslationSet> = {
         wrongInstrument: "Instrumenty Widma",
         wrongInstrumentDesc: "Użyj hacku powtórzeń: [sax][saxophone][solo].",
         roboticVocals: "Rozpad Wokalu",
-        roboticVocalsDesc: "Dodaj 'Pristine production' and 'Clean vocals' to stylu.",
+        roboticVocalsDesc: "Dodaj 'Pristine production' and 'Clean vocals' do stylu. Ulepsz do v5.",
         audioDegradation: "Bit-rot",
         audioDegradationDesc: "Usuń sprzeczne tagi gatunkowe lub skróć opis stylu."
       }

@@ -197,7 +197,13 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
     { id: 'addVocals', icon: MicVocal, label: t.audio.uploadModes.addVocals },
     { id: 'addInstrumentals', icon: Guitar, label: t.audio.uploadModes.addInstrumentals },
   ];
-  const dropLabel = t.audio.dropLabels[mode] || t.audio.dropLabel;
+  
+  // Use explicit labels if available in translation, fallback to generic
+  const dropLabel = mode === 'addVocals' 
+    ? (t.audio.dropLabels.addVocals || "Drop INSTRUMENTAL here to add AI Vocals")
+    : mode === 'addInstrumentals' 
+    ? (t.audio.dropLabels.addInstrumentals || "Drop VOCAL stem here to add Backing Track")
+    : t.audio.dropLabel;
 
   // Styles
   const borderColor = isPyriteMode ? 'border-purple-500/30' : 'border-blue-500/30';
@@ -299,7 +305,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
                 <div className={`p-3 rounded-full mb-3 ${isPyriteMode ? 'bg-purple-900/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'}`}>
                     {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
                 </div>
-                <p className="text-sm font-bold text-zinc-300 mb-1">{isProcessing ? t.audio.processing : dropLabel}</p>
+                <p className="text-sm font-bold text-zinc-300 mb-1 px-4">{isProcessing ? t.audio.processing : dropLabel}</p>
                 <p className="text-xs text-zinc-500">{t.audio.limits}</p>
             </div>
             </div>

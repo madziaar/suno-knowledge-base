@@ -36,7 +36,6 @@ const RadialGauge = ({ value, max, label, color, size = 60, stroke = 4 }: { valu
         <div className="flex flex-col items-center gap-1">
             <div className="relative" style={{ width: size, height: size }}>
                 <svg className="w-full h-full -rotate-90">
-                    {/* Track */}
                     <circle
                         cx={size / 2}
                         cy={size / 2}
@@ -46,7 +45,6 @@ const RadialGauge = ({ value, max, label, color, size = 60, stroke = 4 }: { valu
                         strokeWidth={stroke}
                         className="text-white/5"
                     />
-                    {/* Progress */}
                     <motion.circle
                         cx={size / 2}
                         cy={size / 2}
@@ -78,10 +76,12 @@ const DraftHealth: React.FC<DraftHealthProps> = memo(({ isPyriteMode, onOptimize
 
   let scoreColor = 'text-zinc-500';
   let borderColor = 'border-zinc-800';
+  let glowColor = '';
   
   if (validation.status === 'optimal') {
       scoreColor = isPyriteMode ? 'text-green-400' : 'text-green-600';
       borderColor = isPyriteMode ? 'border-green-500/30' : 'border-green-500/20';
+      glowColor = isPyriteMode ? 'shadow-[0_0_20px_rgba(74,222,128,0.1)]' : '';
   } else if (validation.status === 'good') {
       scoreColor = isPyriteMode ? 'text-blue-400' : 'text-blue-600';
       borderColor = isPyriteMode ? 'border-blue-500/30' : 'border-blue-500/20';
@@ -100,8 +100,7 @@ const DraftHealth: React.FC<DraftHealthProps> = memo(({ isPyriteMode, onOptimize
   const displaySuggestions = isPyriteMode ? validation.suggestions.map(pyriteTranslate) : validation.suggestions;
 
   return (
-    <div className={cn("rounded-xl border p-4 transition-all duration-300 flex flex-col gap-6", borderColor, bgClass)}>
-      {/* HEADER */}
+    <div className={cn("rounded-xl border p-4 transition-all duration-300 flex flex-col gap-6", borderColor, bgClass, glowColor)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
             <Activity className={cn("w-4 h-4", scoreColor)} />
@@ -119,15 +118,13 @@ const DraftHealth: React.FC<DraftHealthProps> = memo(({ isPyriteMode, onOptimize
         </div>
       </div>
 
-      {/* RADIAL CHART GRID */}
       <div className="grid grid-cols-4 gap-2">
-          <RadialGauge value={validation.breakdown.completeness} max={30} label={t.metrics.completeness.substring(0,4)} color="text-blue-400" />
-          <RadialGauge value={validation.breakdown.specificity} max={30} label={t.metrics.specificity.substring(0,4)} color="text-purple-400" />
-          <RadialGauge value={validation.breakdown.balance} max={20} label={t.metrics.balance.substring(0,3)} color="text-green-400" />
-          <RadialGauge value={validation.breakdown.coherence} max={20} label={t.metrics.coherence.substring(0,3)} color="text-yellow-400" />
+          <RadialGauge value={validation.breakdown.completeness} max={30} label="CMP" color="text-blue-400" />
+          <RadialGauge value={validation.breakdown.specificity} max={30} label="SPC" color="text-purple-400" />
+          <RadialGauge value={validation.breakdown.balance} max={20} label="BAL" color="text-green-400" />
+          <RadialGauge value={validation.breakdown.coherence} max={20} label="COH" color="text-yellow-400" />
       </div>
 
-      {/* INTELLIGENCE FEED */}
       <div className="space-y-2 min-h-[60px]">
           {displayConflicts.slice(0, 1).map((conflict, i) => (
               <div key={`conflict-${i}`} className="flex items-start gap-2 text-[10px] text-red-400 bg-red-950/30 p-2 rounded-lg border border-red-500/20 animate-in fade-in zoom-in-95">
@@ -149,7 +146,6 @@ const DraftHealth: React.FC<DraftHealthProps> = memo(({ isPyriteMode, onOptimize
           ))}
       </div>
 
-      {/* AUTO-IMPROVE ACTION */}
       {onOptimize && (
           <button 
             onClick={() => { sfx.play('click'); onOptimize(); }}

@@ -1,5 +1,5 @@
 
-import { GenreDef, StructureTemplate } from '../../../types/generator';
+import { GenreDef, StructureTemplate } from '../types/generator';
 
 // --- VOCAL STYLES (EXPANDED FOR V4.5) ---
 export const VOCAL_STYLES = {
@@ -52,22 +52,41 @@ export const STRUCTURE_TEMPLATES: Record<string, StructureTemplate> = {
   pop: {
     name: "Standard Pop",
     description: "Radio-friendly verse-chorus structure",
-    structure: ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge", "Chorus", "Outro"]
+    structure: ["Intro", "Verse 1", "Pre-Chorus", "Chorus", "Verse 2", "Pre-Chorus", "Chorus", "Bridge", "Chorus", "Outro"],
+    guidelines: {
+      "Verse": { lineCount: 8, description: "Storytelling, sets the scene" },
+      "Chorus": { lineCount: 4, description: "Main hook, high energy" },
+      "Bridge": { lineCount: 6, description: "Emotional shift, contrasting melody" }
+    }
   },
   hiphop: {
     name: "Hip Hop / Trap",
     description: "Beat-focused with hooks and bars",
-    structure: ["Intro", "Hook", "Verse 1", "Hook", "Verse 2", "Hook", "Bridge", "Hook", "Outro"]
+    structure: ["Intro", "Hook", "Verse 1", "Hook", "Verse 2", "Hook", "Bridge", "Hook", "Outro"],
+    guidelines: {
+      "Verse": { lineCount: 16, description: "16 bars of flow and rhymes" },
+      "Hook": { lineCount: 8, description: "8 bars, repetitive and catchy" },
+      "Bridge": { lineCount: 8, description: "Flow switch or melodic breakdown" }
+    }
   },
   phonk: {
     name: "Phonk / Memphis",
     description: "Repetitive hooks, cowbells, and short verses",
-    structure: ["Intro", "Hook", "Verse 1", "Hook", "Verse 2", "Hook", "Outro"]
+    structure: ["Intro", "Hook", "Verse 1", "Hook", "Verse 2", "Hook", "Outro"],
+    guidelines: {
+      "Verse": { lineCount: 12, description: "Dark, gritty lyrics" },
+      "Hook": { lineCount: 8, description: "Chanted, repetitive" }
+    }
   },
   electronic: {
     name: "EDM / Club",
     description: "Build-drop dynamics for dance floors",
-    structure: ["Intro", "Build-up", "Drop", "Breakdown", "Build-up", "Drop", "Outro"]
+    structure: ["Intro", "Build-up", "Drop", "Breakdown", "Build-up", "Drop", "Outro"],
+    guidelines: {
+      "Build-up": { lineCount: 4, description: "Rising tension, repetitive vocal chops" },
+      "Drop": { lineCount: 0, description: "Instrumental high energy" },
+      "Breakdown": { lineCount: 4, description: "Atmospheric, minimal vocals" }
+    }
   },
   dnb: {
     name: "Drum & Bass",
@@ -77,7 +96,12 @@ export const STRUCTURE_TEMPLATES: Record<string, StructureTemplate> = {
   ballad: {
     name: "Power Ballad",
     description: "Slow build to emotional climax",
-    structure: ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Guitar Solo", "Chorus", "Outro"]
+    structure: ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge", "Guitar Solo", "Chorus", "Outro"],
+    guidelines: {
+      "Verse": { lineCount: 8, description: "Gentle, narrative" },
+      "Chorus": { lineCount: 6, description: "Soaring, emotional peak" },
+      "Bridge": { lineCount: 4, description: "Vulnerable moment before final build" }
+    }
   },
   progressive: {
     name: "Progressive Journey",
@@ -87,7 +111,11 @@ export const STRUCTURE_TEMPLATES: Record<string, StructureTemplate> = {
   punk: {
     name: "Punk Rock",
     description: "Short, fast, high energy",
-    structure: ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Guitar Solo", "Chorus", "Outro"]
+    structure: ["Intro", "Verse 1", "Chorus", "Verse 2", "Chorus", "Guitar Solo", "Chorus", "Outro"],
+    guidelines: {
+      "Verse": { lineCount: 4, description: "Fast, aggressive delivery" },
+      "Chorus": { lineCount: 4, description: "Shouted anthem" }
+    }
   },
   jazz: {
     name: "Jazz Standard",
@@ -127,7 +155,12 @@ export const STRUCTURE_TEMPLATES: Record<string, StructureTemplate> = {
   v45_extended: {
     name: "V4.5 Extended (8 min)",
     description: "Long-form structure with multiple movements",
-    structure: ["Intro", "Atmospheric Build", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge with Ostinato", "Transition Section", "Solo", "Chorus", "Emotional Bridge", "Outro", "Instrumental Fade Out", "End"]
+    structure: ["Intro", "Atmospheric Build", "Verse 1", "Chorus", "Verse 2", "Chorus", "Bridge with Ostinato", "Transition Section", "Solo", "Chorus", "Emotional Bridge", "Outro", "Instrumental Fade Out", "End"],
+    guidelines: {
+      "Verse": { lineCount: 12, description: "Extended storytelling" },
+      "Chorus": { lineCount: 8, description: "Big, memorable hook" },
+      "Bridge with Ostinato": { lineCount: 8, description: "Repetitive rhythmic phrase building tension" }
+    }
   }
 };
 

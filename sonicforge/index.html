@@ -97,6 +97,13 @@
         background: linear-gradient(to bottom, transparent, rgba(var(--accent-primary), 0.03), transparent);
         animation: scanline 8s infinite linear; pointer-events: none; z-index: 10; mix-blend-mode: overlay;
       }
+      @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .animate-spin-slow {
+        animation: spin-slow 12s linear infinite;
+      }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
       .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
