@@ -3,46 +3,42 @@ import React, { useMemo } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { estimateSyllables } from '../utils/syllableCounter';
 
-const CHAR_LIMIT_FOR_ANALYSIS = 1500; // Lowered threshold for mandatory performance
-const MAX_LINES_FOR_HEATMAP = 50; // Only show heatmap for reasonable song lengths
+const CHAR_LIMIT_FOR_ANALYSIS = 3000; // Optimization threshold
 
 export const useSyntaxHighlighter = (value: string, placeholder: string | undefined, isPyriteMode: boolean) => {
   return useMemo(() => {
+    const lines = (value || '').split('\n');
+    const isLargeText = (value || '').length > CHAR_LIMIT_FOR_ANALYSIS;
+
+    // If empty value, show placeholder structure
     if (!value) return <span className="text-zinc-600 select-none">{placeholder}</span>;
-
-    const lines = value.split('\n');
-    const isLargeText = value.length > CHAR_LIMIT_FOR_ANALYSIS;
-    const tooManyLines = lines.length > MAX_LINES_FOR_HEATMAP;
-
+    
     return lines.map((line, lineIdx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={lineIdx} className="min-h-[1.5em]" />;
-
-        const isStructural = trimmed.startsWith('[') && trimmed.endsWith(']');
-        const isInstruction = trimmed.startsWith('(') && trimmed.endsWith(')');
-        
+        const isStructural = line.trim().startsWith('[') && line.trim().endsWith(']');
         let syllables = 0;
         let isDense = false;
         
-        // Skip expensive heuristic for very large inputs to maintain 60fps typing
-        if (!isLargeText && !tooManyLines && !isStructural && !isInstruction) {
+        // --- PERFORMANCE OPTIMIZATION ---
+        // Only run syllable analysis on smaller texts to prevent freezes
+        if (!isLargeText) {
             syllables = estimateSyllables(line);
-            isDense = syllables > 14;
+            isDense = syllables > 16;
         }
         
-        // Heatmap color logic
+        // Heatmap color
         let heatColor = 'text-zinc-600';
         if (syllables > 12) heatColor = 'text-yellow-600';
         if (syllables > 16) heatColor = 'text-red-600';
+        if (isStructural || isLargeText) heatColor = 'opacity-0'; // Hide count for structural lines or large texts
 
-        // Tokenize line: prioritize performance over complex nesting
+        // Tokenize line for syntax highlighting
+        // Split by brackets [ ] AND parentheses ( )
         const tokens = line.split(/(\[[^\]]+\]|\([^)]+\))/g);
 
         return (
-            <div key={lineIdx} className="min-h-[1.5em] relative flex pr-10 group/line">
+            <div key={lineIdx} className="min-h-[1.5em] relative flex pr-8 group/line">
                 <div className="flex-1">
                     {tokens.map((token, tokenIdx) => {
-                        if (!token) return null;
                         if (token.startsWith('[') && token.endsWith(']')) {
                             return (
                                 <span key={tokenIdx} className={`font-bold ${isPyriteMode ? 'text-purple-400' : 'text-yellow-500'}`}>
@@ -50,6 +46,7 @@ export const useSyntaxHighlighter = (value: string, placeholder: string | undefi
                                 </span>
                             );
                         } else if (token.startsWith('(') && token.endsWith(')')) {
+                            // Parentheses are musical instructions or ad-libs in V4.5
                             return (
                                 <span key={tokenIdx} className={`italic ${isPyriteMode ? 'text-pink-400' : 'text-blue-400'}`}>
                                     {token}
@@ -60,11 +57,11 @@ export const useSyntaxHighlighter = (value: string, placeholder: string | undefi
                     })}
                 </div>
                 
-                {/* Syllable Heatmap Badge */}
-                {syllables > 0 && (
-                   <span className={`absolute right-0 top-1/2 -translate-y-1/2 text-[9px] font-mono select-none ${heatColor} opacity-20 group-hover/line:opacity-100 transition-opacity flex items-center bg-black/20 px-1 rounded`}>
+                {/* Syllable Heatmap Badge (Right aligned) */}
+                {line.trim().length > 0 && !isStructural && !isLargeText && (
+                   <span className={`absolute right-0 top-1/2 -translate-y-1/2 text-[9px] font-mono select-none ${heatColor} opacity-30 group-hover/line:opacity-100 transition-opacity flex items-center`}>
                       {syllables}
-                      {isDense && <AlertCircle className="w-2.5 h-2.5 ml-1 text-red-500 animate-pulse" />}
+                      {isDense && <AlertCircle className="w-3 h-3 ml-1 text-red-500" />}
                    </span>
                 )}
             </div>

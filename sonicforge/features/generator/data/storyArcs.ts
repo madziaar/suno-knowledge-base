@@ -1,6 +1,12 @@
 
-import { StoryArc } from '../../../types';
 import { SongSection } from "../../../types";
+
+export interface StoryArc {
+  id: string;
+  name: { en: string; pl: string }; // Localized name
+  description: { en: string; pl: string };
+  structure: SongSection[];
+}
 
 export const STORY_ARCS: StoryArc[] = [
   {

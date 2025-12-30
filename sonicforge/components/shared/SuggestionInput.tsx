@@ -1,7 +1,7 @@
+
 import React, { useState, useRef, useEffect, memo, useCallback } from 'react';
 import { Sparkles, ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import Tooltip from '../Tooltip';
 
 interface SuggestionInputProps {
   value: string;
@@ -11,7 +11,6 @@ interface SuggestionInputProps {
   className?: string;
   variant?: 'default' | 'pyrite';
   label?: string;
-  tooltipContent?: string;
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
 
@@ -23,7 +22,6 @@ const SuggestionInput: React.FC<SuggestionInputProps> = memo(({
   className = '',
   variant = 'default',
   label,
-  tooltipContent,
   onFocus
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -149,12 +147,9 @@ const SuggestionInput: React.FC<SuggestionInputProps> = memo(({
   return (
     <div ref={wrapperRef} className="relative w-full group">
       {label && (
-        <div className="flex items-center mb-1.5 h-4">
-          <label className={cn("text-[10px] font-bold uppercase tracking-widest transition-colors select-none", labelColor)}>
-            {label}
-          </label>
-          {tooltipContent && <Tooltip content={tooltipContent} />}
-        </div>
+        <label className={cn("text-[10px] font-bold uppercase tracking-widest mb-1.5 block transition-colors select-none", labelColor)}>
+          {label}
+        </label>
       )}
       
       <div className="relative">

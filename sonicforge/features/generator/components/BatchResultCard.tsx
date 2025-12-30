@@ -57,8 +57,7 @@ const BatchResultCard: React.FC<BatchResultCardProps> = ({
         </div>
         <div className={cn("flex items-center text-xs font-mono font-bold", scoreColor)}>
           {validation.status === 'optimal' || validation.status === 'good' ? <CheckCircle className="w-3.5 h-3.5 mr-1" /> : <Activity className="w-3.5 h-3.5 mr-1" />}
-          {/* Fix: Property 'score' does not exist on type 'PromptQualityScore'. Use 'totalScore' instead. */}
-          {validation.totalScore}%
+          {validation.score}%
         </div>
       </div>
 

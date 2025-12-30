@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, ChevronRight, ChevronLeft, Zap, Terminal, Music2, Settings2 } from 'lucide-react';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 import ThemedButton from '../../components/shared/ThemedButton';
 import { sfx } from '../../lib/audio';
-import { useLocalStorage } from '../../hooks';
 
 interface OnboardingTourProps {
   isPyriteMode: boolean;
@@ -133,7 +132,7 @@ const TOUR_CONTENT = {
     },
     {
       title: "Select Your Mode",
-      desc: "**Custom Mode**: Full control. You provide the lyrics (or let AI write them) and the concept.\n\n**ReMi Logic**: Toggle this in Custom Mode for more creative, 'unhinged' lyrics that prioritize melodic coherence over rigid rhymes.\n\n**Instrumental Mode**: Optimizes tags for non-vocal tracks, ensuring the AI focuses on texture and atmosphere."
+      desc: "**Custom Mode**: Full control. You provide the lyrics (or let AI write them) and the concept.\n\n**Instrumental Mode**: Optimizes tags for non-vocal tracks, ensuring the AI focuses on texture and atmosphere."
     },
     {
       title: "Expert Protocol",
@@ -151,7 +150,7 @@ const TOUR_CONTENT = {
     },
     {
       title: "Wybierz Tryb",
-      desc: "**Tryb Własny**: Pełna kontrola. Dostarczasz tekst (lub pozwalasz AI go napisać) i koncept.\n\n**Logika ReMi**: Włącz to w Trybie Własnym, aby uzyskać bardziej kreatywne, 'odważne' teksty, stawiające na spójność melodyczną.\n\n**Tryb Instrumentalny**: Optymalizuje tagi dla utworów bez wokalu, zapewniając, że AI skupi się na teksturze i atmosferze."
+      desc: "**Tryb Własny**: Pełna kontrola. Dostarczasz tekst (lub pozwalasz AI go napisać) i koncept.\n\n**Tryb Instrumentalny**: Optymalizuje tagi dla utworów bez wokalu, zapewniając, że AI skupi się na teksturze i atmosferze."
     },
     {
       title: "Protokół Ekspert",

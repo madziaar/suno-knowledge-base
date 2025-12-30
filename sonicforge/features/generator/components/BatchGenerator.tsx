@@ -1,17 +1,15 @@
 
 import React, { useState } from 'react';
-import { Sparkles, Copy, Settings2, Dices, GitBranch } from 'lucide-react';
+import { Sparkles, Copy, Settings2, Dices } from 'lucide-react';
 import { GeneratedPrompt, BatchConstraints, BuilderTranslation } from '../../../types';
 import ThemedButton from '../../../components/shared/ThemedButton';
 import BatchResultCard from './BatchResultCard';
-import EvolutionPaths from './Batch/EvolutionPaths';
 import { cn } from '../../../lib/utils';
-import { sfx } from '../../../lib/audio';
 
 interface BatchGeneratorProps {
   basePrompt: GeneratedPrompt;
   variations: GeneratedPrompt[];
-  onGenerate: (count: number, level: 'light' | 'medium' | 'heavy', constraints: BatchConstraints, evolutionPath?: string) => void;
+  onGenerate: (count: number, level: 'light' | 'medium' | 'heavy', constraints: BatchConstraints) => void;
   onApply: (variation: GeneratedPrompt) => void;
   onExport: (selected: number[]) => void;
   isGenerating: boolean;
@@ -31,7 +29,6 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
 }) => {
   const [count, setCount] = useState(3);
   const [level, setLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
-  const [evolutionPath, setEvolutionPath] = useState<string | null>(null);
   const [constraints, setConstraints] = useState<BatchConstraints>({
     keepGenre: true,
     keepStructure: false,
@@ -42,22 +39,12 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
 
   const handleToggleConstraint = (key: keyof BatchConstraints) => {
     setConstraints(prev => ({ ...prev, [key]: !prev[key] }));
-    sfx.play('click');
-  };
-
-  const handleSelectPath = (pathId: string) => {
-      setEvolutionPath(prev => prev === pathId ? null : pathId);
-      sfx.play('secret');
   };
 
   const handleSelect = (index: number, checked: boolean) => {
     setSelectedIndices(prev =>
       checked ? [...prev, index] : prev.filter(i => i !== index)
     );
-  };
-
-  const handleGenerate = () => {
-      onGenerate(count, level, constraints, evolutionPath || undefined);
   };
 
   const CONSTRAINT_CONFIG = [
@@ -84,16 +71,9 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
       
       <div className="pb-4 space-y-6 animate-in slide-in-from-top-2">
         <div className={cn(
-            "p-5 rounded-xl border space-y-6",
+            "p-5 rounded-xl border space-y-5",
             isPyriteMode ? "bg-purple-900/5 border-purple-500/20" : "bg-black/20 border-white/5"
         )}>
-            {/* Evolution Paths */}
-            <EvolutionPaths 
-                selectedPath={evolutionPath} 
-                onSelect={handleSelectPath} 
-                isPyriteMode={isPyriteMode} 
-            />
-
             {/* Controls */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
@@ -104,9 +84,9 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
                     {(['light', 'medium', 'heavy'] as const).map(l => (
                         <button 
                             key={l} 
-                            onClick={() => { setLevel(l); sfx.play('click'); }} 
+                            onClick={() => setLevel(l)} 
                             className={cn(
-                                "px-2 py-1.5 text-[9px] md:text-xs font-bold rounded capitalize transition-all", 
+                                "px-2 py-1.5 text-xs font-bold rounded capitalize transition-all", 
                                 level === l 
                                     ? (isPyriteMode ? 'bg-purple-600 text-white shadow-lg' : 'bg-zinc-700 text-white shadow-lg') 
                                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
@@ -127,7 +107,7 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
                         min="1" 
                         max="10" 
                         value={count} 
-                        onChange={e => { setCount(parseInt(e.target.value)); sfx.play('light'); }} 
+                        onChange={e => setCount(parseInt(e.target.value))} 
                         className={cn(
                             "w-full h-1.5 bg-zinc-700 rounded-lg appearance-none cursor-pointer", 
                             isPyriteMode ? 'accent-purple-500' : 'accent-yellow-500'
@@ -164,7 +144,7 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
 
             <div className="flex justify-end pt-2">
                 <ThemedButton 
-                    onClick={handleGenerate} 
+                    onClick={() => onGenerate(count, level, constraints)} 
                     isLoading={isGenerating} 
                     variant={isPyriteMode ? 'pyrite' : 'default'} 
                     className="px-6 py-2 text-xs"
@@ -178,7 +158,7 @@ const BatchGenerator: React.FC<BatchGeneratorProps> = ({
         {/* Results Grid */}
         {variations.length > 0 && !isGenerating && (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex items-center justify-between border-b border-white/5 pb-2 px-1">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
                     <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{t.batch.results} ({variations.length})</span>
                     <ThemedButton 
                         onClick={() => onExport(selectedIndices)} 

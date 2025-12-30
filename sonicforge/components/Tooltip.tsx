@@ -1,12 +1,11 @@
-
-import React, { useState, memo } from 'react';
+import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 
 interface TooltipProps {
   content: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = memo(({ content }) => {
+const Tooltip: React.FC<TooltipProps> = ({ content }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
@@ -33,6 +32,6 @@ const Tooltip: React.FC<TooltipProps> = memo(({ content }) => {
       )}
     </div>
   );
-});
+};
 
 export default Tooltip;

@@ -1,125 +1,227 @@
 
-import { GeneratedPrompt, Language, PromptQualityScore } from "../../../types";
+import { GeneratedPrompt, Language } from "../../../types";
 import { sunoMetaTags } from "../data/sunoMetaTags";
 import { MOOD_DESCRIPTORS } from "../data/genreDatabase";
 import { translations } from "../../../translations";
-import { CONFLICT_PAIRS } from "../data/descriptorBank";
+import { estimateSyllables } from "./syllableCounter";
+
+export interface SunoValidationResult {
+  score: number; // 0 to 100
+  issues: string[];
+  suggestions: string[];
+  conflicts: string[];
+  status: 'critical' | 'warning' | 'good' | 'optimal';
+  details: {
+    completeness: number;
+    specificity: number;
+    balance: number;
+    coherence: number;
+  }
+}
 
 /**
  * Evaluates a Suno V4.5 prompt against best practices.
+ * Checks for Completeness, Specificity, Structure, and Golden Rules (Front-loading, Density).
  */
-export const validateSunoPrompt = (prompt: GeneratedPrompt, lang: Language = 'en'): PromptQualityScore => {
+export const validateSunoPrompt = (prompt: GeneratedPrompt, lang: Language = 'en'): SunoValidationResult => {
   const combinedText = `${prompt.style || ''} ${prompt.tags || ''}`.toLowerCase();
+  const tagsText = (prompt.tags || '').toLowerCase();
   const styleText = (prompt.style || '').toLowerCase();
-  const lyricsText = (prompt.lyrics || '').toLowerCase();
+  const lyricsText = (prompt.lyrics || '').trim();
   
-  const tSet = translations[lang] || translations['en'];
-  const tVal = tSet.builder.validation;
+  // Load Translations
+  const tVal = translations[lang].builder.validation;
+
+  // Define Conflicts with Localized Messages
+  const CONFLICT_PAIRS = [
+    { 
+        a: ['happy', 'joyful', 'euphoric', 'uplifting', 'cheerful', 'bright', 'sunny'], 
+        b: ['sad', 'melancholic', 'depressive', 'sorrowful', 'grieving', 'heartbreaking', 'downbeat'], 
+        message: tVal.conflictMood
+    },
+    { 
+        a: ['energetic', 'aggressive', 'driving', 'fast', 'explosive', 'high energy'], 
+        b: ['calm', 'relaxing', 'chill', 'serene', 'peaceful', 'laid back', 'mellow'], 
+        message: tVal.conflictEnergy
+    },
+    { 
+        a: ['acoustic', 'unplugged', 'folk', 'stripped back'], 
+        b: ['electronic', 'synth', 'edm', 'dubstep', 'techno', 'house', 'robotic'], 
+        message: tVal.conflictInstrument
+    },
+    {
+        a: ['slow tempo', 'downtempo', '60 bpm', '70 bpm', '80 bpm'],
+        b: ['fast tempo', 'upbeat', '170 bpm', '180 bpm', 'speed'], 
+        message: tVal.conflictTempo
+    }
+  ];
   
   let completenessScore = 0;
   let specificityScore = 0;
   let balanceScore = 0;
-  let coherenceScore = 20; 
+  let coherenceScore = 20; // Start with full coherence
   
   const issues: string[] = [];
   const suggestions: string[] = [];
   const conflicts: string[] = [];
 
-  // 1. COMPLETENESS (Max 30)
+  // --- 1. COMPLETENESS CHECK (Max 30 pts) ---
+  // Essential elements: Genre, Mood, Vocals, Tempo/BPM, Instruments
+  
   const hasGenre = sunoMetaTags.some(t => (t.category === 'genre' || t.category === 'subgenre') && combinedText.includes(t.name));
   if (hasGenre) completenessScore += 10;
-  else issues.push(tVal.missingGenre);
+  else {
+      issues.push(tVal.missingGenre);
+  }
 
   const hasMood = sunoMetaTags.some(t => t.category === 'mood' && combinedText.includes(t.name)) || 
                   Object.values(MOOD_DESCRIPTORS).flat().some(m => combinedText.includes(m.toLowerCase()));
-  if (hasMood) completenessScore += 10;
-  else issues.push(tVal.missingMood);
+  if (hasMood) completenessScore += 5;
+  else {
+      issues.push(tVal.missingMood);
+  }
 
-  const hasVocals = combinedText.includes('vocal') || combinedText.includes('voice') || combinedText.includes('singer') || combinedText.includes('instrumental');
-  if (hasVocals) completenessScore += 10;
-  else issues.push(tVal.missingVocal);
+  const hasVocals = sunoMetaTags.some(t => t.category === 'vocals' && combinedText.includes(t.name)) ||
+                    ['vocal', 'voice', 'singer', 'instrumental'].some(v => combinedText.includes(v));
+  if (hasVocals) completenessScore += 5;
+  else {
+      issues.push(tVal.missingVocal);
+  }
 
-  // 2. SPECIFICITY: THE 50-CHAR RULE (V4.5 Special)
-  const first50 = styleText.substring(0, 50);
-  const genreInFirst50 = sunoMetaTags.some(t => (t.category === 'genre' || t.category === 'subgenre') && first50.includes(t.name));
-  if (genreInFirst50) specificityScore += 15;
-  else suggestions.push("Hierarchical Weight Tip: Move Genre anchors to the start of the style prompt.");
+  const hasTempo = combinedText.includes('bpm') || ['fast', 'slow', 'tempo', 'upbeat', 'downtempo'].some(t => combinedText.includes(t));
+  if (hasTempo) completenessScore += 5;
+  else {
+      suggestions.push(tVal.addBpm);
+  }
 
-  const vocalInFirst50 = combinedText.includes('male') || combinedText.includes('female') || combinedText.includes('duet') || combinedText.includes('choir') || combinedText.includes('instrumental');
-  if (vocalInFirst50) specificityScore += 15;
-  else suggestions.push("Hallucination Guard: Specify vocal gender right after the genre.");
+  const hasInstruments = sunoMetaTags.some(t => t.category === 'instruments' && combinedText.includes(t.name)) ||
+                         ['guitar', 'synth', 'bass', 'drum', 'piano', 'strings'].some(i => combinedText.includes(i));
+  if (hasInstruments) completenessScore += 5;
   
-  // 3. BALANCE (Max 20)
+  // --- 2. SPECIFICITY CHECK (Max 30 pts) ---
+  // Checks for high-value/specific tags vs generic ones
+  
+  const specificTags = sunoMetaTags.filter(t => 
+    t.impact === 'high' && 
+    (t.category === 'subgenre' || t.category === 'production' || t.category === 'technique') &&
+    combinedText.includes(t.name)
+  );
+  
+  // Cap at 30 points (approx 3 specific tags = max score)
+  specificityScore = Math.min(30, specificTags.length * 10);
+  
+  // --- 3. BALANCE & STRUCTURE CHECK (Max 20 pts) ---
+  
+  // Tag Count (Sweet spot 8-25 words/tags)
   const wordCount = combinedText.split(/[\s,]+/).filter(Boolean).length;
-  if (wordCount >= 8 && wordCount <= 35) balanceScore = 20;
-  else if (wordCount < 8) { balanceScore = 5; issues.push(tVal.promptTooShort); }
-  else { balanceScore = 10; suggestions.push(tVal.promptTooLong); }
-
-  // 4. SYNTAX AUDIT: BRACKETS & PIPES
-  const openBrackets = (lyricsText.match(/\[/g) || []).length;
-  const closeBrackets = (lyricsText.match(/\]/g) || []).length;
-  if (openBrackets !== closeBrackets) {
-    issues.push("Syntax Error: Mismatched square brackets [ ] detected.");
-    coherenceScore -= 10;
+  
+  if (wordCount >= 8 && wordCount <= 35) {
+      balanceScore += 20;
+  } else if (wordCount < 8) {
+      balanceScore += 5;
+      issues.push(tVal.promptTooShort);
+  } else {
+      balanceScore += 10;
+      suggestions.push(tVal.promptTooLong);
   }
 
-  const hasLegacyParenStructure = /\((intro|verse|chorus|bridge|outro)\)/i.test(lyricsText);
-  if (hasLegacyParenStructure) {
-    issues.push(tVal.structuralTagWarning);
-    coherenceScore -= 5;
+  // --- NEW: V4.5 TAG DENSITY CHECK (v4.5) ---
+  // Count comma-separated items in the 'tags' field specifically. 
+  // Should keep it lean: 1-2 genres, 1 mood, 2-3 instruments => max ~6 items.
+  const tagItems = tagsText.split(',').filter(Boolean);
+  if (tagItems.length > 5) {
+      suggestions.push("Tag Overload (v4.5): Keep 'tags' field lean (max 5 items). Move details to Style description.");
+      balanceScore = Math.max(0, balanceScore - 5);
   }
 
-  // 5. COHERENCE & POWER ENDING (Using Shared Conflict Pairs)
+  // --- NEW: V4.5 FRONT-LOADING CHECK (v4.5) ---
+  // Check if Genre/Mood/Vocals are in the first ~50 characters of style prompt.
+  // This helps "lock" the model.
+  if (styleText.length > 20) {
+      const startOfStyle = styleText.substring(0, 50);
+      const genreAtStart = sunoMetaTags.some(t => (t.category === 'genre' || t.category === 'subgenre') && startOfStyle.includes(t.name));
+      const vocalsAtStart = sunoMetaTags.some(t => t.category === 'vocals' && startOfStyle.includes(t.name));
+      
+      if (!genreAtStart && hasGenre) {
+          suggestions.push("Front-Load (v4.5): Put Genre/Mood at the very start of the style prompt.");
+          specificityScore = Math.max(0, specificityScore - 5);
+      }
+      if (!vocalsAtStart && hasVocals) {
+          suggestions.push("Front-Load (v4.5): Put Vocal Type early in the style prompt to lock the voice.");
+      }
+  }
+
+  // --- NEW: SYLLABLE COUNT CHECK (Lyric Density) (v4.5) ---
+  // Aim for 6-12 syllables per line for better articulation.
+  if (lyricsText && !lyricsText.toLowerCase().includes('[instrumental]')) {
+      const lines = lyricsText.split('\n').filter(l => l.trim() && !l.trim().startsWith('['));
+      let highSyllableLines = 0;
+      lines.forEach(line => {
+          if (estimateSyllables(line) > 12) highSyllableLines++;
+      });
+      
+      if (highSyllableLines > 3) {
+          suggestions.push("Lyric Density (v4.5): Keep lines 6-12 syllables for clear articulation. Some lines are too long.");
+      }
+  }
+
+  // --- 4. COHERENCE & CONFLICT CHECK (Max 20 pts) ---
+  
+  // Detect Conflicts
   CONFLICT_PAIRS.forEach(pair => {
-      // Check if BOTH sides of the conflict pair exist in the prompt
       const hasA = pair.a.some(k => combinedText.includes(k));
       const hasB = pair.b.some(k => combinedText.includes(k));
       
       if (hasA && hasB) {
-          conflicts.push(`${pair.message}: "${pair.a.find(k=>combinedText.includes(k))}" vs "${pair.b.find(k=>combinedText.includes(k))}"`);
+          conflicts.push(pair.message);
           coherenceScore -= 10;
       }
   });
-
-  const hasPowerEnding = lyricsText.includes('[end]') && (lyricsText.includes('fade out') || lyricsText.includes('[outro]'));
-  if (!hasPowerEnding) {
-      issues.push(tVal.missingEnding);
-      coherenceScore -= 5;
-  }
   
-  // 6. GENRE SPECIFIC CHECKS
-  if (combinedText.includes('trap') && !combinedText.includes('phonk')) {
-      suggestions.push("Tip: Add 'Phonk Drum' for punchier Trap beats.");
-  }
-  if ((combinedText.includes('rock') || combinedText.includes('metal')) && !combinedText.includes('guitar')) {
-      suggestions.push("Tip: Specify 'Electric Guitar' or 'Distorted Guitar' for clarity.");
+  // --- INSTRUMENTAL MIX CHECK (Reverb/EQ) ---
+  if (combinedText.includes('instrumental')) {
+      const hasMixTags = ['reverb', 'eq', 'mix', 'mastered', 'polished', 'production', 'stereo'].some(t => combinedText.includes(t));
+      if (!hasMixTags) {
+          suggestions.push(tVal.instrumentalMixTip);
+          // Small penalty to specificity if instrumental lacks mix details
+          specificityScore = Math.max(0, specificityScore - 5); 
+      }
   }
 
-  const totalScore = Math.min(100, completenessScore + specificityScore + balanceScore + Math.max(0, coherenceScore));
+  // Cap coherence
+  coherenceScore = Math.max(0, coherenceScore);
+
+  // --- 5. LYRICS STRUCTURE (Penalty logic) ---
   
-  let status: 'critical' | 'warning' | 'good' | 'optimal' = 'optimal';
+  // Critical for V4.5 ending
+  if (!lyricsText.toLowerCase().includes('[instrumental]')) {
+      if (!lyricsText.toLowerCase().includes('[end]') && !lyricsText.toLowerCase().includes('[fade out]') && !lyricsText.toLowerCase().includes('[outro]')) {
+          issues.push(tVal.missingEnding);
+          // Penalty applied to balance score implicitly by not awarding bonus, or could deduct
+          balanceScore = Math.max(0, balanceScore - 5);
+      }
+  }
+
+  // Calculate Total
+  const totalScore = Math.min(100, completenessScore + specificityScore + balanceScore + coherenceScore);
+
+  // Determine Status
+  let status: SunoValidationResult['status'] = 'optimal';
   if (totalScore < 50) status = 'critical';
   else if (totalScore < 75) status = 'warning';
   else if (totalScore < 90) status = 'good';
 
-  let grade = 'D';
-  if (totalScore >= 95) grade = 'S';
-  else if (totalScore >= 80) grade = 'A';
-  else if (totalScore >= 70) grade = 'B';
-  else if (totalScore >= 60) grade = 'C';
-
   return {
-    totalScore,
-    grade,
+    score: totalScore,
     issues,
     suggestions,
     conflicts,
     status,
-    breakdown: {
+    details: {
         completeness: completenessScore,
         specificity: specificityScore,
         balance: balanceScore,
-        coherence: Math.max(0, coherenceScore)
+        coherence: coherenceScore
     }
   };
 };

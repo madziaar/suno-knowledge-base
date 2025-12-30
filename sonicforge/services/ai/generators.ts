@@ -2,14 +2,13 @@
 import { getClient } from "./client";
 import { Type, Schema } from "@google/genai";
 import { SAFETY_SETTINGS, EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
-import { validateAndFixTags, sanitizeLyrics } from "./validators";
-// Fix: Added missing imports from utils to solve reference errors
 import { parseError, retryWithBackoff, globalCircuitBreaker } from "./utils";
-// FIX: Correctly import IntentProfile from the global types file.
-import { GeneratedPrompt, ExpertInputs, AgentType, IntentProfile, ProducerPersona } from "../../types";
-import { GENERATE_SUNO_PROMPT, GENERATE_EXPERT_PROMPT, getFewShotExamples, REFINE_PROMPT_TASK, GENERATE_ALCHEMY_PROMPT, GENERATE_MASHUP_PROMPT } from "./prompts";
+import { validateAndFixTags, sanitizeLyrics } from "./validators";
+import { GeneratedPrompt, ExpertInputs, AgentType } from "../../types";
+import { GENERATE_SUNO_PROMPT, GENERATE_EXPERT_PROMPT, getFewShotExamples, REFINE_PROMPT_TASK, GENERATE_ALCHEMY_PROMPT } from "./prompts";
 import { runCriticAgent, runRefinerAgent } from "./agents";
 import { repairJsonAsync, parseJsonAsync } from "../../lib/json-repair";
+import { IntentProfile } from "./classifier";
 import { assembleStylePrompt, enhanceFromDatabase, StyleComponents } from "../../features/generator/utils/styleBuilder";
 
 const validateExpertOutput = (prompt: GeneratedPrompt): string[] => {
@@ -30,7 +29,6 @@ const executeAgenticLoop = async (
     onAgentChange?: (agent: AgentType) => void
 ): Promise<GeneratedPrompt> => {
     try {
-        // Fix: globalCircuitBreaker is now imported
         return await globalCircuitBreaker.execute(async () => {
             if (onAgentChange) onAgentChange('critic');
             const critique = await runCriticAgent(initialDraft);
@@ -54,11 +52,8 @@ const executeAgenticLoop = async (
     }
 };
 
-const MODEL_CASCADE_TIERS = [
-    { model: 'gemini-3-pro-preview', tier: 1, budget: 32768, note: "Primary (Pro)", complexity: 'complex' },
-    { model: 'gemini-3-flash-preview', tier: 2, budget: 16384, note: "Secondary (Flash)", complexity: 'moderate' },
-    { model: 'gemini-2.5-flash-lite', tier: 3, budget: 8192, note: "Emergency (Lite)", complexity: 'simple' }
-];
+// Heuristic for token counting (Client-side fast estimation)
+const estimateTokenCount = (text: string) => Math.ceil(text.length / 4);
 
 const executeGenerationCascade = async (
     promptContent: string,
@@ -66,100 +61,118 @@ const executeGenerationCascade = async (
     systemInstruction: string,
     baseThinkingBudget: number,
     onStreamUpdate?: (partial: GeneratedPrompt) => void,
-    complexity: 'simple' | 'moderate' | 'complex' = 'moderate'
+    complexity?: 'simple' | 'moderate' | 'complex'
 ): Promise<GeneratedPrompt> => {
-    try {
-        // Fix: globalCircuitBreaker is now imported
-        return await globalCircuitBreaker.execute(async () => {
-            const client = getClient();
-            let tiersToTry = MODEL_CASCADE_TIERS;
-            
-            if (complexity) {
-                const startIndex = tiersToTry.findIndex(t => t.complexity === complexity);
-                if (startIndex > 0) {
-                    tiersToTry = tiersToTry.slice(startIndex);
-                }
-            }
-            
-            let lastError: unknown = null;
+    const client = getClient();
+    let result: GeneratedPrompt;
     
-            for (const tier of tiersToTry) {
-                try {
-                    // Fix: retryWithBackoff is now imported
-                    const result = await retryWithBackoff(async () => {
-                        const effectiveBudget = Math.min(baseThinkingBudget, tier.budget);
-                        const config: any = { 
-                            responseMimeType: "application/json", 
-                            responseSchema: schema, 
-                            systemInstruction: systemInstruction, 
-                            safetySettings: SAFETY_SETTINGS,
-                            temperature: 0.8
-                        };
+    // Dynamic Budgeting based on input complexity
+    // V4.5 demands deeper reasoning for structure and style ordering
+    // UPGRADE: Maximize thinking budget for complex tasks to utilize Gemini 3 capabilities fully
+    let effectiveBudget = Math.max(baseThinkingBudget, 16384); 
     
-                        // Both Gemini 3 Pro and Flash support Thinking Config
-                        if (tier.model.includes('gemini-3') || tier.model.includes('gemini-2.5')) {
-                            config.thinkingConfig = { thinkingBudget: effectiveBudget };
-                        }
-    
-                        let fullText = "";
-                        if (onStreamUpdate) {
-                             const streamResult = await client.models.generateContentStream({ model: tier.model, contents: promptContent, config });
-                             for await (const chunk of streamResult) {
-                                const chunkText = chunk.text;
-                                if (chunkText) {
-                                    fullText += chunkText;
-                                    const partial = await repairJsonAsync(fullText);
-                                    onStreamUpdate(partial);
-                                }
-                            }
-                        } else {
-                             const response = await client.models.generateContent({ model: tier.model, contents: promptContent, config });
-                             fullText = response.text || "";
-                        }
-    
-                        const json = await parseJsonAsync(fullText || "{}") as GeneratedPrompt;
-                        json.modelUsed = `${tier.note} - ${tier.model}`;
-                        
-                        if (tier.tier > 1) {
-                            json.analysis = `[SYSTEM NOTE: Previous tier model failed. Cascaded to ${tier.note}.] ` + (json.analysis || "");
-                        }
-                        
-                        return json;
-                    }, 2, 800);
-    
-                    return result; // Success!
-    
-                } catch (error: unknown) {
-                    console.warn(`[Generation Cascade] Tier ${tier.tier} (${tier.model}) failed.`, error);
-                    lastError = error;
-                }
-            }
-            
-            console.error("All generation tiers failed. Returning fallback object.");
-            // Fix: parseError is now imported
-            const errorMessage = parseError(lastError);
-            return {
-                title: "Generation Failed",
-                tags: "error, system failure",
-                style: "An error occurred during generation. Please check the analysis for details.",
-                lyrics: `[SYSTEM_ERROR]\n${errorMessage}`,
-                analysis: `[FATAL] The AI core failed to generate a response after trying all model tiers. This is usually due to a persistent API issue (like quota exhaustion or server-side problems) or a safety flag on a complex prompt.\n\nLast Error: ${errorMessage}`,
-                modelUsed: 'fallback-system'
-            };
-        });
-    } catch (e: unknown) {
-        console.error("Generation failed at the circuit breaker level. Returning fallback object.", e);
-        // Fix: parseError is now imported
-        const errorMessage = parseError(e);
-        return {
-            title: "Generation Halted",
-            tags: "error, circuit breaker",
-            style: "The system has halted generation due to repeated errors. Please wait a moment before trying again.",
-            lyrics: `[CIRCUIT_BREAKER_TRIPPED]\n${errorMessage}`,
-            analysis: `[CRITICAL] The generation circuit breaker has been tripped due to multiple consecutive failures. This is a protective measure to prevent API spam during an outage or persistent error state. The system will automatically reset after a cooldown period.\n\nError: ${errorMessage}`,
-            modelUsed: 'fallback-system'
-        };
+    if (complexity === 'simple') effectiveBudget = 8192; // Simple tasks
+    if (complexity === 'moderate') effectiveBudget = 16384; // Standard
+    if (complexity === 'complex') effectiveBudget = 32768; // Max out for complex logic (Gemini 3 Pro Max)
+
+    // Check estimated prompt size
+    const estimatedInputTokens = estimateTokenCount(promptContent + systemInstruction);
+    const useLiteFallbackImmediately = estimatedInputTokens > 30000; // If prompt is massive, 3 Pro might error or be slow
+
+    if (useLiteFallbackImmediately) {
+         console.warn("Input too large, skipping to Lite model.");
     }
+
+    // TIER 1: Gemini 3 Pro (Thinking)
+    // Wrapped in Retry with Backoff
+    try {
+        if (useLiteFallbackImmediately) throw new Error("Skipping Tier 1");
+
+        await retryWithBackoff(async () => {
+            const streamResult = await client.models.generateContentStream({
+                model: 'gemini-3-pro-preview',
+                contents: promptContent,
+                config: {
+                    thinkingConfig: { thinkingBudget: effectiveBudget },
+                    responseMimeType: "application/json",
+                    responseSchema: schema,
+                    systemInstruction: systemInstruction,
+                    safetySettings: SAFETY_SETTINGS
+                }
+            });
+
+            let fullText = "";
+            for await (const chunk of streamResult) {
+                const chunkText = chunk.text;
+                if (chunkText) {
+                    fullText += chunkText;
+                    if (onStreamUpdate) {
+                        // Use Async Worker for Repair to keep UI responsive
+                        const partial = await repairJsonAsync(fullText);
+                        onStreamUpdate(partial);
+                    }
+                }
+            }
+            
+            // Offload final parse to worker to avoid UI freeze
+            result = await parseJsonAsync(fullText || "{}") as GeneratedPrompt;
+            result.modelUsed = "Gemini 3 Pro (Thinking)";
+        }, 2, 500); // 2 Retries, 500ms initial delay
+
+    } catch (tier1Error: unknown) {
+        console.warn("Tier 1 (Pro) Failed. Cascading to Tier 2...", tier1Error);
+        
+        // TIER 2: Gemini 2.5 Flash (Standard)
+        try {
+            await retryWithBackoff(async () => {
+                const response = await client.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: promptContent,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: schema,
+                        systemInstruction: systemInstruction,
+                        safetySettings: SAFETY_SETTINGS
+                    }
+                });
+                // Offload parse
+                result = await parseJsonAsync(response.text || "{}") as GeneratedPrompt;
+                result.modelUsed = "Gemini 2.5 Flash";
+            }, 2, 500);
+            
+            if (result!.analysis) result!.analysis += "\n\n[SYSTEM NOTE: Pro model overloaded/failed. Generated via Backup (Flash).]";
+
+        } catch (tier2Error: unknown) {
+            console.warn("Tier 2 (Flash) Failed. Cascading to Tier 3...", tier2Error);
+
+            // TIER 3: Gemini 2.5 Flash Lite (Emergency)
+            // Use Circuit Breaker for the final safeguard
+            try {
+                result = await globalCircuitBreaker.execute(async () => {
+                    const response = await client.models.generateContent({
+                        model: 'gemini-2.5-flash-lite',
+                        contents: promptContent,
+                        config: {
+                            responseMimeType: "application/json",
+                            responseSchema: schema,
+                            systemInstruction: systemInstruction,
+                            safetySettings: SAFETY_SETTINGS
+                        }
+                    });
+                    const r = await parseJsonAsync(response.text || "{}") as GeneratedPrompt;
+                    r.modelUsed = "Gemini 2.5 Flash Lite";
+                    return r;
+                });
+                
+                if (result!.analysis) result!.analysis += "\n\n[SYSTEM NOTE: Emergency Fallback Protocol (Lite).]";
+
+            } catch (tier3Error: unknown) {
+                throw new Error(`ALL TIERS FAILED. Last error: ${parseError(tier3Error)}`);
+            }
+        }
+    }
+
+    return result!;
 };
 
 export const generateExpertPrompt = async (
@@ -172,17 +185,18 @@ export const generateExpertPrompt = async (
   negativePrompt?: string,
   onAgentChange?: (agent: AgentType) => void,
   structuredStyle?: StyleComponents,
-  lyricsLanguage?: string,
-  producerPersona: ProducerPersona = 'standard'
+  lyricsLanguage?: string // New
 ): Promise<GeneratedPrompt> => {
   if (!inputs.structure || inputs.structure.length === 0) {
       throw new Error("Expert Mode Error: No song structure defined. Add sections to continue.");
   }
 
+  // Construct optimized style string from components or inputs
   let targetStyleString = '';
   if (structuredStyle) {
       targetStyleString = assembleStylePrompt(structuredStyle);
   } else {
+      // Fallback builder if not provided explicitly (though it should be)
       targetStyleString = assembleStylePrompt({
           genres: [inputs.genre],
           subGenres: [],
@@ -190,7 +204,7 @@ export const generateExpertPrompt = async (
           bpm: inputs.bpm,
           key: inputs.key,
           era: inputs.era,
-          vocals: [], 
+          vocals: [], // Inferred by AI if empty
           vocalStyle: inputs.vocalStyle,
           instruments: (inputs.instrumentStyle || '').split(',').map(s=>s.trim()).filter(Boolean),
           atmosphere: (inputs.atmosphereStyle || '').split(',').map(s=>s.trim()).filter(Boolean),
@@ -205,7 +219,9 @@ export const generateExpertPrompt = async (
     return `   - Section: [${s.type}${mods}]${isInst ? ' -> FORCE SILENCE / INSTRUMENTAL' : ''}`;
   }).join('\n');
 
-  const prompt = GENERATE_EXPERT_PROMPT(userInput, mood, inputs.instrumentStyle || '', researchData, inputs, structureInstructions, lyricsLanguage, isPyriteMode, producerPersona) + 
+  // Inject the target style into the prompt as a strict directive
+  // Pass lyricsLanguage to the task builder
+  const prompt = GENERATE_EXPERT_PROMPT(userInput, researchData, inputs, structureInstructions, mood, lyricsLanguage, isPyriteMode) + 
                  `\n\n**CRITICAL STYLE DIRECTIVE**: The 'style' field output MUST strictly follow this pre-calculated structure:\n"${targetStyleString}, [AI Added Details]"`;
 
   const schema: Schema = {
@@ -221,44 +237,36 @@ export const generateExpertPrompt = async (
   };
 
   const context = `${inputs.genre} ${mood} ${userInput}`;
-  const targetLanguage = 'en'; 
+  const targetLanguage = 'en'; // Expert mode often implies EN, but we can pass it if we want full localization
   
-  // Fix: Reduced argument count to 8 to match Expected 6-8 (Removed false/useReMi)
-  const systemInstruction = getSystemInstruction(
-    isPyriteMode, 
-    context, 
-    profile, 
-    negativePrompt, 
-    inputs.customPersona, 
-    targetLanguage as any, 
-    lyricsLanguage, 
-    producerPersona
-  ) + "\n" + EXPERT_SYSTEM_PROMPT;
+  // Pass lyricsLanguage explicitly
+  const systemInstruction = getSystemInstruction(isPyriteMode, context, profile, negativePrompt, inputs.customPersona, targetLanguage as any, lyricsLanguage) + "\n" + EXPERT_SYSTEM_PROMPT;
 
-  
-  if (onAgentChange) onAgentChange('generator');
-  let json = await executeGenerationCascade(prompt, schema, systemInstruction, 32768, undefined, profile?.complexity);
-  
-  if (json.tags) json.tags = validateAndFixTags(json.tags);
-  if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
+  try {
+    if (onAgentChange) onAgentChange('generator');
+    let json = await executeGenerationCascade(prompt, schema, systemInstruction, 32768, undefined, profile?.complexity);
+    
+    if (json.tags) json.tags = validateAndFixTags(json.tags);
+    if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
 
-  json = await executeAgenticLoop(json, onAgentChange);
+    json = await executeAgenticLoop(json, onAgentChange);
 
-  const validationWarnings = validateExpertOutput(json);
-  if (validationWarnings.length > 0 && json.analysis) {
-      json.analysis += `\n\n[VALIDATION REPORT]:\n${validationWarnings.join('\n')}`;
+    const validationWarnings = validateExpertOutput(json);
+    if (validationWarnings.length > 0 && json.analysis) {
+        json.analysis += `\n\n[VALIDATION REPORT]:\n${validationWarnings.join('\n')}`;
+    }
+
+    return json;
+  } catch (e: unknown) {
+    console.error("Expert Generation Failed", e);
+    throw new Error(parseError(e));
   }
-
-  return json;
-  
 };
 
 interface AlchemyContext {
     workflow: 'forge' | 'alchemy';
-    mode: 'vocals' | 'instrumental' | 'inspire' | 'cover' | 'mashup';
+    mode: 'vocals' | 'instrumental' | 'inspire' | 'cover';
     playlistUrl?: string;
-    sourceA?: string;
-    sourceB?: string;
 }
 
 export const generateSunoPrompt = async (
@@ -274,14 +282,15 @@ export const generateSunoPrompt = async (
   structuredStyle?: StyleComponents,
   alchemyContext?: AlchemyContext,
   targetLanguage: 'en' | 'pl' = 'en',
-  lyricsLanguage?: string,
-  producerPersona: ProducerPersona = 'standard'
+  lyricsLanguage?: string // New override
 ): Promise<GeneratedPrompt> => {
   const contextKey = `${intent} ${mode}`;
   const examples = getFewShotExamples(contextKey);
 
+  // If we have structured style, we can use it to guide the model or enhance it
   let finalIntent = intent;
   if (structuredStyle) {
+      // Deterministic Enhancement using DB if genre is known
       if (structuredStyle.genres.length > 0) {
           const enhancement = enhanceFromDatabase(structuredStyle.genres[0]);
           if (enhancement.instruments) structuredStyle.instruments.push(...enhancement.instruments);
@@ -294,13 +303,9 @@ export const generateSunoPrompt = async (
 
   let prompt = '';
   if (alchemyContext && alchemyContext.workflow === 'alchemy') {
-      if (alchemyContext.mode === 'mashup') {
-          prompt = GENERATE_MASHUP_PROMPT(alchemyContext.sourceA || '', alchemyContext.sourceB || '', finalIntent, isPyriteMode);
-      } else {
-          prompt = GENERATE_ALCHEMY_PROMPT(alchemyContext.mode, finalIntent, researchData, alchemyContext.playlistUrl, lyricsLanguage, isPyriteMode, producerPersona);
-      }
+      prompt = GENERATE_ALCHEMY_PROMPT(alchemyContext.mode, finalIntent, researchData, alchemyContext.playlistUrl, lyricsLanguage, isPyriteMode);
   } else {
-      prompt = GENERATE_SUNO_PROMPT(finalIntent, "", "", researchData, mode, existingLyrics, examples, lyricsLanguage, undefined, isPyriteMode, producerPersona);
+      prompt = GENERATE_SUNO_PROMPT(finalIntent, researchData, mode, existingLyrics, examples, lyricsLanguage, undefined, isPyriteMode);
   }
 
   const schema: Schema = {
@@ -315,32 +320,28 @@ export const generateSunoPrompt = async (
       required: ["analysis", "title", "tags", "style"]
   };
 
-  // Fix: Reduced argument count to 6 to match Expected 3-6 (Removed lyricsLanguage, producerPersona, useReMi)
-  const systemInstruction = getSystemInstruction(
-    isPyriteMode, 
-    intent, 
-    profile, 
-    negativePrompt, 
-    undefined, 
-    targetLanguage as any
-  );
+  // Pass lyricsLanguage to system instruction builder
+  const systemInstruction = getSystemInstruction(isPyriteMode, intent, profile, negativePrompt, undefined, targetLanguage, lyricsLanguage);
   
-  let budget = 32768; // Max power for Pro
+  // V4.5 requires more thought
+  let budget = 24576; 
   if (mode === 'instrumental') budget = 16384;
-  if (profile?.complexity === 'complex') budget = 32768; 
+  if (profile?.complexity === 'complex') budget = 32768; // Use Max Budget for complex queries
 
-  
-  if (onAgentChange) onAgentChange('generator');
-  let json = await executeGenerationCascade(prompt, schema, systemInstruction, budget, onStreamUpdate, profile?.complexity);
-  
-  if (json.tags) json.tags = validateAndFixTags(json.tags);
-  if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
+  try {
+    if (onAgentChange) onAgentChange('generator');
+    let json = await executeGenerationCascade(prompt, schema, systemInstruction, budget, onStreamUpdate, profile?.complexity);
+    
+    if (json.tags) json.tags = validateAndFixTags(json.tags);
+    if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
 
-  json = await executeAgenticLoop(json, onAgentChange);
+    json = await executeAgenticLoop(json, onAgentChange);
 
-  return json;
+    return json;
 
-  
+  } catch (error: unknown) {
+    throw new Error(parseError(error));
+  }
 };
 
 export const refineSunoPrompt = async (
@@ -348,10 +349,10 @@ export const refineSunoPrompt = async (
   instruction: string,
   isPyriteMode: boolean,
   targetLanguage: 'en' | 'pl' = 'en',
-  lyricsLanguage?: string 
+  lyricsLanguage?: string // New: Accept lyricsLanguage for Refinement
 ): Promise<GeneratedPrompt> => {
   const previousJson = JSON.stringify(previousResult, null, 2);
-  const prompt = REFINE_PROMPT_TASK(previousJson, instruction, lyricsLanguage); 
+  const prompt = REFINE_PROMPT_TASK(previousJson, instruction, lyricsLanguage); // Pass to task
 
   const schema: Schema = {
       type: Type.OBJECT,
@@ -365,23 +366,18 @@ export const refineSunoPrompt = async (
       required: ["analysis", "title", "tags", "style", "lyrics"]
   };
 
-  // Fix: Reduced argument count to 6 to match Expected 3-6
-  const systemInstruction = getSystemInstruction(
-    isPyriteMode, 
-    instruction, 
-    undefined, 
-    undefined, 
-    undefined, 
-    targetLanguage as any
-  );
+  // Pass lyricsLanguage to system instruction as well
+  const systemInstruction = getSystemInstruction(isPyriteMode, instruction, undefined, undefined, undefined, targetLanguage, lyricsLanguage);
 
-  
-  let json = await executeGenerationCascade(prompt, schema, systemInstruction, 16384, undefined, 'moderate');
-  
-  if (json.tags) json.tags = validateAndFixTags(json.tags);
-  if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
+  try {
+    let json = await executeGenerationCascade(prompt, schema, systemInstruction, 16384);
+    
+    if (json.tags) json.tags = validateAndFixTags(json.tags);
+    if (json.lyrics) json.lyrics = sanitizeLyrics(json.lyrics);
 
-  return json;
+    return json;
 
-  
+  } catch (error: unknown) {
+    throw new Error(parseError(error));
+  }
 };

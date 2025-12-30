@@ -2,8 +2,13 @@
 import { getClient } from "./client";
 import { Type, Schema } from "@google/genai";
 import { SAFETY_SETTINGS } from "./config";
-import { retryWithBackoff } from "./utils";
-import { IntentProfile } from "../../types";
+
+export interface IntentProfile {
+  tone: 'aggressive' | 'melancholic' | 'uplifting' | 'technical' | 'chaotic' | 'neutral';
+  complexity: 'simple' | 'moderate' | 'complex';
+  needsResearch: boolean;
+  detectedGenre?: string;
+}
 
 const CLASSIFIER_SCHEMA: Schema = {
   type: Type.OBJECT,
@@ -18,7 +23,11 @@ const CLASSIFIER_SCHEMA: Schema = {
 
 /**
  * Rapidly classifies user intent using Gemini 2.5 Flash-Lite.
+ * This runs in parallel with research to configure the system prompt dynamically.
  * Determines thinking budget (via complexity) and tone modulation.
+ * 
+ * @param userInput - The raw user input string.
+ * @returns An IntentProfile object.
  */
 export const classifyIntent = async (userInput: string): Promise<IntentProfile> => {
   if (!userInput || userInput.length < 5) {
@@ -28,22 +37,21 @@ export const classifyIntent = async (userInput: string): Promise<IntentProfile> 
   const client = getClient();
   
   try {
-    return await retryWithBackoff(async () => {
-        const response = await client.models.generateContent({
-          model: 'gemini-2.5-flash-lite', 
-          contents: `Classify this music generation prompt. Input: "${userInput}"`,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: CLASSIFIER_SCHEMA,
-            temperature: 0.1,
-            maxOutputTokens: 100,
-            safetySettings: SAFETY_SETTINGS
-          }
-        });
-        return JSON.parse(response.text || "{}") as IntentProfile;
-    }, 2, 500); // 2 retries for classification
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite', // Fastest model for metadata
+      contents: `Classify this music generation prompt. Input: "${userInput}"`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: CLASSIFIER_SCHEMA,
+        temperature: 0.1,
+        maxOutputTokens: 100,
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+
+    return JSON.parse(response.text || "{}") as IntentProfile;
   } catch (e: unknown) {
-    console.warn("Intent classification failed after retries, using defaults.", e);
+    console.warn("Intent classification failed, using defaults.", e);
     return { tone: 'neutral', complexity: 'moderate', needsResearch: false };
   }
 };

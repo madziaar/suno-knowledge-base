@@ -1,12 +1,10 @@
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import StudioPanel from '../components/StudioPanel';
+import StatusLog from '../components/StatusLog/index';
 import ResultsDisplay from '../components/ResultsDisplay';
-import StemTerminal from '../components/Studio/StemTerminal';
-import TapeMachine from '../../../components/shared/TapeMachine';
 import { usePromptState } from '../../../contexts';
-import { usePromptActions } from '../hooks/usePromptActions';
-import { GeneratorState, GeneratedPrompt, BatchConstraints, BuilderTranslation, ToastTranslation, AgentType, GroundingChunk, StemWeights } from '../../../types';
+import { GeneratorState, GeneratedPrompt, BatchConstraints, BuilderTranslation, ToastTranslation, AgentType, GroundingChunk } from '../../../types';
 import { StyleComponents } from '../utils/styleBuilder';
 
 interface StudioLayoutProps {
@@ -39,20 +37,11 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
   onGenerateVariations, onApplyVariation, onExportBatch,
   t, toast, isPyriteMode, showToast
 }) => {
-  const { result, variations, isGeneratingVariations, expertInputs } = usePromptState();
-  const { updateExpertInput } = usePromptActions();
-  
-  const isGenerating = state === GeneratorState.RESEARCHING || state === GeneratorState.ANALYZING || state === GeneratorState.GENERATING;
-
-  const handleWeightChange = useCallback((weights: StemWeights) => {
-      updateExpertInput({ stemWeights: weights });
-  }, [updateExpertInput]);
+  const { inputs, result, variations, isGeneratingVariations } = usePromptState();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 relative">
       <div className="space-y-6">
-        <TapeMachine isActive={isGenerating} isPyriteMode={isPyriteMode} />
-
         <StudioPanel
             t={t}
             toast={toast}
@@ -62,10 +51,16 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
             state={state}
         />
 
-        <StemTerminal 
-            isPyriteMode={isPyriteMode} 
-            weights={expertInputs.stemWeights}
-            onWeightChange={handleWeightChange} 
+        <StatusLog 
+            state={state}
+            activeAgent={activeAgent}
+            researchData={researchData}
+            processingStep={0} 
+            steps={['analyzing', 'structuring', 'adlibs', 'tags', 'finalizing']}
+            t={t}
+            isPyriteMode={isPyriteMode}
+            errorMessage={error}
+            lastSaved={null} 
         />
       </div>
 
@@ -73,7 +68,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
         <ResultsDisplay 
             result={result}
             state={state}
-            showLyrics={true}
+            showLyrics={true} // Studio always shows full data
             onEnhance={onEnhance}
             onRefine={onRefine}
             onOpenExport={onOpenExport}
@@ -82,6 +77,7 @@ export const StudioLayout: React.FC<StudioLayoutProps> = ({
             toast={toast}
             isPyriteMode={isPyriteMode}
             showToast={showToast}
+            platform={inputs.platform}
             variations={variations}
             isGeneratingVariations={isGeneratingVariations}
             onGenerateVariations={onGenerateVariations}

@@ -1,12 +1,12 @@
 
 export const APP_CONFIG = {
   NAME: "Pyrite's Sonic Forge V5",
-  VERSION: "7.2.0 (ENHANCED)",
+  VERSION: "7.0.0 (AETHER)",
   LIMITS: {
     TITLE: 80,
-    TAGS: 400, // Updated to V4.5 Strict Limit
-    STYLE: 400, // Updated to V4.5 Strict Limit
-    LYRICS: 3000, // V4.5 Limit
+    TAGS: 1000,
+    STYLE: 1000,
+    LYRICS: 5000,
     FILE_SIZE_MB: 10,
   },
   TIMEOUTS: {

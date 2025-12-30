@@ -6,7 +6,7 @@ import { Platform } from '../types';
 interface AudioContextType {
   isMuted: boolean;
   toggleMute: () => void;
-  play: (type: 'click' | 'hover' | 'success' | 'error' | 'toggle' | 'light' | 'secret' | 'heavy') => void;
+  play: (type: 'click' | 'hover' | 'success' | 'error' | 'toggle' | 'light' | 'secret') => void;
   setPyriteMode: (isPyrite: boolean) => void;
   getAnalyser: () => AnalyserNode | null;
   platform: Platform;
@@ -16,7 +16,7 @@ interface AudioContextType {
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [platform, setPlatform] = useState<Platform>('suno');
   const engineRef = useRef(sfx);
 
@@ -30,7 +30,7 @@ export const AudioProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsMuted(newState);
   }, []);
 
-  const play = useCallback((type: 'click' | 'hover' | 'success' | 'error' | 'toggle' | 'light' | 'secret' | 'heavy') => {
+  const play = useCallback((type: 'click' | 'hover' | 'success' | 'error' | 'toggle' | 'light' | 'secret') => {
     engineRef.current.play(type);
   }, []);
 

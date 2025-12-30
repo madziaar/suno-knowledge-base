@@ -1,11 +1,13 @@
 
-import React, { memo, useMemo } from 'react';
-import { Layers } from 'lucide-react';
-import { ExpertInputs, SongConcept, BuilderTranslation, SongSection, ToastTranslation, DialogTranslation } from '../../../../types';
+import React, { memo, useState, useCallback, useMemo } from 'react';
+import { Layers, BookOpen, UserCog, Save } from 'lucide-react';
+import { ExpertInputs, SongConcept, BuilderTranslation, SongSection, Persona, ToastTranslation, DialogTranslation } from '../../../../types';
 import ExpertGlobalPanel from '../ExpertGlobalPanel';
 import StructureBuilder from '../StructureBuilder';
 import { cn } from '../../../../lib/utils';
 import { STORY_ARCS } from '../../data/storyArcs';
+import { useLocalStorage } from '../../../../hooks/useLocalStorage';
+import PersonaManager from './PersonaManager';
 import { sfx } from '../../../../lib/audio';
 import VocalStyleDesigner from '../inputs/VocalStyleDesigner';
 import SpecialTechniquesPanel from '../inputs/SpecialTechniquesPanel';
@@ -32,9 +34,15 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
   inputs,
   setInputs,
   isPyriteMode,
-  t
+  t,
+  showToast,
+  tToast,
+  tDialog
 }) => {
+  const [savedPersonas, setSavedPersonas] = useLocalStorage<Persona[]>('pyrite_personas', []);
+  const [isPersonaManagerOpen, setIsPersonaManagerOpen] = useState(false);
   const { lang } = useSettings();
+
   const activeBorder = isPyriteMode ? 'focus:border-purple-500' : 'focus:border-yellow-500';
 
   const handleApplyArc = (arcId: string) => {
@@ -49,6 +57,40 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
       sfx.play('success');
     }
   };
+
+  const handleSavePersona = useCallback(() => {
+    const prompt = expertInputs.customPersona?.trim();
+    if (!prompt) {
+      showToast(tToast.personaEmpty || "Persona prompt is empty.", 'info');
+      return;
+    }
+    const name = window.prompt(tDialog.savePersonaName || "Enter a name for this persona:");
+    if (name && name.trim()) {
+      const newPersona: Persona = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        prompt: prompt
+      };
+      setSavedPersonas(prev => [...prev, newPersona]);
+      showToast(tToast.personaSaved || "Persona Saved", 'success');
+      sfx.play('success');
+    }
+  }, [expertInputs.customPersona, setSavedPersonas, showToast, tDialog.savePersonaName, tToast.personaSaved, tToast.personaEmpty]);
+  
+  const handleLoadPersona = useCallback((prompt: string) => {
+    setExpertInputs(p => ({ ...p, customPersona: prompt }));
+    setIsPersonaManagerOpen(false);
+    showToast(tToast.personaLoaded || "Persona Loaded", 'success');
+    sfx.play('success');
+  }, [setExpertInputs, showToast, tToast.personaLoaded]);
+
+  const handleDeletePersona = useCallback((id: string) => {
+    if (window.confirm(tDialog.deletePersona || "Delete this persona? This cannot be undone.")) {
+      setSavedPersonas(prev => prev.filter(p => p.id !== id));
+      showToast(tToast.personaDeleted || "Persona Deleted", 'info');
+      sfx.play('click');
+    }
+  }, [setSavedPersonas, showToast, tToast.personaDeleted, tDialog.deletePersona]);
 
   // Transform Story Arcs to Select Options using localized names
   const arcOptions: SelectOption[] = useMemo(() => {
@@ -72,7 +114,6 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
         onChange={(newValue) => setExpertInputs(p => ({...p, vocalStyle: newValue}))}
         genre={expertInputs.genre}
         isPyriteMode={isPyriteMode}
-        t={t}
       />
 
       <InstrumentDesigner
@@ -80,14 +121,12 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
         onChange={(newValue) => setExpertInputs(p => ({...p, instrumentStyle: newValue}))}
         genre={expertInputs.genre}
         isPyriteMode={isPyriteMode}
-        t={t}
       />
       
       <AtmosphereDesigner
         value={expertInputs.atmosphereStyle || ''}
         onChange={(newValue) => setExpertInputs(p => ({...p, atmosphereStyle: newValue}))}
         isPyriteMode={isPyriteMode}
-        t={t}
       />
 
       <SpecialTechniquesPanel isPyriteMode={isPyriteMode} />
@@ -103,6 +142,31 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
                 activeBorder
               )}
               placeholder={t.conceptPlaceholder}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2 flex items-center justify-between">
+                <span className="flex items-center">
+                    <UserCog className="w-3 h-3 mr-1.5" />
+                    {t.expert.customPersona}
+                </span>
+                <div className="flex gap-1">
+                    <button onClick={handleSavePersona} title={t.expert.savePersona} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors">
+                        <Save className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => setIsPersonaManagerOpen(true)} title={t.expert.loadPersona} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors">
+                        <BookOpen className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            </label>
+            <textarea
+              value={expertInputs.customPersona || ''}
+              onChange={(e) => setExpertInputs(p => ({ ...p, customPersona: e.target.value }))}
+              className={cn(
+                "w-full bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 text-zinc-200 outline-none h-24 resize-none text-sm font-mono placeholder:text-zinc-600",
+                activeBorder
+              )}
+              placeholder={t.expert.customPersonaPlaceholder}
             />
           </div>
       </div>
@@ -122,7 +186,7 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
                     value=""
                     onChange={handleApplyArc}
                     options={arcOptions}
-                    placeholder={t.expert.applyTemplate}
+                    placeholder={lang === 'pl' ? "Wybierz Szablon..." : "Apply Template..."}
                     variant={isPyriteMode ? 'pyrite' : 'default'}
                     className="z-20"
                 />
@@ -142,8 +206,19 @@ const ExpertDrawerContent: React.FC<ExpertDrawerContentProps> = ({
           lyrics={inputs.lyricsInput}
         />
       </div>
+
+      <PersonaManager
+        isOpen={isPersonaManagerOpen}
+        onClose={() => setIsPersonaManagerOpen(false)}
+        personas={savedPersonas}
+        onLoad={handleLoadPersona}
+        onDelete={handleDeletePersona}
+        isPyriteMode={isPyriteMode}
+        t={t}
+      />
     </div>
   );
 };
 
 export default React.memo(ExpertDrawerContent);
+    

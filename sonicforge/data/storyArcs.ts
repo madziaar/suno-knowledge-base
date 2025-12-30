@@ -1,11 +1,17 @@
 
-import { StoryArc } from '../types';
 import { SongSection } from "../types";
+
+export interface StoryArc {
+  id: string;
+  name: string;
+  description: { en: string; pl: string };
+  structure: SongSection[];
+}
 
 export const STORY_ARCS: StoryArc[] = [
   {
     id: "heros_journey",
-    name: { en: "Hero's Journey", pl: "Podróż Bohatera" },
+    name: "Hero's Journey",
     description: { en: "Classic narrative structure. Ideal for Epic/Cinematic tracks.", pl: "Klasyczna struktura narracyjna. Idealna do epickich utworów." },
     structure: [
       { id: "s1", type: "Intro", modifiers: ["Atmospheric", "Low Energy"] },
@@ -20,7 +26,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "pop_radio",
-    name: { en: "Radio Hit (3:30)", pl: "Radiowy Hit (3:30)" },
+    name: "Radio Hit (3:30)",
     description: { en: "Tight, punchy structure optimized for airplay.", pl: "Zwarta, dynamiczna struktura zoptymalizowana pod radio." },
     structure: [
       { id: "p1", type: "Intro", modifiers: ["Short", "Hook Tease"] },
@@ -36,7 +42,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "edm_festival",
-    name: { en: "EDM Festival Banger", pl: "EDM Festiwal" },
+    name: "EDM Festival Banger",
     description: { en: "Build-Drop dynamic for dance floors.", pl: "Dynamika Build-Drop na parkiety taneczne." },
     structure: [
       { id: "e1", type: "Intro", modifiers: ["DJ Friendly", "Beat"] },
@@ -51,7 +57,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "progressive_journey",
-    name: { en: "Progressive Flow", pl: "Progresywny Flow" },
+    name: "Progressive Flow",
     description: { en: "Slow evolution without standard verse-chorus structure.", pl: "Powolna ewolucja bez standardowej struktury zwrotka-refren." },
     structure: [
       { id: "pr1", type: "Intro", modifiers: ["Ambient", "Slow"] },
@@ -65,7 +71,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "metal_core",
-    name: { en: "Metalcore Breakdown", pl: "Metalcore Breakdown" },
+    name: "Metalcore Breakdown",
     description: { en: "Heavy/Soft dynamics with a massive breakdown.", pl: "Dynamika Ciężko/Lekko z potężnym breakdownem." },
     structure: [
       { id: "m1", type: "Intro", modifiers: ["Feedback", "Heavy Riff"] },
@@ -81,7 +87,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "hiphop_cypher",
-    name: { en: "Rap Cypher Flow", pl: "Rap Cypher Flow" },
+    name: "Rap Cypher Flow",
     description: { en: "Verse-heavy structure for lyrical storytelling.", pl: "Struktura skupiona na zwrotkach i opowiadaniu historii." },
     structure: [
       { id: "h1", type: "Intro", modifiers: ["Beat Tag", "Spoken"] },
@@ -96,7 +102,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "jazz_standard",
-    name: { en: "Jazz Standard (AABA)", pl: "Standard Jazzowy (AABA)" },
+    name: "Jazz Standard (AABA)",
     description: { en: "Traditional jazz form with head and solos.", pl: "Tradycyjna forma jazzowa z tematem i solówkami." },
     structure: [
       { id: "j1", type: "Intro", modifiers: ["Piano Trio", "Swing"] },
@@ -111,7 +117,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "euro_pop",
-    name: { en: "Euro-Pop Anthem", pl: "Euro-Pop Hymn" },
+    name: "Euro-Pop Anthem",
     description: { en: "High energy structure with a key change.", pl: "Wysokoenergetyczna struktura ze zmianą tonacji." },
     structure: [
       { id: "ep1", type: "Intro", modifiers: ["Synth Hook"] },
@@ -127,7 +133,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "cyberpunk_narrative",
-    name: { en: "Cyberpunk Narrative", pl: "Narracja Cyberpunkowa" },
+    name: "Cyberpunk Narrative",
     description: { en: "Dystopian story flow with atmospheric breaks.", pl: "Dystopijna narracja z przerwami atmosferycznymi." },
     structure: [
       { id: "cp1", type: "Intro", modifiers: ["Rain FX", "Synth Swell"] },
@@ -141,7 +147,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "lofi_loop",
-    name: { en: "Lo-Fi Study Loop", pl: "Pętla Lo-Fi" },
+    name: "Lo-Fi Study Loop",
     description: { en: "Simple, repetitive structure for focus.", pl: "Prosta, powtarzalna struktura do skupienia." },
     structure: [
       { id: "lf1", type: "Intro", modifiers: ["Vinyl Crackle", "Piano"] },
@@ -153,7 +159,7 @@ export const STORY_ARCS: StoryArc[] = [
   },
   {
     id: "v45_odyssey",
-    name: { en: "8-Minute Odyssey (V4.5)", pl: "8-Minutowa Odyseja (V4.5)" },
+    name: "8-Minute Odyssey (V4.5)",
     description: { en: "Massive, multi-part structure for extended generation.", pl: "Potężna, wieloczęściowa struktura dla długich generacji." },
     structure: [
       { id: "od1", type: "Intro", modifiers: ["Atmospheric", "Slow Build"] },

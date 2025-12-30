@@ -1,8 +1,15 @@
 
 import { useState, useCallback } from 'react';
-// FIX: Import types from central location after moving them.
-import { HistoryItem, SyncStatus, CloudConfig } from '../types';
+import { HistoryItem } from '../types';
 import { useLocalStorage } from './useLocalStorage';
+
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'success';
+
+export interface CloudConfig {
+  url: string;
+  key: string;
+  syncId: string;
+}
 
 export const useCloudSync = () => {
   const [config, setConfig] = useLocalStorage<CloudConfig>('pyrite_cloud_config', {

@@ -63,14 +63,6 @@ export const DESCRIPTOR_BANK = {
   } as Record<string, string[]>
 };
 
-export const CONFLICT_PAIRS = [
-    { a: ['energetic', 'driving', 'fast'], b: ['calm', 'relaxing', 'chill', 'soft'], message: 'Energy Clash' },
-    { a: ['acoustic', 'folk', 'unplugged'], b: ['electronic', 'techno', 'dubstep', 'synthesizer'], message: 'Texture Clash' },
-    { a: ['happy', 'joyful', 'euphoric'], b: ['sad', 'melancholic', 'depressive'], message: 'Mood Clash' },
-    { a: ['minimalist', 'sparse'], b: ['wall of sound', 'dense', 'layered'], message: 'Density Clash' },
-    { a: ['lo-fi', 'vintage'], b: ['pristine', 'hi-fi', 'crystal clear'], message: 'Fidelity Clash' }
-];
-
 export const getDescriptors = (category: keyof typeof DESCRIPTOR_BANK): string[] => {
   if (category === 'moods') return Object.values(DESCRIPTOR_BANK.moods).flat();
   return (DESCRIPTOR_BANK as any)[category] || [];

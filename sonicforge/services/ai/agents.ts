@@ -31,6 +31,9 @@ const CRITIC_SCHEMA: Schema = {
  * 1. THE INQUISITOR (Critic)
  * Uses a fast, low-cost model (Flash) to verify strict Suno V4.5 constraints.
  * Checks for character limits, tag syntax, and formatting violations.
+ * 
+ * @param draft - The generated prompt to evaluate.
+ * @returns An object indicating pass/fail and list of specific issues.
  */
 export const runCriticAgent = async (draft: GeneratedPrompt): Promise<CriticResult> => {
   const client = getClient();
@@ -38,19 +41,19 @@ export const runCriticAgent = async (draft: GeneratedPrompt): Promise<CriticResu
   
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview', 
+      model: 'gemini-2.5-flash', // Fast inference
       contents: CRITIC_PROMPT(draftJson),
       config: {
         responseMimeType: "application/json",
         responseSchema: CRITIC_SCHEMA,
-        temperature: 0.1, 
+        temperature: 0.1, // Strict logic
         safetySettings: SAFETY_SETTINGS
       }
     });
 
     const result = JSON.parse(response.text || "{}");
     return {
-      pass: result.pass ?? true,
+      pass: result.pass ?? true, // Default to pass if parsing fails to avoid blocking
       issues: result.issues ?? []
     };
   } catch (e) {
@@ -61,8 +64,12 @@ export const runCriticAgent = async (draft: GeneratedPrompt): Promise<CriticResu
 
 /**
  * 2. THE REFINER
- * Uses a smarter model (Gemini 3 Pro) to surgically fix specific issues identified by the Critic.
- * Upgraded from Flash for maximum adherence to constraints during repair.
+ * Uses a smarter model (Flash) to surgically fix specific issues identified by the Critic.
+ * Only modifies the fields flagged as problematic.
+ * 
+ * @param draft - The original failed draft.
+ * @param issues - List of issues identified by the Critic.
+ * @returns The corrected prompt object.
  */
 export const runRefinerAgent = async (draft: GeneratedPrompt, issues: string[]): Promise<GeneratedPrompt> => {
   const client = getClient();
@@ -82,19 +89,19 @@ export const runRefinerAgent = async (draft: GeneratedPrompt, issues: string[]):
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-2.5-flash', // Flash is sufficient for structured fixes
       contents: REFINER_PROMPT(draftJson, issues),
       config: {
         responseMimeType: "application/json",
         responseSchema: REFINER_SCHEMA,
         temperature: 0.2,
-        thinkingConfig: { thinkingBudget: 4096 }, // Give it some time to think about the fix
         safetySettings: SAFETY_SETTINGS
       }
     });
 
     const fixed = JSON.parse(response.text || "{}");
     
+    // Merge fixed fields with original (preserve analysis if lost)
     return {
       ...draft,
       ...fixed,
@@ -108,56 +115,84 @@ export const runRefinerAgent = async (draft: GeneratedPrompt, issues: string[]):
 
 /**
  * 3. THE RESEARCHER (Dynamic Tooling)
- * Scours the web for technical sonic specs.
+ * Decides whether to use external tools (Google Search) or internal knowledge base
+ * based on the complexity of the user's request.
+ * 
+ * @param intent - The user's prompt description.
+ * @param artistRef - Specific artist reference (triggers mandatory search).
+ * @param forceSearchOnIntent - Manually override heuristic to force search.
+ * @returns Research summary text and source citations.
  */
 export const runResearchAgent = async (intent: string, artistRef: string, forceSearchOnIntent: boolean = false): Promise<ResearchResult> => {
   const client = getClient();
   const hasRef = artistRef && artistRef.trim().length > 0;
   
+  // If no inputs, skip
   if (!intent?.trim() && !hasRef) return { text: '', sources: [] };
 
+  let decisionPromptPart = `
+    DECISION PROTOCOL:
+    1. If an Artist Reference is provided, you MUST use the 'googleSearch' tool.
+       - Focus search on: Specific production techniques (mixing, effects), Key Instruments (synths, guitars), and Vocal Styles.
+       - If the reference includes a style description (e.g. "Dark Era", "Unplugged"), include that in your search query.
+    2. If the User Intent contains specific, obscure, or technical genres that might require external data, use 'googleSearch'.
+    3. If the request is generic (e.g. "Sad piano song") and no Artist Reference is present, DO NOT use the tool. Just generate the report from internal knowledge.
+  `;
+
+  if (forceSearchOnIntent) {
+    decisionPromptPart = `
+      DECISION PROTOCOL:
+      You MUST use the 'googleSearch' tool to research the User Intent. If an Artist Reference is also provided, research that as well (focusing on production/instruments/vocals). Your primary research target is the USER INTENT.
+    `;
+  }
+
   const prompt = `
-    ROLE: You are an expert musicologist and high-end Audio Engineer.
-    TASK: Extract exact technical specifications for a song generation AI.
+    ROLE: You are an expert musicologist and audio engineer assistant.
+    TASK: Provide technical research data for a song generation AI.
     
-    TARGETS:
-    - User Intent: "${intent || 'General Song'}"
-    - Artist Reference: "${hasRef ? artistRef : "None"}"
+    INPUTS:
+    - USER INTENT: "${intent || 'General Song'}"
+    - ARTIST REFERENCE: "${hasRef ? artistRef : "None"}"
 
-    INSTRUCTIONS:
-    1. Search for: "Mixing signal chain", "Key Instruments", "Vocal processing", and "Rhythm section specs" for the targets.
-    2. Identify specific hardware models (e.g., Roland Juno-60, TR-808, Fender Telecaster).
-    3. Determine the Era's production limitations (e.g., "1980s gated reverb", "Tape saturation intensity").
-    4. Categorize results: [PRODUCTION], [INSTRUMENTS], [VOCALS], [ERA ACCURACY].
+    ${decisionPromptPart}
 
-    Keep the output technical and dense. No conversational filler.
+    RESEARCH TARGETS (Prioritize these details):
+    1. PRODUCTION: Mixing style (e.g. Wall of Sound, Lo-fi, Wide Stereo), Effects (Gated Reverb, Distortion), and specific Era production traits.
+    2. INSTRUMENTS: Specific gear if possible (Juno-106, TR-808, Stratocaster) or general instrumentation characteristics.
+    3. VOCALS: Delivery style (Falsetto, Fry, Belting), processing (Autotune, Vocoder), and gender/timbre.
+
+    OUTPUT FORMAT (Strict Text):
+    Categorize into: [PRODUCTION], [INSTRUMENTS], [VOCALS], [KEY GENRES].
+    Keep it dense, technical, and concise. No conversational filler.
   `;
 
   try {
+    // We use a non-streaming call to allow tool use
     const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }],
-        systemInstruction: "You are a professional Music Production Researcher. Focus purely on technical gear and mixing techniques.",
+        tools: [{ googleSearch: {} }], // Tool is available
+        systemInstruction: "You are a helpful research agent. Use tools only if necessary to add VALUE.",
         safetySettings: SAFETY_SETTINGS
       }
     });
 
-    const text = response.text || "No technical data discovered.";
+    const text = response.text || "No research data generated.";
     
+    // Extract sources if tool was used
     const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     const sources: GroundingChunk[] = chunks.map(chunk => ({
       web: chunk.web ? {
         uri: chunk.web.uri || '',
         title: chunk.web.title || ''
       } : undefined
-    })).filter(s => !!s.web?.uri);
+    })).filter(s => s.web?.uri);
 
     return { text, sources };
 
   } catch (e) {
     console.warn("Research Agent failed. Returning empty context.", e);
-    return { text: "Research uplink unreachable.", sources: [] };
+    return { text: "Research unavailable.", sources: [] };
   }
 };

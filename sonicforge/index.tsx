@@ -2,10 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AudioProvider } from './contexts/AudioContext';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { UIProvider } from './contexts/UIContext';
-import { HistoryProvider } from './contexts/HistoryContext';
-import { PromptProvider } from './contexts/PromptContext';
+import { SettingsProvider, UIProvider, HistoryProvider, PromptProvider } from './contexts';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 
 const rootElement = document.getElementById('root');

@@ -1,76 +1,121 @@
 
+
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-function isErrorLike(value: unknown): value is { message: string; status?: number } {
-  return typeof value === 'object' && value !== null && ('message' in value || 'status' in value);
+// Type Guard for Errors
+function isErrorLike(value: unknown): value is { message: string; response?: any } {
+  return typeof value === 'object' && value !== null && 'message' in value;
 }
 
-export const isTransientError = (e: unknown): boolean => {
-    const msg = String(e).toLowerCase();
-    return msg.includes('429') || 
-           msg.includes('503') || 
-           msg.includes('504') || 
-           msg.includes('quota') ||
-           msg.includes('fetch') ||
-           msg.includes('network');
-};
-
-export const parseError = (e: unknown, lang: 'en' | 'pl' = 'en'): string => {
+export const parseError = (e: unknown): string => {
+  const msg = String(e).toLowerCase();
   const rawMsg = isErrorLike(e) ? e.message : String(e);
-  const msg = rawMsg.toLowerCase();
+  const errorObj = isErrorLike(e) ? e : null;
 
-  const t = {
-    auth: lang === 'pl' ? "Nie można wygenerować. Sprawdź klucz API." : "Unable to generate. Please check your API key.",
-    quota: lang === 'pl' ? "Limit zapytań wyczerpany (429). Spróbuj za chwilę." : "Quota exhausted (429). Please try again in a moment.",
-    safety: lang === 'pl' ? "Blokada bezpieczeństwa: Treść narusza politykę." : "Safety lockout: Content violates policy.",
-    malformed: lang === 'pl' ? "Błąd formatowania danych modelu." : "Malformed model response data."
-  };
+  // 1. Rate Limiting / Quota
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted')) {
+    return "CORE OVERLOAD (429): API Rate Limit Exceeded. The forge is running too hot. Cool down for 60 seconds and try again.";
+  }
 
-  if (msg.includes('api key') || msg.includes('403')) return t.auth;
-  if (msg.includes('429') || msg.includes('quota')) return t.quota;
-  if (msg.includes('safety') || msg.includes('blocked')) return t.safety;
-  if (msg.includes('malformed') || msg.includes('json')) return t.malformed;
+  // 2. Server Issues
+  if (msg.includes('503') || msg.includes('500') || msg.includes('overloaded') || msg.includes('internal')) {
+    return "SYSTEM FAILURE (503): Gemini Servers Unresponsive. The neural link is severed. Please retry in a moment.";
+  }
 
-  return lang === 'pl' ? `Błąd systemu: ${rawMsg.substring(0, 80)}...` : `System error: ${rawMsg.substring(0, 80)}...`;
+  // 3. Safety Filters
+  if (msg.includes('safety') || msg.includes('blocked') || (errorObj?.response?.promptFeedback?.blockReason)) {
+    return "SAFETY LOCKOUT: Content flagged by corporate protocols. Your prompt might be too spicy or controversial. Try softening the language.";
+  }
+
+  // 4. Auth / Permissions
+  if (msg.includes('key') || msg.includes('permission') || msg.includes('403')) {
+    return "ACCESS DENIED (403): Invalid API Key or Permissions. Please check your credentials.";
+  }
+
+  // 5. Network / Offline
+  if (msg.includes('fetch') || msg.includes('network') || msg.includes('offline')) {
+    return "CONNECTION LOST: Unable to reach the AI Core. Check your internet connection.";
+  }
+  
+  // Default Fallback with sanitization
+  const cleanMsg = rawMsg.replace(/apikey/gi, '***').substring(0, 150);
+  return `UNKNOWN NEURAL FRACTURE: ${cleanMsg}... Check console for full details.`;
 };
 
+/**
+ * Retries a function with exponential backoff.
+ */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   retries: number = 3,
-  initialDelay: number = 1000
+  initialDelay: number = 1000,
+  factor: number = 2
 ): Promise<T> {
   let currentDelay = initialDelay;
+  
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
     } catch (error: unknown) {
-      if (i === retries - 1 || !isTransientError(error)) throw error;
+      const msg = isErrorLike(error) ? error.message : String(error);
+      const isRetryable = msg.includes('429') || msg.includes('503') || msg.includes('fetch');
+      
+      if (i === retries - 1 || !isRetryable) {
+        throw error;
+      }
+      
+      console.warn(`[Retry System] Attempt ${i + 1} failed. Retrying in ${currentDelay}ms...`, error);
       await delay(currentDelay);
-      currentDelay *= 2;
+      currentDelay *= factor;
     }
   }
-  throw new Error("Retry exhausted.");
+  throw new Error("Unreachable");
 }
 
+/**
+ * Circuit Breaker implementation to prevent cascading failures.
+ */
 export class CircuitBreaker {
   private failures = 0;
-  private lastFailure = 0;
-  private threshold = 5;
-  private cooldown = 60000;
+  private lastFailureTime = 0;
+  private readonly threshold = 5;
+  private readonly resetTimeout = 60000; // 60s cooldown
 
   public async execute<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.failures >= this.threshold && Date.now() - this.lastFailure < this.cooldown) {
-        throw new Error("CIRCUIT_OPEN: System resting.");
+    if (this.isOpen()) {
+      throw new Error("CIRCUIT_OPEN: Too many failures. System is cooling down.");
     }
+
     try {
       const result = await fn();
-      this.failures = 0;
+      this.reset();
       return result;
     } catch (error) {
-      this.failures++;
-      this.lastFailure = Date.now();
+      this.recordFailure();
       throw error;
     }
+  }
+
+  private isOpen(): boolean {
+    if (this.failures >= this.threshold) {
+      const now = Date.now();
+      if (now - this.lastFailureTime > this.resetTimeout) {
+        this.reset(); // Half-open/Reset logic
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private recordFailure() {
+    this.failures++;
+    this.lastFailureTime = Date.now();
+  }
+
+  private reset() {
+    this.failures = 0;
+    this.lastFailureTime = 0;
   }
 }
 

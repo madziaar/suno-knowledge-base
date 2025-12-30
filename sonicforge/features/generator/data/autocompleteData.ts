@@ -18,6 +18,7 @@ export const MOODS = [
   'Relaxed', 'Chaotic', 'Hypnotic', 'Solemn', 'Playful', 'Bittersweet', 'Gritty'
 ];
 
+// SUNO INSTRUMENTS (General, Atmospheric, Ensemble)
 export const INSTRUMENTS_SUNO = [
   'Piano', 'Guitar', 'Synthesizer', 'Drums', 'Bass', 'Violin', 'Cello', 
   'Saxophone', 'Trumpet', 'Flute', 'Harp', '808', 'Drum Machine', 
@@ -29,6 +30,7 @@ export const INSTRUMENTS_SUNO = [
   'Phonk Drum', 'Cowbell', 'Gated Reverb', 'Tape Saturation'
 ];
 
+// Default Export for backward compatibility (defaults to Suno)
 export const INSTRUMENTS = INSTRUMENTS_SUNO;
 
 export const ERAS = [
@@ -60,27 +62,32 @@ export const LYRIC_LANGUAGES = [
   'Latin', 'Swahili', 'Tagalog'
 ];
 
-// DYNAMIC SUGGESTION MAPS
-export const GENRE_INSTRUMENT_MAP: Record<string, { primary: string[], secondary: string[] }> = {
-  'Rock': { primary: ['Electric Guitar', 'Bass Guitar', 'Drum Kit'], secondary: ['Organ', 'Piano', 'Acoustic Guitar'] },
-  'Metal': { primary: ['Distorted Guitar', 'Double Kick Drum', 'Distorted Bass'], secondary: ['Synthesizer', 'Choir', 'Violin'] },
-  'Pop': { primary: ['Synthesizer', 'Drum Machine', 'Vocals'], secondary: ['Acoustic Guitar', 'Piano', 'Bass'] },
-  'Hip Hop': { primary: ['Drum Machine', '808 Bass', 'Vocals'], secondary: ['Piano', 'Synthesizer', 'Vinyl Crackle'] },
-  'Trap': { primary: ['808 Bass', 'Rapid Hi-Hats', 'Phonk Drum'], secondary: ['Cowbell', 'Dark Piano', 'Distorted Synth'] },
-  'Jazz': { primary: ['Saxophone', 'Double Bass', 'Brushed Drums'], secondary: ['Piano', 'Trumpet', 'Clarinet'] },
-  'EDM': { primary: ['Synthesizer', 'Wobble Bass', 'Drum Machine'], secondary: ['Vocal Chops', 'Pads', 'Arpeggiator'] },
-  'Cinematic': { primary: ['Orchestra', 'Strings', 'Percussion'], secondary: ['Brass', 'Choir', 'Piano', 'Braams'] },
-  'Lo-fi': { primary: ['Piano', 'Vinyl Crackle', 'Muffled Drums'], secondary: ['Jazz Samples', 'Saxophone', 'Soft Bass'] }
-};
-
-export const GENRE_MOOD_MAP: Record<string, string[]> = {
-  'Rock': ['Energetic', 'Aggressive', 'Anthemic', 'Rebellious'],
-  'Metal': ['Intense', 'Dark', 'Aggressive', 'Powerful'],
-  'Pop': ['Happy', 'Uplifting', 'Catchy', 'Romantic'],
-  'Hip Hop': ['Groovy', 'Confident', 'Gritty', 'Urban'],
-  'EDM': ['Euphoric', 'Energetic', 'Hypnotic', 'Party'],
-  'Jazz': ['Sophisticated', 'Relaxed', 'Melancholic', 'Smooth'],
-  'Ambient': ['Peaceful', 'Dreamy', 'Eerie', 'Atmospheric']
+export const GENRE_INSTRUMENT_MAP: { [key: string]: string[] } = {
+  'Rock': ['Electric Guitar', 'Bass Guitar', 'Drums'],
+  'Metal': ['Electric Guitar', 'Bass Guitar', 'Drums', 'Distorted Bass'],
+  'Pop': ['Synthesizer', 'Drum Machine', 'Vocals', 'Bass'],
+  'Hip Hop': ['Drum Machine', '808', 'Synthesizer', 'Vocals'],
+  'Trap': ['808', 'Drum Machine', 'Synthesizer', 'Phonk Drum'],
+  'Drill': ['808', 'Drum Machine', 'Synthesizer'],
+  'Boom Bap': ['Drum Machine', 'Samples', 'Bass'],
+  'Lo-fi': ['Piano', 'Drum Machine', 'Vinyl FX', 'Bass'],
+  'Jazz': ['Saxophone', 'Piano', 'Double Bass', 'Drums'],
+  'Blues': ['Guitar', 'Harmonica', 'Piano', 'Bass'],
+  'Country': ['Acoustic Guitar', 'Banjo', 'Violin', 'Bass'],
+  'Folk': ['Acoustic Guitar', 'Violin', 'Accordion', 'Banjo'],
+  'Classical': ['Orchestra', 'Violin', 'Cello', 'Piano'],
+  'EDM': ['Synthesizer', 'Drum Machine', 'Bass'],
+  'Techno': ['Synthesizer', 'Drum Machine'],
+  'House': ['Synthesizer', 'Drum Machine', 'Piano', 'Vocals'],
+  'Dubstep': ['Synthesizer', 'Distorted Bass', 'Drum Machine'],
+  'Synthwave': ['Analog Synths', 'Drum Machine', 'Synthesizer'],
+  'Cinematic': ['Orchestra', 'Strings', 'Brass', 'Percussion', 'Choir'],
+  'Ambient': ['Synthesizer', 'Pads', 'Drone'],
+  'Reggae': ['Bass', 'Drums', 'Guitar', 'Organ'],
+  'Funk': ['Bass', 'Drums', 'Guitar', 'Brass'],
+  'R&B': ['Piano', 'Synthesizer', 'Bass', 'Drum Machine', 'Vocals'],
+  'Soul': ['Organ', 'Bass', 'Drums', 'Brass', 'Vocals'],
+  'Phonk': ['808', 'Cowbell', 'Vocals', 'Distorted Bass', 'Phonk Drum']
 };
 
 export const MOOD_INSTRUMENT_MAP: { [key: string]: string[] } = {

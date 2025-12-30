@@ -1,12 +1,11 @@
 
 import React from 'react';
 import ConfigForm from '../components/ConfigForm';
+import StatusLog from '../components/StatusLog/index';
 import ResultsDisplay from '../components/ResultsDisplay';
 import { usePromptState } from '../../../contexts';
 import { GeneratorState, GeneratedPrompt, BatchConstraints, BuilderTranslation, ToastTranslation, AgentType, GroundingChunk } from '../../../types';
 import { StyleComponents } from '../utils/styleBuilder';
-import { cn } from '../../../lib/utils';
-import StatusLog from '../components/StatusLog/index';
 
 interface ForgeLayoutProps {
   state: GeneratorState;
@@ -47,9 +46,8 @@ export const ForgeLayout: React.FC<ForgeLayoutProps> = ({
   const { inputs, result, variations, isGeneratingVariations } = usePromptState();
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 items-start">
-      {/* FORM SIDE: The Brain */}
-      <div className="w-full lg:w-[45%] sticky top-24 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 relative">
+      <div className="space-y-6">
         <ConfigForm
             state={state}
             onGenerate={onGenerate}
@@ -63,23 +61,21 @@ export const ForgeLayout: React.FC<ForgeLayoutProps> = ({
             richLyricContext={richLyricContext}
             onRandomize={onRandomize}
         />
-        
-        {/* Integrated Status Feed (Forge Only) */}
-        <div className="hidden lg:block">
-           <StatusLog 
-              state={state}
-              activeAgent={activeAgent}
-              researchData={researchData}
-              t={t}
-              isPyriteMode={isPyriteMode}
-              errorMessage={error}
-              producerPersona={inputs.producerPersona}
-           />
-        </div>
+
+        <StatusLog 
+            state={state}
+            activeAgent={activeAgent}
+            researchData={researchData}
+            processingStep={0} 
+            steps={['analyzing', 'structuring', 'adlibs', 'tags', 'finalizing']}
+            t={t}
+            isPyriteMode={isPyriteMode}
+            errorMessage={error}
+            lastSaved={null} 
+        />
       </div>
 
-      {/* RESULTS SIDE: The Output */}
-      <div className="w-full lg:w-[55%] min-h-[600px]">
+      <div className="space-y-6">
         <ResultsDisplay 
             result={result}
             state={state}
@@ -92,6 +88,7 @@ export const ForgeLayout: React.FC<ForgeLayoutProps> = ({
             toast={toast}
             isPyriteMode={isPyriteMode}
             showToast={showToast}
+            platform={inputs.platform}
             variations={variations}
             isGeneratingVariations={isGeneratingVariations}
             onGenerateVariations={onGenerateVariations}

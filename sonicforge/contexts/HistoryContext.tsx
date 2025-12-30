@@ -1,25 +1,17 @@
 
-import React, { createContext, useContext, useMemo, useCallback } from 'react';
-// FIX: Import CloudConfig and SyncStatus which are now exported from the main types index.
-import { HistoryItem, GenreTemplate, CloudConfig, SyncStatus } from '../types';
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { HistoryItem, GenreTemplate } from '../types';
 import { useAudio } from './AudioContext';
 import { exportAsJSON } from '../lib/export-utils';
-import { useSettingsState } from './SettingsContext';
+import { useSettings } from './SettingsContext';
 import { translations } from '../translations';
-import { useCloudSync, useLocalStorage } from '../hooks';
+import { useCloudSync, CloudConfig, SyncStatus } from '../hooks/useCloudSync';
 
-// State
-interface HistoryState {
+interface HistoryContextType {
   history: HistoryItem[];
   loadedItem: HistoryItem | null;
   loadedTemplate: GenreTemplate | null;
-  cloudConfig: CloudConfig;
-  syncStatus: SyncStatus;
-  lastSyncTime: number | null;
-}
-
-// Dispatch
-type HistoryDispatch = {
   addToHistory: (item: HistoryItem) => void;
   loadFromHistory: (item: HistoryItem) => void;
   loadFromTemplate: (template: GenreTemplate) => void;
@@ -28,22 +20,26 @@ type HistoryDispatch = {
   clearHistory: () => void;
   exportHistory: () => { success: boolean, message: string };
   resetLoaders: () => void;
+  // Cloud Sync
+  cloudConfig: CloudConfig;
   setCloudConfig: (val: CloudConfig | ((prev: CloudConfig) => CloudConfig)) => void;
+  syncStatus: SyncStatus;
+  lastSyncTime: number | null;
   pushHistoryToCloud: () => Promise<void>;
   pullHistoryFromCloud: () => Promise<void>;
-};
+}
 
-const HistoryStateContext = createContext<HistoryState | undefined>(undefined);
-const HistoryDispatchContext = createContext<HistoryDispatch | undefined>(undefined);
+const HistoryContext = createContext<HistoryContextType | undefined>(undefined);
 
 export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [history, setHistory] = useLocalStorage<HistoryItem[]>('pyrite_history', []);
-  const [loadedItem, setLoadedItem] = React.useState<HistoryItem | null>(null);
-  const [loadedTemplate, setLoadedTemplate] = React.useState<GenreTemplate | null>(null);
+  const [loadedItem, setLoadedItem] = useState<HistoryItem | null>(null);
+  const [loadedTemplate, setLoadedTemplate] = useState<GenreTemplate | null>(null);
   
   const { play } = useAudio();
-  const { lang } = useSettingsState();
+  const { lang } = useSettings();
   
+  // Cloud Sync Hook
   const { 
       config: cloudConfig, 
       setConfig: setCloudConfig, 
@@ -53,14 +49,20 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       lastSyncTime 
   } = useCloudSync();
 
+  // Sort history: Favorites first, then chronological descending
   const sortedHistory = useMemo(() => {
     return [...history].sort((a, b) => {
-        if (!!a.isFavorite !== !!b.isFavorite) return a.isFavorite ? -1 : 1;
+        // If one is favorite and the other isn't, favorite wins
+        if (!!a.isFavorite !== !!b.isFavorite) {
+            return a.isFavorite ? -1 : 1;
+        }
+        // Otherwise sort by timestamp (newest first)
         return b.timestamp - a.timestamp;
     });
   }, [history]);
 
   const addToHistory = useCallback((item: HistoryItem) => {
+    // Limit to 100 items to prevent storage bloat
     setHistory(prev => [item, ...prev.slice(0, 99)]); 
   }, [setHistory]);
 
@@ -90,7 +92,7 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const clearHistory = useCallback(() => {
     if (window.confirm(translations[lang].dialogs.purgeHistory)) {
-      setHistory(prev => prev.filter(i => i.isFavorite));
+      setHistory(prev => prev.filter(i => i.isFavorite)); // Keep favorites
       play('click');
     }
   }, [setHistory, play, lang]);
@@ -108,6 +110,8 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setLoadedTemplate(null);
   }, []);
 
+  // --- CLOUD OPERATIONS ---
+  
   const pushHistoryToCloud = useCallback(async () => {
       if (history.length === 0) return;
       await syncToCloud(history);
@@ -116,47 +120,51 @@ export const HistoryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const pullHistoryFromCloud = useCallback(async () => {
       const cloudData = await pullFromCloud();
       if (cloudData) {
+          // Merge Strategy: Union by ID
           setHistory((current: HistoryItem[]) => {
               const merged = new Map<string, HistoryItem>();
+              // Load local items first
               current.forEach(item => merged.set(item.id, item));
+              // Overwrite/Add cloud items
               cloudData.forEach(item => merged.set(item.id, item));
+              
               return Array.from(merged.values());
           });
       }
   }, [pullFromCloud, setHistory]);
 
-  const stateValue = useMemo(() => ({
-    history: sortedHistory, loadedItem, loadedTemplate, cloudConfig, syncStatus, lastSyncTime
-  }), [sortedHistory, loadedItem, loadedTemplate, cloudConfig, syncStatus, lastSyncTime]);
-
-  const dispatchValue = useMemo(() => ({
-    addToHistory, loadFromHistory, loadFromTemplate, deleteFromHistory, toggleFavorite, clearHistory, exportHistory, resetLoaders, setCloudConfig, pushHistoryToCloud, pullHistoryFromCloud
-  }), [addToHistory, loadFromHistory, loadFromTemplate, deleteFromHistory, toggleFavorite, clearHistory, exportHistory, resetLoaders, setCloudConfig, pushHistoryToCloud, pullHistoryFromCloud]);
+  const value = useMemo(() => ({
+    history: sortedHistory,
+    loadedItem,
+    loadedTemplate,
+    addToHistory,
+    loadFromHistory,
+    loadFromTemplate,
+    deleteFromHistory,
+    toggleFavorite,
+    clearHistory,
+    exportHistory,
+    resetLoaders,
+    // Cloud
+    cloudConfig,
+    setCloudConfig,
+    syncStatus,
+    lastSyncTime,
+    pushHistoryToCloud,
+    pullHistoryFromCloud
+  }), [sortedHistory, loadedItem, loadedTemplate, addToHistory, loadFromHistory, loadFromTemplate, deleteFromHistory, toggleFavorite, clearHistory, exportHistory, resetLoaders, cloudConfig, setCloudConfig, syncStatus, lastSyncTime, pushHistoryToCloud, pullHistoryFromCloud]);
 
   return (
-    <HistoryStateContext.Provider value={stateValue}>
-        <HistoryDispatchContext.Provider value={dispatchValue}>
-            {children}
-        </HistoryDispatchContext.Provider>
-    </HistoryStateContext.Provider>
+    <HistoryContext.Provider value={value}>
+      {children}
+    </HistoryContext.Provider>
   );
 };
 
-export const useHistoryState = () => {
-  const context = useContext(HistoryStateContext);
-  if (context === undefined) throw new Error('useHistoryState must be used within a HistoryProvider');
-  return context;
-};
-
-export const useHistoryDispatch = () => {
-    const context = useContext(HistoryDispatchContext);
-    if (context === undefined) throw new Error('useHistoryDispatch must be used within a HistoryProvider');
-    return context;
-};
-
-// Legacy for compatibility
 export const useHistory = () => {
-    const state = useHistoryState();
-    const dispatch = useHistoryDispatch();
-    return { ...state, ...dispatch };
+  const context = useContext(HistoryContext);
+  if (context === undefined) {
+    throw new Error('useHistory must be used within a HistoryProvider');
+  }
+  return context;
 };

@@ -1,16 +1,19 @@
+
 import React, { useCallback, useMemo, Suspense, useState } from 'react';
 import { GeneratorState } from '../../types';
 import { translations } from '../../translations';
 import { exportBatchAsText } from '../../lib/export-utils';
-import { useSettings, useUI, useHistory, usePromptBuilder } from '../../contexts';
+import { useSettings, useUI, useHistory, usePrompt } from '../../contexts';
 import ExportPanel from './components/ExportPanel';
-import { ForgeLayout } from './layouts/ForgeLayout';
-import { StudioLayout } from './layouts/StudioLayout';
-import { useKeyboardShortcuts } from '../../lib/utils';
-import { generateRandomConcept } from './utils';
+import { generateRandomConcept } from './utils/randomizer';
+import { usePromptActions } from './hooks/usePromptActions';
 import { useGenerationWorkflow } from './hooks/useGenerationWorkflow';
 import { useHistoryActions } from './hooks/useHistoryActions';
+import { ForgeLayout } from './layouts/ForgeLayout';
+import { StudioLayout } from './layouts/StudioLayout';
+import { useKeyboardShortcuts } from '../../lib/keyboard-shortcuts';
 
+// Lazy Load Chat
 const PyriteChat = React.lazy(() => import('../chat/PyriteChat'));
 
 interface PromptBuilderProps {
@@ -18,53 +21,48 @@ interface PromptBuilderProps {
 }
 
 const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => {
-  const { lang, isOverclockedMode: isPyriteMode } = useSettings();
+  const { lang, isPyriteMode } = useSettings();
   const { showToast, setGeneratorState, generatorState: globalGeneratorState } = useUI();
   const { history } = useHistory();
+  const { loadFromHistory } = useHistoryActions();
   
-  const { 
-    inputs, 
-    expertInputs, 
-    isExpertMode, 
-    result, 
+  // Use state from context
+  const {
+    inputs,
+    expertInputs,
+    isExpertMode,
+    result,
     variations,
-    updateInput,
-    updateExpertInput,
-    reset,
-    activeAgent,
-    researchData,
-    error,
-    isGeneratingVariations,
-    // Fix: Removed updateResult from usePromptBuilder as it belongs to useGenerationWorkflow
-    setResult,
-    setState
-  } = usePromptBuilder();
+  } = usePrompt();
 
+  // Use actions from hook
+  const { updateInput, updateExpertInput, reset } = usePromptActions();
+
+  // Generation Workflow Hook
   const { 
     generate, 
     refine, 
     enhance, 
-    // Fix: Destructured updateResult here where it is actually provided
-    updateResult,
+    updateResult, 
     generateVariations, 
     applyVariation, 
+    state: workflowState, 
+    error, 
+    activeAgent, 
+    researchData 
   } = useGenerationWorkflow(viewMode as 'forge' | 'studio');
-  
-  const { loadFromHistory } = useHistoryActions();
 
   const [isExportPanelOpen, setIsExportPanelOpen] = useState(false);
-  const [chatSessionId, setChatSessionId] = useState(0);
+  const [chatSessionId, setChatSessionId] = useState(0); // Tracks chat lifecycle for clearing
 
-  const currentTranslations = useMemo(() => translations[lang] || translations['en'], [lang]);
-  const t = currentTranslations?.builder || translations['en'].builder;
-  const tToast = currentTranslations?.toast || translations['en'].toast;
-  const tDialog = currentTranslations?.dialogs || translations['en'].dialogs;
+  const t = translations[lang].builder;
+  const tToast = translations[lang].toast;
+  const tDialog = translations[lang].dialogs;
 
   const handleClear = useCallback(() => {
-    const msg = tDialog?.resetWorkflow || "Reset workflow?";
-    if (window.confirm(msg)) {
+    if (window.confirm(tDialog.resetWorkflow)) {
       reset();
-      setChatSessionId(prev => prev + 1);
+      setChatSessionId(prev => prev + 1); // Force chat remount to clear context cache
       setGeneratorState(GeneratorState.IDLE);
       showToast(tToast.cleared, 'info');
     }
@@ -89,11 +87,15 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
     }
   }, [variations, result, showToast]);
 
+  // Keyboard Shortcuts
   useKeyboardShortcuts([
     { 
       key: 'Enter', 
       ctrlKey: true, 
-      handler: () => { generate(); }, 
+      handler: () => {
+        // Trigger generation. The hook's `generate` function handles inputs from context internally.
+        generate();
+      }, 
       allowInInput: true 
     }
   ]);
@@ -116,6 +118,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
     showToast(`${tToast.presetLoaded} ${name}`, 'success');
   }, [showToast, tToast.presetLoaded]);
 
+  // Use the global generator state from UIContext for rendering status
   const currentGeneratorState = globalGeneratorState;
 
   return (
@@ -170,7 +173,6 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ viewMode = 'forge' }) => 
            key={chatSessionId}
            isPyriteMode={isPyriteMode}
            t={t}
-           tDialog={tDialog}
            onUpdateConfig={(config: any) => {
                updateInput(config);
                updateExpertInput(config);

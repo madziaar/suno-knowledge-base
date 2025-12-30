@@ -1,25 +1,24 @@
 
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
-import { SongConcept, ExpertInputs, GeneratedPrompt, GenreTemplate, HistoryItem, Platform, AgentType } from '../types';
+import { SongConcept, ExpertInputs, GeneratedPrompt, GenreTemplate, HistoryItem, Platform } from '../types';
 import { useHistory } from './HistoryContext';
 import { useSettings } from './SettingsContext';
+
+// --- STATE & TYPES ---
 
 const DEFAULT_INPUTS: SongConcept = {
   platform: 'suno' as Platform,
   mode: 'custom' as 'custom' | 'general' | 'instrumental',
   workflow: 'forge',
-  alchemyMode: 'vocals',
+  alchemyMode: 'inspire',
   intent: '',
   artistReference: '',
   mood: '',
   instruments: '',
   lyricsInput: '',
   negativePrompt: '',
-  lyricsLanguage: '',
-  useReMi: false,
-  useVowelExtension: false,
-  useBackingVocals: false,
-  useChords: false
+  playlistUrl: '',
+  lyricsLanguage: '' // Default to auto/empty
 };
 
 const DEFAULT_EXPERT_INPUTS: ExpertInputs = {
@@ -30,11 +29,9 @@ const DEFAULT_EXPERT_INPUTS: ExpertInputs = {
   key: '',
   timeSignature: '',
   structure: [],
-  stemWeights: { 
-    vocals: 50, drums: 50, bass: 50, melody: 50,
-    guitar: 50, piano: 50, strings: 50, synth: 50,
-    fx: 50, texture: 50, percussion: 50, choir: 50
-  }
+  customPersona: '',
+  isRawMode: false,
+  aiModel: 'gemini-3-pro'
 };
 
 export type EnhancementLevel = 'light' | 'medium' | 'heavy';
@@ -49,10 +46,8 @@ export interface PromptState {
   variations: GeneratedPrompt[];
   useGoogleSearch: boolean;
   isGeneratingVariations: boolean;
+  useReMi: boolean;
   enhancementLevel: EnhancementLevel;
-  // Consolidated Status State
-  activeAgent: AgentType;
-  error: string;
 }
 
 const initialState: PromptState = {
@@ -65,9 +60,8 @@ const initialState: PromptState = {
   variations: [],
   useGoogleSearch: false,
   isGeneratingVariations: false,
+  useReMi: false,
   enhancementLevel: 'medium',
-  activeAgent: 'idle',
-  error: ''
 };
 
 interface UndoableState {
@@ -87,17 +81,19 @@ export type Action =
   | { type: 'UPDATE_INPUT'; payload: Partial<SongConcept> }
   | { type: 'UPDATE_EXPERT_INPUT'; payload: Partial<ExpertInputs> }
   | { type: 'SET_RESULT'; payload: { result: GeneratedPrompt | null; researchData: any | null } }
-  | { type: 'SET_STATUS'; payload: { activeAgent: AgentType; error?: string } }
   | { type: 'LOAD_HISTORY_ITEM'; payload: HistoryItem }
   | { type: 'LOAD_TEMPLATE'; payload: { template: GenreTemplate; lang: 'en' | 'pl' } }
   | { type: 'RESET' }
   | { type: 'UNDO' }
   | { type: 'REDO' };
 
+// --- REDUCER ---
+
 const reducer = (state: UndoableState, action: Action): UndoableState => {
   const { past, present, future } = state;
 
   const updateState = (newPresent: PromptState): UndoableState => {
+    // Basic equality check to prevent history spam for identical updates
     if (JSON.stringify(newPresent) === JSON.stringify(present)) return state;
     return {
       past: [...past, present],
@@ -107,48 +103,40 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
   };
 
   switch (action.type) {
-    case 'SET_PARTIAL_STATE':
+    case 'SET_PARTIAL_STATE': {
       return updateState({ ...present, ...action.payload });
-    case 'UPDATE_INPUT':
+    }
+    case 'UPDATE_INPUT': {
       return updateState({ ...present, inputs: { ...present.inputs, ...action.payload } });
-    case 'UPDATE_EXPERT_INPUT':
+    }
+    case 'UPDATE_EXPERT_INPUT': {
       return updateState({ ...present, expertInputs: { ...present.expertInputs, ...action.payload } });
-    case 'SET_RESULT':
+    }
+    case 'SET_RESULT': {
+      // Results are not undoable history states in the same way inputs are, 
+      // but we update the present state. 
+      // Do NOT push to history for result generation to avoid "Undo" removing the result immediately.
       return { 
           ...state, 
           present: { 
               ...present, 
               result: action.payload.result, 
               researchData: action.payload.researchData, 
-              variations: [],
-              activeAgent: 'idle',
-              error: ''
+              variations: [] 
           } 
       };
-    case 'SET_STATUS':
-      return {
-        ...state,
-        present: {
-          ...present,
-          activeAgent: action.payload.activeAgent,
-          error: action.payload.error ?? present.error
-        }
-      };
+    }
     case 'LOAD_HISTORY_ITEM': {
         const item = action.payload;
-        const cleanedInputs = { 
-            ...DEFAULT_INPUTS,
-            ...item.inputs 
-        };
-
         const newPresent: PromptState = {
-          ...present,
           inputs: { 
-            ...cleanedInputs, 
+            ...item.inputs, 
             lyricsInput: item.inputs.lyricsInput || '', 
             platform: 'suno',
-            lyricsLanguage: item.inputs.lyricsLanguage || '',
-            useReMi: item.inputs.useReMi || false
+            workflow: item.inputs.workflow || 'forge',
+            alchemyMode: item.inputs.alchemyMode || 'inspire',
+            playlistUrl: item.inputs.playlistUrl || '',
+            lyricsLanguage: item.inputs.lyricsLanguage || ''
           },
           expertInputs: { ...DEFAULT_EXPERT_INPUTS, ...item.expertInputs },
           isExpertMode: item.isExpertMode,
@@ -156,9 +144,12 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
           result: item.result,
           researchData: item.researchData || null,
           variations: [],
-          activeAgent: 'idle',
-          error: ''
+          useGoogleSearch: false,
+          isGeneratingVariations: false,
+          useReMi: false,
+          enhancementLevel: 'medium', // Default for loaded items
         };
+        // Reset history on load
         return { past: [], present: newPresent, future: [] };
     }
     case 'LOAD_TEMPLATE': {
@@ -172,7 +163,6 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
                 mode: 'custom',
                 intent: template.stylePrompt,
                 artistReference: templateName,
-                useReMi: false
             },
             isExpertMode: true,
             expertInputs: {
@@ -187,33 +177,55 @@ const reducer = (state: UndoableState, action: Action): UndoableState => {
     }
     case 'RESET':
       return { past: [], present: initialState, future: [] };
-    case 'UNDO':
+    case 'UNDO': {
       if (past.length === 0) return state;
+      const previous = past[past.length - 1];
+      const newPast = past.slice(0, past.length - 1);
       return {
-        past: past.slice(0, past.length - 1),
-        present: past[past.length - 1],
+        past: newPast,
+        present: previous,
         future: [present, ...future],
       };
-    case 'REDO':
+    }
+    case 'REDO': {
       if (future.length === 0) return state;
+      const next = future[0];
+      const newFuture = future.slice(1);
       return {
         past: [...past, present],
-        present: future[0],
-        future: future.slice(1),
+        present: next,
+        future: newFuture,
       };
+    }
     default:
       return state;
   }
 };
 
-const PromptContext = createContext<{ state: PromptState; history: { canUndo: boolean; canRedo: boolean } } | undefined>(undefined);
+// --- CONTEXT SPLITTING ---
+
+// 1. State Context Value Wrapper
+interface PromptContextValue {
+  state: PromptState;
+  history: {
+    canUndo: boolean;
+    canRedo: boolean;
+  };
+}
+
+const PromptContext = createContext<PromptContextValue | undefined>(undefined);
+
+// 2. Dispatch Context
 const PromptDispatchContext = createContext<React.Dispatch<Action> | undefined>(undefined);
+
+// --- PROVIDER ---
 
 export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialUndoableState);
   const { loadedItem, loadedTemplate, resetLoaders } = useHistory();
   const { lang } = useSettings();
 
+  // History / Template Loading Side Effects
   useEffect(() => {
     if (loadedItem) {
       dispatch({ type: 'LOAD_HISTORY_ITEM', payload: loadedItem });
@@ -230,7 +242,10 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const contextValue = useMemo(() => ({
     state: state.present,
-    history: { canUndo: state.past.length > 0, canRedo: state.future.length > 0 }
+    history: {
+      canUndo: state.past.length > 0,
+      canRedo: state.future.length > 0
+    }
   }), [state.present, state.past.length, state.future.length]);
 
   return (
@@ -242,54 +257,71 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
+// --- HOOKS ---
+
 export const usePromptState = () => {
   const context = useContext(PromptContext);
-  if (!context) throw new Error('usePromptState must be used within a PromptProvider');
+  if (context === undefined) throw new Error('usePromptState must be used within a PromptProvider');
   return context.state;
 };
 
-export const usePromptDispatch = () => {
-  const context = useContext(PromptDispatchContext);
-  if (!context) throw new Error('usePromptDispatch must be used within a PromptProvider');
-  return context;
+// --- OPTIMIZED SELECTOR HOOKS ---
+
+export const usePromptInputs = () => {
+  const context = useContext(PromptContext);
+  if (context === undefined) throw new Error('usePromptInputs must be used within a PromptProvider');
+  return context.state.inputs;
 };
 
-/**
- * AUTHORITATIVE HOOK: usePromptBuilder
- * The single source of truth for UI components to interact with prompt logic.
- */
-export const usePromptBuilder = () => {
-  const state = usePromptState();
-  const dispatch = usePromptDispatch();
-  const { canUndo, canRedo } = (useContext(PromptContext) as any).history;
+export const useExpertSettings = () => {
+  const context = useContext(PromptContext);
+  if (context === undefined) throw new Error('useExpertSettings must be used within a PromptProvider');
+  return context.state.expertInputs;
+};
 
-  const actions = useMemo(() => ({
-    updateInput: (payload: Partial<SongConcept>) => dispatch({ type: 'UPDATE_INPUT', payload }),
-    updateExpertInput: (payload: Partial<ExpertInputs>) => dispatch({ type: 'UPDATE_EXPERT_INPUT', payload }),
-    setState: (payload: Partial<PromptState>) => dispatch({ type: 'SET_PARTIAL_STATE', payload }),
-    setResult: (payload: { result: GeneratedPrompt | null, researchData: any | null }) => dispatch({ type: 'SET_RESULT', payload }),
-    setStatus: (payload: { activeAgent: AgentType; error?: string }) => dispatch({ type: 'SET_STATUS', payload }),
-    reset: () => dispatch({ type: 'RESET' }),
-    undo: () => dispatch({ type: 'UNDO' }),
-    redo: () => dispatch({ type: 'REDO' }),
-    setMode: (mode: 'custom' | 'general' | 'instrumental' | 'easy') => dispatch({ type: 'UPDATE_INPUT', payload: { mode } }),
-    setLyricSource: (lyricSource: 'ai' | 'user') => dispatch({ type: 'SET_PARTIAL_STATE', payload: { lyricSource } }),
-    setWorkflow: (workflow: 'forge' | 'alchemy') => dispatch({ type: 'UPDATE_INPUT', payload: { workflow } })
-  }), [dispatch]);
-
+export const usePromptResult = () => {
+  const context = useContext(PromptContext);
+  if (context === undefined) throw new Error('usePromptResult must be used within a PromptProvider');
   return {
-    ...state,
-    ...actions,
-    canUndo,
-    canRedo
+    result: context.state.result,
+    researchData: context.state.researchData,
+    variations: context.state.variations,
+    isGeneratingVariations: context.state.isGeneratingVariations
   };
 };
 
-// Legacy re-exports
-export const usePromptInputs = () => usePromptState().inputs;
-export const useExpertSettings = () => usePromptState().expertInputs;
-export const usePromptActions = () => {
-    const { updateInput, updateExpertInput, setState, setResult, reset, undo, redo, setMode, setLyricSource, setWorkflow } = usePromptBuilder();
-    return { updateInput, updateExpertInput, setState, setResult, reset, undo, redo, setMode, setLyricSource, setWorkflow };
+export const usePromptHistoryInfo = () => {
+  const context = useContext(PromptContext);
+  if (context === undefined) throw new Error('usePromptHistoryInfo must be used within a PromptProvider');
+  return context.history;
+}
+
+export const usePromptDispatch = () => {
+  const context = useContext(PromptDispatchContext);
+  if (context === undefined) throw new Error('usePromptDispatch must be used within a PromptProvider');
+  return context;
 };
-export const usePrompt = usePromptBuilder;
+
+// Legacy Compatibility Hook (Aggregates everything)
+export const usePrompt = () => {
+  const state = usePromptState();
+  const { canUndo, canRedo } = usePromptHistoryInfo();
+  const dispatch = usePromptDispatch();
+
+  const setState = useCallback((payload: Partial<PromptState>) => dispatch({ type: 'SET_PARTIAL_STATE', payload }), [dispatch]);
+  const setResult = useCallback((payload: { result: GeneratedPrompt | null, researchData: any | null }) => dispatch({ type: 'SET_RESULT', payload }), [dispatch]);
+  const reset = useCallback(() => dispatch({ type: 'RESET' }), [dispatch]);
+  const undo = useCallback(() => dispatch({ type: 'UNDO' }), [dispatch]);
+  const redo = useCallback(() => dispatch({ type: 'REDO' }), [dispatch]);
+
+  return {
+    ...state,
+    setState,
+    setResult,
+    reset,
+    undo,
+    redo,
+    canUndo, 
+    canRedo 
+  };
+};

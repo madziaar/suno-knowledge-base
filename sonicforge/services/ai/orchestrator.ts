@@ -1,10 +1,14 @@
 
-import { GeneratedPrompt, GroundingChunk, ExpertInputs, SongConcept, Platform, AgentType, IntentProfile } from "../../types";
+import { GeneratedPrompt, GroundingChunk, ExpertInputs, SongConcept, Platform, AgentType } from "../../types";
 import { runResearchAgent } from "./agents";
-import { classifyIntent } from "./classifier";
+import { classifyIntent, IntentProfile } from "./classifier";
 import { generateSunoPrompt, generateExpertPrompt } from "./generators";
-import { StyleComponents } from "../../features/generator/utils";
+import { StyleComponents } from "../../features/generator/utils/styleBuilder";
 
+/**
+ * Shared Context Object (The Hive Mind)
+ * Stores the state of the generation process as it moves between agents.
+ */
 export interface AgentContext {
   id: string;
   userInput: SongConcept;
@@ -12,9 +16,14 @@ export interface AgentContext {
   intentProfile: IntentProfile;
   researchData: { text: string; sources: GroundingChunk[] };
   generatedDraft: GeneratedPrompt | null;
-  history: string[];
+  history: string[]; // Log of agent actions
 }
 
+/**
+ * AgentOrchestrator
+ * Manages the lifecycle of a generation request, coordinating multiple AI agents
+ * (Research, Classification, Generation) to produce a high-quality result.
+ */
 export class AgentOrchestrator {
   private context: AgentContext;
   private isPyriteMode: boolean;
@@ -36,14 +45,26 @@ export class AgentOrchestrator {
     };
   }
 
+  /**
+   * Phase 1: Parallel Intelligence Gathering
+   * Runs Research and Intent Classification concurrently to minimize latency.
+   * 
+   * @param useGoogleSearch - Force external research if true
+   */
   async initializeIntelligence(useGoogleSearch: boolean): Promise<void> {
     const { intent, artistReference } = this.context.userInput;
+    
+    // Create promises for parallel execution
     const classifierPromise = classifyIntent(`${intent} ${artistReference}`);
+    
+    // We let the classifier run, but we also check explicit flags
     const shouldResearch = useGoogleSearch || !!artistReference;
+    
     const researchPromise = shouldResearch 
       ? runResearchAgent(intent, artistReference, useGoogleSearch)
       : Promise.resolve({ text: '', sources: [] });
 
+    // Await both (Async Batch Processing)
     const [profile, research] = await Promise.all([classifierPromise, researchPromise]);
 
     this.context.intentProfile = profile;
@@ -51,6 +72,16 @@ export class AgentOrchestrator {
     this.context.history.push(`[INTEL]: Classified as ${profile.tone}/${profile.complexity}. Research found ${research.sources.length} sources.`);
   }
 
+  /**
+   * Phase 2: Generation Cascade
+   * Selects the appropriate generator (Expert vs Standard) and executes it.
+   * 
+   * @param isExpertMode - Whether to use the granular structure builder
+   * @param lyricSource - 'ai' to generate lyrics, 'user' to restructure provided text
+   * @param onStreamUpdate - Callback for streaming JSON partials to the UI
+   * @param onAgentChange - Callback for notifying UI about active agent
+   * @param structuredStyle - Optional pre-built style components
+   */
   async executeGeneration(
     isExpertMode: boolean, 
     lyricSource: 'ai' | 'user',
@@ -59,7 +90,7 @@ export class AgentOrchestrator {
     structuredStyle?: StyleComponents
   ): Promise<GeneratedPrompt> {
     const { userInput, expertInputs, researchData, intentProfile } = this.context;
-    const { negativePrompt, lyricsLanguage } = userInput;
+    const { negativePrompt, lyricsLanguage } = userInput; // Extract lyricsLanguage
 
     // Suno Branch (Default)
     if (isExpertMode) {
@@ -69,19 +100,18 @@ export class AgentOrchestrator {
             userInput.mood,
             researchData.text,
             this.isPyriteMode,
-            intentProfile,
+            intentProfile, // Pass profile for tone adjustment
             negativePrompt,
-            onAgentChange,
-            structuredStyle,
-            lyricsLanguage
+            onAgentChange, // Pass agent callback down
+            structuredStyle, // Pass strict style
+            lyricsLanguage // Pass language
         );
     } else {
+        // Prepare Alchemy Context if workflow is Alchemy
         const alchemyContext = userInput.workflow === 'alchemy' ? {
             workflow: 'alchemy' as const,
             mode: userInput.alchemyMode,
-            playlistUrl: userInput.playlistUrl,
-            sourceA: userInput.mashupSourceA,
-            sourceB: userInput.mashupSourceB
+            playlistUrl: userInput.playlistUrl
         } : undefined;
 
         this.context.generatedDraft = await generateSunoPrompt(
@@ -91,13 +121,13 @@ export class AgentOrchestrator {
             lyricSource === 'user' ? userInput.lyricsInput : undefined,
             this.isPyriteMode,
             onStreamUpdate,
-            intentProfile,
+            intentProfile, // Pass profile for tone adjustment
             negativePrompt,
-            onAgentChange,
-            structuredStyle,
-            alchemyContext,
-            undefined, 
-            lyricsLanguage
+            onAgentChange, // Pass agent callback down
+            structuredStyle, // Pass strict style
+            alchemyContext, // Pass alchemy context
+            undefined, // targetLanguage (optional fallback)
+            lyricsLanguage // Explicit language
         );
     }
 
@@ -105,6 +135,9 @@ export class AgentOrchestrator {
     return this.context.generatedDraft;
   }
 
+  /**
+   * Returns the current context state for debugging or history logging.
+   */
   getContext() {
     return this.context;
   }

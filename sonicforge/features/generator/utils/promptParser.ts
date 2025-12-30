@@ -1,6 +1,8 @@
+
 import { GENRE_DATABASE, MOOD_DESCRIPTORS } from '../data/genreDatabase';
 import { INSTRUMENTS_SUNO } from '../data/autocompleteData';
 import { sunoMetaTags } from '../data/sunoMetaTags';
+// FIX: Imported the capitalize utility to resolve the "Cannot find name 'capitalize'" error.
 import { capitalize } from '../../../lib/utils';
 
 export interface ParsedStyle {

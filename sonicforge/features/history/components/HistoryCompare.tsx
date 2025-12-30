@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { HistoryItem } from '../../../types';
-import { comparePrompts, scorePrompt } from '../../generator/utils';
+import { comparePrompts, scorePrompt } from '../../generator/utils/promptAnalysis';
 import GlassPanel from '../../../components/shared/GlassPanel';
 import { X, ArrowRight, ArrowLeft, GitCompare } from 'lucide-react';
 import { cn } from '../../../lib/utils';

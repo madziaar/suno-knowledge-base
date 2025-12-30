@@ -1,4 +1,3 @@
-import { ModifierCategory } from '../../../types';
 
 export const SECTION_TYPES = [
   'Intro',
@@ -21,6 +20,12 @@ export const SECTION_TYPES = [
   'Vocalize',
   'End'
 ];
+
+export interface ModifierCategory {
+  id: string; // Added for localization
+  name: string;
+  options: string[];
+}
 
 export const MODIFIER_CATEGORIES: ModifierCategory[] = [
   {

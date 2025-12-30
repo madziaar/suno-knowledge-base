@@ -1,4 +1,3 @@
-
 export interface AudioAnalysisResult {
   style: string;
   tags: string;
@@ -8,6 +7,4 @@ export interface AudioAnalysisResult {
   key: string;
   genre: string;
   era: string;
-  confidence_score?: number;
-  error_measure?: string;
 }

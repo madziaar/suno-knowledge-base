@@ -1,9 +1,11 @@
+
+
 import { FunctionDeclaration, Schema, Type } from "@google/genai";
 import { getClient } from "./client";
 import { SAFETY_SETTINGS, STANDARD_IDENTITY, CHAOS_IDENTITY } from "./config";
 import { SongSection, BatchConstraints, GeneratedPrompt } from "../../types";
 import { VariationsSchema } from "../../types";
-import { parseError, retryWithBackoff } from "./utils";
+import { parseError } from "./utils";
 
 // --- TOOL DEFINITIONS (V8.0) ---
 
@@ -19,159 +21,72 @@ export const TOOL_SEARCH: FunctionDeclaration = {
   }
 };
 
-/**
- * AI Arranger Tool
- * Generates a structured song progression based on genre and target duration.
- */
-export const generateArrangement = async (genre: string, duration: number, isPyriteMode: boolean): Promise<SongSection[]> => {
-    const client = getClient();
-    const prompt = `
-        TASK: Architect a song structure for the genre: "${genre}" with a target duration of ${duration} seconds.
-        RULES:
-        1. Use Suno v4.5 pipe syntax for modifiers.
-        2. If duration > 240, create at least 10 sections.
-        3. Include energy shifts (e.g. [Chorus | High Energy] followed by [Bridge | Minimal]).
-        4. End with [Instrumental Fade Out][End].
-
-        OUTPUT: JSON Array of objects: [{"type": string, "modifiers": string[]}]
-    `;
-
-    try {
-        const response = await client.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                systemInstruction: isPyriteMode ? CHAOS_IDENTITY : STANDARD_IDENTITY,
-                safetySettings: SAFETY_SETTINGS
-            }
-        });
-
-        const json = JSON.parse(response.text || "[]");
-        return Array.isArray(json) ? json.map((s: any) => ({
-            id: crypto.randomUUID(),
-            type: s.type || "Verse",
-            modifiers: Array.isArray(s.modifiers) ? s.modifiers : []
-        })) : [];
-    } catch (e) {
-        console.error("Arranger failed", e);
-        return [];
-    }
-};
-
-/**
- * Lyrical Translation Tool
- * Translates lyrics while strictly preserving English [Tags].
- */
-export const translateLyrics = async (
-  lyrics: string,
-  targetLanguage: string,
-  isPyriteMode: boolean
-): Promise<string> => {
-  const client = getClient();
-  const prompt = `
-    TASK: Translate the following lyrics into ${targetLanguage}.
-    
-    CRITICAL RULES:
-    1. **Natural Phrasing**: Do not translate literally. Adapt idioms and rhymes to sound natural, poetic, and rhythmic in ${targetLanguage}.
-    2. **Maintain Structure**: DO NOT translate [Square Brackets] tags. Keep them exactly as they are in English (e.g., [Verse], [Chorus | Fast]).
-    3. **Content**: Translate all plain text and ad-libs in (parentheses).
-    
-    LYRICS:
-    ${lyrics}
-  `;
-
-  try {
-    const response = await client.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: isPyriteMode ? "You are Pyrite, translating desire. Seductive, accurate, structured." : "Professional lyrical translator.",
-        safetySettings: SAFETY_SETTINGS
-      }
-    });
-    return response.text?.trim() || lyrics;
-  } catch (e) {
-    console.error("Translation failed", e);
-    return lyrics;
+export const TOOL_RHYME: FunctionDeclaration = {
+  name: "find_rhymes",
+  description: "Finds rhymes for a specific word to help with lyric writing.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      word: { type: Type.STRING, description: "The word to rhyme" },
+      context: { type: Type.STRING, description: "Context of the song to find relevant rhymes" }
+    },
+    required: ["word"]
   }
 };
 
+// --- LEGACY HELPER FUNCTIONS (Maintained for UI components) ---
+
 /**
- * Lyrical Refinement Tool
- * Increases dynamic range, varies sentence structure, and adds sensory details.
+ * Rapidly expands a short string (e.g. "dark techno") into a descriptive paragraph using Flash-Lite.
+ * Used for the "Creative Boost" feature in the UI.
  */
-export const refineLyrics = async (
-  lyrics: string,
-  genre: string,
-  isPyriteMode: boolean,
-  targetLanguage: string = 'English'
-): Promise<string> => {
-  const client = getClient();
-  const prompt = `
-    TASK: Refine these lyrics for a ${genre} song in ${targetLanguage}.
-    
-    OBJECTIVES:
-    1. **Native Fluency**: Ensure the lyrics sound authentic to a native speaker of ${targetLanguage}. Fix awkward phrasing or translation artifacts. Use culturally appropriate idioms.
-    2. **Dynamic Range**: Alternate between short, punchy phrases and longer, flowing descriptions.
-    3. **Sensory Detail**: Inject visceral imagery (Sights, sounds, scents, textures). Make it feel real.
-    4. **Varied Structure**: Avoid repetitive start-words or predictable rhyming couplets.
-    5. **Maintain Tags**: Leave all [Section Tags] completely untouched.
-    
-    LYRICS:
-    ${lyrics}
-  `;
-
-  try {
-    const response = await client.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: isPyriteMode ? "You are Pyrite, the hidden producer. Make it visceral, dark, and sensual. No cliches allowed." : "Professional Lyrical Editor.",
-        safetySettings: SAFETY_SETTINGS,
-        thinkingConfig: { thinkingBudget: 4096 }
-      }
-    });
-    return response.text?.trim() || lyrics;
-  } catch (e) {
-    console.error("Refinement failed", e);
-    return lyrics;
-  }
-};
-
-// --- LEGACY HELPER FUNCTIONS ---
 export const quickEnhance = async (input: string, field: 'tags' | 'style'): Promise<string> => {
   const client = getClient();
   const charLimit = 1000;
   const target = 950;
   const prompt = `Enhance this Suno ${field} string to be extremely descriptive. Target approximately ${target} characters, but DO NOT EXCEED ${charLimit} characters. Add specific details, instruments, and adjectives. Keep it comma separated for tags. Output strictly in lowercase if field is 'tags'. Input: ${input}`;
 
-  const execute = (model: 'gemini-3-flash-preview') => {
-      return retryWithBackoff(async () => {
-          // Fix: Added thinkingBudget when setting maxOutputTokens to follow coding guidelines
-          const response = await client.models.generateContent({
-            model,
+  try {
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: {
+        temperature: 0.7,
+        maxOutputTokens: 1100,
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+    const result = response.text || input;
+    return field === 'tags' ? result.toLowerCase() : result;
+  } catch (e: unknown) {
+    console.warn("Quick Enhance (Lite) failed, retrying with Flash", e);
+    // Fallback to Flash if Lite fails (e.g. overloaded)
+    try {
+        const response = await client.models.generateContent({
+            model: 'gemini-2.5-flash',
             contents: prompt,
             config: {
-              temperature: 0.7,
-              maxOutputTokens: 1100,
-              thinkingConfig: { thinkingBudget: 100 },
-              safetySettings: SAFETY_SETTINGS
+                temperature: 0.7,
+                maxOutputTokens: 1100,
+                safetySettings: SAFETY_SETTINGS
             }
-          });
-          const result = response.text || input;
-          return field === 'tags' ? result.toLowerCase() : result;
-      });
-  };
-  
-  try {
-    return await execute('gemini-3-flash-preview');
-  } catch (e: unknown) {
-    console.warn("Quick Enhance failed", e);
-    return input;
+        });
+        const result = response.text || input;
+        return field === 'tags' ? result.toLowerCase() : result;
+    } catch (fallbackError) {
+        return input;
+    }
   }
 };
 
+/**
+ * Rewrites a selected lyric fragment using AI to improve flow, rhyme, or style.
+ * 
+ * @param fragment - The text selection to rewrite.
+ * @param context - The overall song context/theme.
+ * @param mode - The rewrite strategy (Flow, Edgy, Rhyme, Extend, Chords).
+ * @param isPyriteMode - Adjusts the creativity level.
+ */
 export const rewriteLyricFragment = async (
   fragment: string, 
   context: string, 
@@ -196,32 +111,27 @@ export const rewriteLyricFragment = async (
     LANGUAGE: Detect from fragment and keep same language.
   `;
   
-  const execute = (model: 'gemini-3-flash-preview') => {
-    return retryWithBackoff(async () => {
-        // Fix: Added thinkingBudget when setting maxOutputTokens to follow coding guidelines
-        const response = await client.models.generateContent({
-          model,
-          contents: prompt,
-          config: {
-            temperature: 0.8,
-            maxOutputTokens: 200,
-            thinkingConfig: { thinkingBudget: 50 },
-            systemInstruction: isPyriteMode ? CHAOS_IDENTITY : STANDARD_IDENTITY,
-            safetySettings: SAFETY_SETTINGS
-          }
-        });
-        return response.text?.trim() || fragment;
-    });
-  };
-  
   try {
-    return await execute('gemini-3-flash-preview');
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: {
+        temperature: 0.8,
+        maxOutputTokens: 200,
+        systemInstruction: isPyriteMode ? CHAOS_IDENTITY : STANDARD_IDENTITY,
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+    return response.text?.trim() || fragment;
   } catch (e: unknown) {
-    console.warn("Rewrite failed", e);
+    console.error("Rewrite failed", e);
     return fragment;
   }
 };
 
+/**
+ * Finds rhymes for a specific word using AI, considering the song's context.
+ */
 export const getRhymes = async (word: string, context: string, language: string = 'en'): Promise<string[]> => {
   const client = getClient();
   const prompt = `
@@ -238,29 +148,27 @@ export const getRhymes = async (word: string, context: string, language: string 
     - If the word is obscure, provide synonyms that fit the meter.
   `;
   
-  const execute = (model: 'gemini-3-flash-preview') => {
-      return retryWithBackoff(async () => {
-          const response = await client.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-              responseMimeType: 'application/json',
-              safetySettings: SAFETY_SETTINGS
-            }
-          });
-          const json = JSON.parse(response.text || '[]');
-          return Array.isArray(json) ? json.slice(0, 12) : [];
-      });
-  };
-
   try {
-    return await execute('gemini-3-flash-preview');
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite', // Fast and cheap
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+    const json = JSON.parse(response.text || '[]');
+    return Array.isArray(json) ? json.slice(0, 12) : [];
   } catch (e: unknown) {
-    console.warn("Rhyme lookup failed", e);
+    console.error("Rhyme lookup failed", e);
     return [];
   }
 };
 
+/**
+ * Generates lyrics for Riffusion/Diffusion style models.
+ * Focuses on phonetics and simple repetition rather than narrative.
+ */
 export const generateGhostLyrics = async (
   intent: string, 
   mood: string,
@@ -286,32 +194,28 @@ export const generateGhostLyrics = async (
     OUTPUT: Just the lyrics with tags. No conversation.
   `;
   
-  const execute = (model: 'gemini-3-flash-preview') => {
-      return retryWithBackoff(async () => {
-          // Fix: Added thinkingBudget when setting maxOutputTokens to follow coding guidelines
-          const response = await client.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-              temperature: 0.9,
-              maxOutputTokens: 400,
-              thinkingConfig: { thinkingBudget: 50 },
-              systemInstruction: isPyriteMode ? CHAOS_IDENTITY : STANDARD_IDENTITY,
-              safetySettings: SAFETY_SETTINGS
-            }
-          });
-          return response.text?.trim() || "";
-      });
-  };
-  
   try {
-    return await execute('gemini-3-flash-preview');
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: {
+        temperature: 0.9,
+        maxOutputTokens: 400,
+        systemInstruction: isPyriteMode ? CHAOS_IDENTITY : STANDARD_IDENTITY,
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+    return response.text?.trim() || "";
   } catch (e: unknown) {
-    console.warn("Ghostwriter failed", e);
+    console.error("Ghostwriter failed", e);
     return "[Chorus]\n(Ghostwriter failed to connect)\n";
   }
 };
 
+/**
+ * Analyzes raw lyrics text to detect and label sections (Verse, Chorus, etc.).
+ * Returns a structured array of song sections.
+ */
 export const detectStructure = async (lyrics: string, isPyriteMode: boolean): Promise<SongSection[]> => {
   const client = getClient();
   const prompt = `
@@ -326,34 +230,36 @@ export const detectStructure = async (lyrics: string, isPyriteMode: boolean): Pr
     EXAMPLE OUTPUT:
     [{"type": "Verse", "modifiers": ["Storytelling"]}, {"type": "Chorus", "modifiers": ["Anthemic"]}]
   `;
-  
-  const execute = (model: 'gemini-3-flash-preview') => {
-      return retryWithBackoff(async () => {
-          const response = await client.models.generateContent({
-            model,
-            contents: prompt,
-            config: {
-              responseMimeType: "application/json",
-              safetySettings: SAFETY_SETTINGS
-            }
-          });
-          const json = JSON.parse(response.text || "[]");
-          return Array.isArray(json) ? json.map((s: any) => ({
-              id: crypto.randomUUID(),
-              type: s.type || "Verse",
-              modifiers: Array.isArray(s.modifiers) ? s.modifiers : []
-          })) : [];
-      });
-  };
 
   try {
-    return await execute('gemini-3-flash-preview');
-  } catch (e: unknown) {
-    console.warn("Structure detection failed", e);
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        safetySettings: SAFETY_SETTINGS
+      }
+    });
+    const json = JSON.parse(response.text || "[]");
+    return Array.isArray(json) ? json.map((s: any) => ({
+        id: crypto.randomUUID(),
+        type: s.type || "Verse",
+        modifiers: Array.isArray(s.modifiers) ? s.modifiers : []
+    })) : [];
+  } catch (e) {
+    console.error("Structure detection failed", e);
     return [];
   }
 };
 
+/**
+ * Generates multiple variations of a prompt for A/B testing or brainstorming.
+ * 
+ * @param basePrompt - The original prompt to modify.
+ * @param count - Number of variations to generate (1-10).
+ * @param level - Intensity of variation (Light, Medium, Heavy).
+ * @param constraints - Rules for what to keep/change.
+ */
 export const generateBatchVariations = async (
   basePrompt: GeneratedPrompt,
   count: number,
@@ -371,6 +277,7 @@ export const generateBatchVariations = async (
   if(constraints.randomizeMood) constraintInstructions += `- Randomize Mood: Actively change the mood descriptors to explore different emotional tones.\n`;
   if(constraints.randomizeVocals) constraintInstructions += `- Randomize Vocals: Actively change the vocal style descriptors (e.g., from 'male' to 'female', 'clean' to 'raspy').\n`;
   
+  // If no constraints are active, don't include the block.
   if(Object.values(constraints).every(v => !v)) {
       constraintInstructions = '';
   }
@@ -399,23 +306,21 @@ export const generateBatchVariations = async (
     OUTPUT: A valid JSON array of prompt objects, like this: [ { "title": "...", "tags": "...", ... }, { ... } ]
   `;
 
-  // Use Gemini 3 Pro for creative batching as it requires complex adherence to constraints
-  const primaryModel = 'gemini-3-pro-preview';
+  // Determine model strategy: Pyrite uses Pro, Standard uses Flash.
+  const primaryModel = isPyriteMode ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
 
-  const execute = (model: string) => {
-    return retryWithBackoff(async () => {
-        const response = await client.models.generateContent({
-          model: model,
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-            safetySettings: SAFETY_SETTINGS,
-            temperature: 0.8,
-          }
-        });
-        const json = JSON.parse(response.text || '[]');
-        return VariationsSchema.parse(json);
+  const execute = async (model: string) => {
+    const response = await client.models.generateContent({
+      model: model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        safetySettings: SAFETY_SETTINGS,
+        temperature: 0.8,
+      }
     });
+    const json = JSON.parse(response.text || '[]');
+    return VariationsSchema.parse(json);
   };
 
   try {
@@ -424,7 +329,7 @@ export const generateBatchVariations = async (
     if (primaryModel === 'gemini-3-pro-preview') {
       console.warn("Batch Generation (Pro) failed, falling back to Flash", e);
       try {
-        return await execute('gemini-3-flash-preview');
+        return await execute('gemini-2.5-flash');
       } catch (fallbackError: unknown) {
         console.error("Batch Generation Fallback failed", fallbackError);
         throw new Error(parseError(fallbackError));

@@ -6,33 +6,28 @@ import { useAudio } from './AudioContext';
 
 type Tab = 'forge' | 'studio' | 'guide' | 'history' | 'docs' | 'templates';
 
-// State
-interface UIState {
+interface UIContextType {
   activeTab: Tab;
-  generatorState: GeneratorState;
-  toast: ToastState;
-  isSettingsModalOpen: boolean;
-}
-// Dispatch
-type UIDispatch = {
   setActiveTab: (tab: Tab) => void;
+  generatorState: GeneratorState;
   setGeneratorState: (state: GeneratorState) => void;
+  toast: ToastState;
   showToast: (msg: string, type?: 'success' | 'info' | 'error') => void;
   dismissToast: () => void;
-  openSettings: () => void;
-  closeSettings: () => void;
-};
+  isSettingsModalOpen: boolean; // New
+  openSettings: () => void; // New
+  closeSettings: () => void; // New
+}
 
-const UIStateContext = createContext<UIState | undefined>(undefined);
-const UIDispatchContext = createContext<UIDispatch | undefined>(undefined);
+const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<Tab>('forge');
   const [generatorState, setGeneratorState] = useState<GeneratorState>(GeneratorState.IDLE);
   const [toast, setToast] = useState<ToastState>({ msg: '', type: 'info', visible: false });
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // New: State for settings modal
   const { play } = useAudio();
-
+  
   const handleSetActiveTab = useCallback((tab: Tab) => {
     setActiveTab(tab);
     play('click');
@@ -48,41 +43,42 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     setToast(prev => ({ ...prev, visible: false }));
   }, []);
 
-  const openSettings = useCallback(() => setIsSettingsModalOpen(true), []);
-  const closeSettings = useCallback(() => setIsSettingsModalOpen(false), []);
+  // New: Settings modal handlers
+  const openSettings = useCallback(() => {
+    setIsSettingsModalOpen(true);
+    play('click');
+  }, [play]);
 
-  const state = useMemo(() => ({
-    activeTab, generatorState, toast, isSettingsModalOpen
-  }), [activeTab, generatorState, toast, isSettingsModalOpen]);
-  
-  const dispatch = useMemo(() => ({
-    setActiveTab: handleSetActiveTab, setGeneratorState, showToast, dismissToast, openSettings, closeSettings
-  }), [handleSetActiveTab, showToast, dismissToast, openSettings, closeSettings]);
+  const closeSettings = useCallback(() => {
+    setIsSettingsModalOpen(false);
+    play('click');
+  }, [play]);
+
+
+  const value = useMemo(() => ({
+    activeTab,
+    setActiveTab: handleSetActiveTab,
+    generatorState,
+    setGeneratorState,
+    toast,
+    showToast,
+    dismissToast,
+    isSettingsModalOpen, // New
+    openSettings, // New
+    closeSettings, // New
+  }), [activeTab, handleSetActiveTab, generatorState, toast, showToast, dismissToast, isSettingsModalOpen, openSettings, closeSettings]);
 
   return (
-    <UIStateContext.Provider value={state}>
-      <UIDispatchContext.Provider value={dispatch}>
-        {children}
-      </UIDispatchContext.Provider>
-    </UIStateContext.Provider>
+    <UIContext.Provider value={value}>
+      {children}
+    </UIContext.Provider>
   );
 };
 
-export const useUIState = () => {
-  const context = useContext(UIStateContext);
-  if (!context) throw new Error('useUIState must be used within a UIProvider');
-  return context;
-};
-
-export const useUIDispatch = () => {
-  const context = useContext(UIDispatchContext);
-  if (!context) throw new Error('useUIDispatch must be used within a UIProvider');
-  return context;
-};
-
-// Legacy hook for compatibility
 export const useUI = () => {
-  const state = useUIState();
-  const dispatch = useUIDispatch();
-  return { ...state, ...dispatch };
+  const context = useContext(UIContext);
+  if (context === undefined) {
+    throw new Error('useUI must be used within a UIProvider');
+  }
+  return context;
 };

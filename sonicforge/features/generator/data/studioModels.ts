@@ -39,14 +39,14 @@ export const STUDIO_MODELS: AIModel[] = [
   },
   {
     id: 'gemini-2.5-flash',
-    name: 'Gemini 3.0 Flash',
+    name: 'Gemini 2.5 Flash',
     provider: 'Google',
     family: 'Gemini',
-    version: 'Preview',
+    version: 'Latest',
     tier: 'free',
     capabilities: {
-      reasoning: 85,
-      speed: 98,
+      reasoning: 80,
+      speed: 95,
       creativity: 85,
       contextWindow: '1M',
       strengths: ['Low Latency', 'Audio Analysis', 'Research', 'Quick Iteration']

@@ -1,39 +1,29 @@
 
 import { GENRE_DATABASE } from '../data/genreDatabase';
-import { sunoMetaTags } from '../data/sunoMetaTags';
 
 export interface StyleComponents {
   genres: string[];
   subGenres: string[];
   moods: string[];
-  vocals: string[]; 
-  vocalStyle?: string; 
+  vocals: string[]; // Kept for simple mode arrays
+  vocalStyle?: string; // New for expert mode detailed string
   bpm?: string;
   key?: string;
   instruments: string[];
-  atmosphere: string[]; 
-  production: string[]; 
+  atmosphere: string[]; // New: Texture/Vibe
+  production: string[]; // New: Mixing/Tech
   influences: string[];
   era?: string;
 }
 
-export interface BuildStyleConfig {
-  genre: string | string[];
-  mood?: string | string[];
-  vocals?: string | string[];
-  tempo?: number | string;
-  key?: string;
-  instruments?: string[];
-  production?: string[];
-  atmosphere?: string[];
-  enhance?: boolean;
-}
-
 /**
- * Retrieves genre-specific defaults from the database.
+ * Searches the GENRE_DATABASE for a matching genre and returns its characteristics.
+ * Used for deterministic enhancement of sparse prompts.
  */
 export const enhanceFromDatabase = (genreName: string): Partial<StyleComponents> => {
   const normalizedInput = genreName.toLowerCase();
+  
+  // Find match in DB
   const genreDef = GENRE_DATABASE.find(g => 
     g.name.toLowerCase() === normalizedInput || 
     g.subGenres.some(sub => sub.toLowerCase() === normalizedInput)
@@ -41,146 +31,132 @@ export const enhanceFromDatabase = (genreName: string): Partial<StyleComponents>
 
   if (!genreDef) return {};
 
+  // Map DB fields to StyleComponents
   return {
-    instruments: genreDef.instruments.slice(0, 4), // Grab top 4 signature instruments
-    vocals: genreDef.vocalsStyle.slice(0, 2),      // Grab top 2 vocal styles
-    production: genreDef.characteristics.filter(c => c.includes('production') || c.includes('mix') || c.includes('sound') || c.includes('fi')),
-    atmosphere: genreDef.characteristics.filter(c => !c.includes('production') && !c.includes('mix') && !c.includes('sound') && !c.includes('fi')),
+    instruments: genreDef.instruments.slice(0, 3),
+    vocals: genreDef.vocalsStyle.slice(0, 2),
+    // Map characteristics to production/atmosphere heuristic
+    production: genreDef.characteristics.filter(c => c.includes('production') || c.includes('mix') || c.includes('sound')),
+    atmosphere: genreDef.characteristics.filter(c => !c.includes('production') && !c.includes('mix') && !c.includes('sound')),
+    // If user input was a subgenre, ensure we have the main category too if needed, 
+    // but usually specific subgenre is better.
     genres: [genreDef.name]
   };
 };
 
 /**
- * CANONICAL V4.5 PROMPT FORMULA
- * Sequence: GENRE, SUBGENRE, MOOD, BPM, KEY, VOCAL STYLE, INSTRUMENTS, ATMOSPHERE, PRODUCTION QUALITY
+ * The V4.5 GOLDEN RULE BUILDER
+ * Updated Order: Genre/Era -> Mood/Vocals -> Instrument Tones -> Rhythm/Tempo -> Key -> Production/Atmosphere
+ * "Front-Loading" is critical for v4.5 to lock the vibe.
  */
 export const assembleStylePrompt = (components: StyleComponents): string => {
   const parts: string[] = [];
 
-  // 1. GENRE & ERA
-  const eraPrefix = components.era ? `${components.era} Style` : '';
+  // 1. Genre & Era (The Anchor)
+  // Logic: "1980s Synthpop" is stronger than "Synthpop, 1980s"
   const baseGenre = components.genres[0] || '';
-  const genrePart = [eraPrefix, baseGenre].filter(Boolean).join(' ');
-  if (genrePart) parts.push(genrePart);
+  const era = components.era ? `${components.era}` : '';
+  
+  let genreBlock = '';
+  if (era && baseGenre) genreBlock = `${era} ${baseGenre}`;
+  else if (baseGenre) genreBlock = baseGenre;
+  else if (era) genreBlock = `${era} Style`;
 
-  // 2. SUBGENRE / SECONDARY GENRES
-  if (components.genres.length > 1) {
-     parts.push(...components.genres.slice(1).map(g => `${g} influence`));
-  }
-  if (components.subGenres.length > 0) {
-    parts.push(components.subGenres.join(', '));
+  if (genreBlock) parts.push(genreBlock);
+  
+  // Sub-Genres / Influences (Merged into Genre Slot)
+  const subGenres = [...components.subGenres, ...components.influences];
+  const uniqueSubGenres = subGenres.filter(s => s && s.toLowerCase() !== baseGenre.toLowerCase());
+  if (uniqueSubGenres.length > 0) {
+    parts.push(...uniqueSubGenres);
   }
 
-  // 3. MOOD
+  // 2. Mood & Vocals (The Emotional Core - Front-Loaded for v4.5)
+  // v4.5 pays most attention to the first 30% of the prompt.
   if (components.moods.length > 0) {
-    parts.push(components.moods.join(', '));
+    parts.push(...components.moods);
+  }
+  
+  // Prioritize detailed vocalStyle string (Expert) over simple array
+  if (components.vocalStyle) {
+    parts.push(components.vocalStyle);
+  } else if (components.vocals.length > 0) {
+    parts.push(...components.vocals);
   }
 
-  // 4. BPM
+  // 3. Instrument Tones (Arrangement)
+  if (components.instruments.length > 0) {
+    parts.push(...components.instruments);
+  }
+
+  // 4. Rhythm & Tempo
   if (components.bpm) {
-    let bpmVal = components.bpm.toString();
-    if (!bpmVal.toLowerCase().includes('bpm')) {
-        bpmVal += ' BPM';
-    }
-    parts.push(bpmVal);
+    // Ensure "BPM" is present if it's just a number
+    const bpmStr = components.bpm.toLowerCase().includes('bpm') ? components.bpm : `${components.bpm} BPM`;
+    parts.push(bpmStr);
   }
 
-  // 5. KEY
+  // 5. Key
   if (components.key) {
     parts.push(components.key);
   }
 
-  // 6. VOCAL STYLE (Mandatory Position for Hallucination Guard)
-  const vocals = components.vocalStyle || components.vocals.join(', ');
-  if (vocals) parts.push(vocals);
-
-  // 7. INSTRUMENTS
-  if (components.instruments.length > 0) {
-    parts.push(components.instruments.join(', '));
+  // 6. Mixing & Atmosphere (The Polish - Moved to End)
+  // These modify the sound but don't define the song's identity.
+  if (components.production.length > 0) {
+    parts.push(...components.production);
+  }
+  if (components.atmosphere && components.atmosphere.length > 0) {
+    parts.push(...components.atmosphere);
   }
 
-  // 8. ATMOSPHERE
-  if (components.atmosphere.length > 0) {
-    parts.push(components.atmosphere.join(', '));
-  }
+  // Final cleanup: 
+  // - Deduplicate case-insensitive
+  // - Trim whitespace
+  // - Join with ", "
+  const uniqueParts = parts.filter((item, index) => {
+    if (!item) return false;
+    const lowerItem = item.toLowerCase().trim();
+    return parts.findIndex(p => p.toLowerCase().trim() === lowerItem) === index;
+  });
 
-  // 9. PRODUCTION QUALITY
-  const production = [...components.production, ...components.influences].join(', ');
-  if (production) parts.push(production);
-
-  // Flatten, deduplicate, and clean
-  const finalString = parts.filter(Boolean).join(', ');
-  
-  // Basic cleanup to remove duplicate words if they appear sequentially
-  return finalString.replace(/\b(\w+), \1\b/g, '$1');
+  return uniqueParts.join(', ');
 };
 
 /**
- * THE MAIN BUILDER FUNCTION
- * Orchestrates the creation of an optimized style prompt.
+ * Helper to parse a raw string into components (Heuristic Reverse-Engineering)
+ * Useful for the "Import" feature.
  */
-export const buildStylePrompt = (config: BuildStyleConfig): string => {
-    // 1. Normalize Inputs
-    const normalize = (val: string | string[] | undefined): string[] => {
-        if (!val) return [];
-        return Array.isArray(val) ? val : val.split(',').map(s => s.trim());
-    };
-
-    const genres = normalize(config.genre);
-    const primaryGenre = genres[0] || '';
-
-    // 2. Initialize Components
-    let components: StyleComponents = {
-        genres: genres,
-        subGenres: [],
-        moods: normalize(config.mood),
-        vocals: normalize(config.vocals),
-        bpm: config.tempo ? config.tempo.toString() : undefined,
-        key: config.key,
-        instruments: normalize(config.instruments),
-        atmosphere: normalize(config.atmosphere),
-        production: normalize(config.production),
-        influences: []
-    };
-
-    // 3. Apply Enhancement (if requested)
-    if (config.enhance && primaryGenre) {
-        const enhancements = enhanceFromDatabase(primaryGenre);
-        
-        // Merge without duplicating
-        const merge = (target: string[], source?: string[]) => {
-            if (!source) return;
-            source.forEach(s => {
-                if (!target.includes(s)) target.push(s);
-            });
-        };
-
-        merge(components.instruments, enhancements.instruments);
-        merge(components.vocals, enhancements.vocals);
-        merge(components.production, enhancements.production);
-        merge(components.atmosphere, enhancements.atmosphere);
-    }
-
-    // 4. Assemble
-    return assembleStylePrompt(components);
-};
-
 export const parseStyleToComponents = (rawString: string): StyleComponents => {
   const parts = rawString.split(',').map(s => s.trim()).filter(Boolean);
+  
   const components: StyleComponents = {
-    genres: [], subGenres: [], moods: [], vocals: [], instruments: [],
-    atmosphere: [], production: [], influences: []
+    genres: [],
+    subGenres: [],
+    moods: [],
+    vocals: [],
+    instruments: [],
+    atmosphere: [],
+    production: [],
+    influences: []
   };
 
+  // Naive classification based on keywords
   parts.forEach(part => {
     const lower = part.toLowerCase();
-    if (lower.includes('bpm')) components.bpm = part;
-    else if (lower.match(/\b[a-g](?:#|b)?\s*(?:major|minor)\b/)) components.key = part;
-    else if (lower.includes('vocal') || lower.includes('voice') || lower.includes('singer') || lower.includes('scream')) components.vocals.push(part);
-    else if (lower.includes('guitar') || lower.includes('drum') || lower.includes('synth') || lower.includes('bass') || lower.includes('flamenco')) components.instruments.push(part);
-    else if (lower.includes('mix') || lower.includes('production') || lower.includes('fi') || lower.includes('tape') || lower.includes('wide')) components.production.push(part);
-    else {
-        // Simple heuristic: First item is usually genre
+    
+    if (lower.includes('bpm')) {
+        components.bpm = part;
+    } else if (lower.includes('major') || lower.includes('minor') || lower.includes('key')) {
+        components.key = part;
+    } else if (lower.includes('vocal') || lower.includes('voice') || lower.includes('singer')) {
+        components.vocals.push(part);
+    } else if (lower.includes('guitar') || lower.includes('drum') || lower.includes('synth') || lower.includes('bass') || lower.includes('piano')) {
+        components.instruments.push(part);
+    } else if (lower.includes('mix') || lower.includes('production') || lower.includes('fi') || lower.includes('verb')) {
+        components.production.push(part);
+    } else {
+        // Fallback: Assume early items are genres, later are moods/atmos
         if (components.genres.length === 0) components.genres.push(part);
         else components.moods.push(part);
     }

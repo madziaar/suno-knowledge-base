@@ -1,81 +1,57 @@
 
 import React, { createContext, useContext, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Language, PerformanceMode } from '../types';
+import { Language } from '../types';
 import { useAudio } from './AudioContext';
 
-// State
-interface SettingsState {
+interface SettingsContextType {
   lang: Language;
-  isOverclockedMode: boolean;
-  performanceMode: PerformanceMode;
-  warnerOptIn: boolean;
-}
-// Dispatch
-type SettingsDispatch = {
   setLang: (value: Language | ((val: Language) => Language)) => void;
-  setIsOverclockedMode: (value: boolean | ((val: boolean) => boolean)) => void;
-  setPerformanceMode: (value: PerformanceMode) => void;
-  setWarnerOptIn: (value: boolean | ((val: boolean) => boolean)) => void;
-};
+  isPyriteMode: boolean;
+  setIsPyriteMode: (value: boolean | ((val: boolean) => boolean)) => void;
+}
 
-const SettingsStateContext = createContext<SettingsState | undefined>(undefined);
-const SettingsDispatchContext = createContext<SettingsDispatch | undefined>(undefined);
+const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLang] = useLocalStorage<Language>('pyrite_lang', 'pl');
-  const [isOverclockedMode, setIsOverclockedMode] = useLocalStorage<boolean>('pyrite_overclock_mode', false);
-  const [performanceMode, setPerformanceMode] = useLocalStorage<PerformanceMode>('pyrite_perf', 'low');
-  const [warnerOptIn, setWarnerOptIn] = useLocalStorage<boolean>('pyrite_warner_optin', false);
+  const [isPyriteMode, setIsPyriteMode] = useLocalStorage<boolean>('pyrite_mode', false);
   
   const { setPyriteMode: setAudioPyriteMode } = useAudio();
 
+  // Sync Pyrite Mode
   useEffect(() => {
-    setAudioPyriteMode(isOverclockedMode);
-    document.body.classList.toggle('pyrite-mode', isOverclockedMode);
-  }, [isOverclockedMode, setAudioPyriteMode]);
+    setAudioPyriteMode(isPyriteMode);
+    if (isPyriteMode) {
+      document.body.classList.add('pyrite-mode');
+    } else {
+      document.body.classList.remove('pyrite-mode');
+    }
+  }, [isPyriteMode, setAudioPyriteMode]);
 
+  // Sync Language
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  useEffect(() => {
-    document.body.classList.remove('perf-high', 'perf-medium', 'perf-low');
-    document.body.classList.add(`perf-${performanceMode}`);
-  }, [performanceMode]);
-
-  const state = useMemo(() => ({
-    lang, isOverclockedMode, performanceMode, warnerOptIn
-  }), [lang, isOverclockedMode, performanceMode, warnerOptIn]);
-
-  const dispatch = useMemo(() => ({
-    setLang, setIsOverclockedMode, setPerformanceMode, setWarnerOptIn
-  }), [setLang, setIsOverclockedMode, setPerformanceMode, setWarnerOptIn]);
+  const value = useMemo(() => ({
+    lang,
+    setLang,
+    isPyriteMode,
+    setIsPyriteMode,
+  }), [lang, setLang, isPyriteMode, setIsPyriteMode]);
 
   return (
-    <SettingsStateContext.Provider value={state}>
-      <SettingsDispatchContext.Provider value={dispatch}>
-        {children}
-      </SettingsDispatchContext.Provider>
-    </SettingsStateContext.Provider>
+    <SettingsContext.Provider value={value}>
+      {children}
+    </SettingsContext.Provider>
   );
 };
 
-export const useSettingsState = () => {
-  const context = useContext(SettingsStateContext);
-  if (!context) throw new Error('useSettingsState must be used within a SettingsProvider');
-  return context;
-};
-
-export const useSettingsDispatch = () => {
-  const context = useContext(SettingsDispatchContext);
-  if (!context) throw new Error('useSettingsDispatch must be used within a SettingsProvider');
-  return context;
-};
-
-// Legacy hook for easier migration if needed, though direct usage of split hooks is preferred.
 export const useSettings = () => {
-    const state = useSettingsState();
-    const dispatch = useSettingsDispatch();
-    return { ...state, ...dispatch };
+  const context = useContext(SettingsContext);
+  if (context === undefined) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  return context;
 };

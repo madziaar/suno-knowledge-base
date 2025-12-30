@@ -45,7 +45,6 @@ export interface ErrorTranslation {
   processingFailed: string;
   workerError: string;
   readFailed: string;
-  apiError: string;
 }
 
 export interface ValidationTranslation {
@@ -73,7 +72,6 @@ export interface AlchemyTranslation {
   addVocals: { label: string; desc: string };
   addInstrumentals: { label: string; desc: string };
   cover: { label: string; desc: string };
-  mashup: { label: string; desc: string };
 }
 
 export interface StudioTranslation {
@@ -221,13 +219,6 @@ export interface DesignersTranslation {
     loadPreset: string;
     polishedMix: string;
     showLess: string;
-    vocalSyncActive: string;
-    vocalSyncPyrite: string;
-    hintLabel: string;
-    hintLabelPyrite: string;
-    hintMsg: string;
-    hintMsgPyrite: string;
-    pyriteVocalMessage: string;
   };
   placeholders: {
     selectOptions: string;
@@ -268,15 +259,6 @@ export interface BuilderTranslation {
   aiLyricOptions: {
     remi: string;
     remiTooltip: string;
-    techniques: {
-        title: string;
-        vowels: string;
-        vowelsTooltip: string;
-        backing: string;
-        backingTooltip: string;
-        chords: string;
-        chordsTooltip: string;
-    };
   };
   lyricsLangLabel: string;
   tooltips: {
@@ -292,17 +274,6 @@ export interface BuilderTranslation {
     expert: string;
     audio: string;
     platform: string;
-    genre: string;
-    negativePrompt: string;
-    vocalStyle: string;
-    instrumentStyle: string;
-    atmosphereStyle: string;
-    era: string;
-    key: string;
-    techAnchor: string;
-    neuralSignature: string;
-    personaPyrite: string;
-    personaTooltip: string;
   };
   alchemy: AlchemyTranslation;
   studio: StudioTranslation;
@@ -328,9 +299,6 @@ export interface BuilderTranslation {
       addVocals: string;
       addInstrumentals: string;
     };
-    ytLabel?: string;
-    ytPlaceholder?: string;
-    ytButton?: string;
   };
   chat: {
     placeholder: string;
@@ -349,7 +317,6 @@ export interface BuilderTranslation {
   googleBadge: string;
   artistPlaceholder: string;
   moodLabel: string;
-  moodLabelPyrite?: string;
   moodPlaceholder: string;
   instrumentsLabel: string;
   instrumentsPlaceholder: string;
@@ -421,11 +388,6 @@ export interface BuilderTranslation {
       mood: string;
       tech: string;
     };
-    detectWithAI: string;
-    syncFromLyrics: string;
-    emptySequence: string;
-    importFromLyrics: string;
-    startWithIntro: string;
   };
   toolbar: {
     insert: string;
@@ -451,18 +413,6 @@ export interface BuilderTranslation {
     fullSuno: string;
   };
   sunoV45Features: SunoV45Translation;
-  health: {
-    title: string;
-    score: string;
-    autoImprove: string;
-    gradeLabel: string;
-    metrics: {
-      completeness: string;
-      specificity: string;
-      balance: string;
-      coherence: string;
-    };
-  };
 }
 
 export interface SettingsTranslation {
@@ -498,11 +448,7 @@ export interface SettingsTranslation {
       error: string;
     };
     warning: string;
-  };
-  performance: string;
-  perfLow: string;
-  perfBalanced: string;
-  perfHigh: string;
+  }
 }
 
 export interface HistoryTranslation {
@@ -523,61 +469,4 @@ export interface HistoryTranslation {
     unfavorite: string;
     delete: string;
   };
-}
-
-export interface TranslationSet {
-  system: {
-    title: string;
-    msg: string;
-    pyriteMsg: string;
-    footer: string;
-    persona: string;
-  };
-  nav: NavTranslation;
-  builder: BuilderTranslation;
-  settings: SettingsTranslation;
-  history: HistoryTranslation;
-  templates: {
-    title: string;
-    subtitle: string;
-    searchPlaceholder: string;
-    all: string;
-    empty: string;
-    load: string;
-  };
-  guide: {
-    title: string;
-    subtitle: string;
-    menu: {
-      start: string;
-      advanced: string;
-      riffusion: string;
-      tags: string;
-      troubleshooting: string;
-    };
-    goldenRules: {
-      title: string;
-      desc: string;
-      rules: { title: string; desc: string }[];
-    };
-    tags: {
-      title: string;
-      desc: string;
-      categories: Record<string, { title: string; items: string[] }>;
-    };
-    troubleshooting: {
-      title: string;
-      abruptEnding: string;
-      abruptEndingDesc: string;
-      wrongInstrument: string;
-      wrongInstrumentDesc: string;
-      roboticVocals: string;
-      roboticVocalsDesc: string;
-      audioDegradation: string;
-      audioDegradationDesc: string;
-    };
-  };
-  dialogs: DialogTranslation;
-  errors: ErrorTranslation;
-  toast: ToastTranslation;
 }

@@ -1,49 +1,41 @@
 
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import Tooltip from '../../../../components/Tooltip';
-import TagInput from '../../../../components/shared/TagInput';
-import { MOODS, GENRE_MOOD_MAP } from '../../data/autocompleteData';
+import SuggestionInput from '../../../../components/shared/SuggestionInput';
+import { MOODS } from '../../data/autocompleteData';
 import { BuilderTranslation } from '../../../../types';
+import { cn } from '../../../../lib/utils';
 
 interface MoodSelectorProps {
   mood: string;
   setMood: (val: string) => void;
   t: BuilderTranslation;
   isPyriteMode: boolean;
-  genre?: string;
+  onFocus?: (e: any) => void;
 }
 
-const MoodSelector: React.FC<MoodSelectorProps> = memo(({ mood, setMood, t, isPyriteMode, genre }) => {
-  
-  const categorizedSuggestions = useMemo(() => {
-    const primaryGenre = genre?.split(',')[0].trim() || '';
-    const genreSuggestions = GENRE_MOOD_MAP[primaryGenre] || 
-                             Object.entries(GENRE_MOOD_MAP).find(([key]) => primaryGenre.toLowerCase().includes(key.toLowerCase()))?.[1] || 
-                             [];
-
-    // In Moods, we use genre suggestions as primary
-    const other = MOODS.filter(m => !genreSuggestions.includes(m));
-
-    return {
-      primary: genreSuggestions,
-      secondary: [], 
-      other
-    };
-  }, [genre]);
-
+const MoodSelector: React.FC<MoodSelectorProps> = memo(({ mood, setMood, t, isPyriteMode, onFocus }) => {
   return (
-    <div className="relative">
-      <TagInput
-         label={t.moodLabel}
+    <div className="relative z-30">
+      <div className="flex items-center mb-2 h-5">
+         <div className="flex items-center">
+           <label className={cn(
+             "text-[10px] font-bold uppercase tracking-widest mr-1.5 transition-colors",
+             isPyriteMode ? 'text-purple-300/80' : 'text-zinc-500'
+           )}>
+             {t.moodLabel}
+           </label>
+           <Tooltip content={t.tooltips.mood} />
+         </div>
+      </div>
+      <SuggestionInput
          value={mood}
          onChange={setMood}
-         suggestions={categorizedSuggestions}
-         isPyriteMode={isPyriteMode}
+         options={MOODS}
+         variant={isPyriteMode ? 'pyrite' : 'default'}
+         onFocus={onFocus}
          placeholder={t.moodPlaceholder}
       />
-      <div className="absolute top-0 right-0 -mt-1">
-        <Tooltip content={t.tooltips.mood} />
-      </div>
     </div>
   );
 });

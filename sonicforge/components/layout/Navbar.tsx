@@ -1,42 +1,48 @@
 
-import React, { memo, useCallback } from 'react';
+import React, { memo } from 'react';
 import { Ghost, Zap, BookOpen, Clock, Volume2, VolumeX, FileText, LayoutGrid, Settings, Sliders } from 'lucide-react';
 import Logo from '../shared/Logo';
 import { useAudio } from '../../contexts/AudioContext';
 import { triggerHaptic } from '../../lib/haptics';
 import { cn } from '../../lib/utils';
-import { useSettingsState, useSettingsDispatch, useUIState, useUIDispatch } from '../../contexts';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useUI } from '../../contexts/UIContext';
 import { translations } from '../../translations';
 import { Language } from '../../types';
 import { motion, LayoutGroup } from 'framer-motion';
 
-const Navbar: React.FC = memo(() => {
-  const { lang, isOverclockedMode } = useSettingsState();
-  const { setLang, setIsOverclockedMode } = useSettingsDispatch();
-  const { activeTab } = useUIState();
-  const { setActiveTab, openSettings } = useUIDispatch();
+interface NavbarProps {
+  togglePyrite: () => void;
+  toggleLang: () => void;
+  openSettings: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ togglePyrite, toggleLang, openSettings }) => {
+  const { lang, isPyriteMode, setLang } = useSettings();
+  const { activeTab, setActiveTab } = useUI();
   const { isMuted, toggleMute, play } = useAudio();
   
   const t = translations[lang];
 
-  const handleToggleMute = useCallback(() => {
+  const handleToggleMute = () => {
       toggleMute();
       triggerHaptic('light');
-  }, [toggleMute]);
+  };
 
-  const handleCycleLang = useCallback(() => {
+  const handleTogglePyrite = () => {
+      togglePyrite();
+      triggerHaptic('heavy');
+  };
+
+  const handleCycleLang = () => {
       const langs: Language[] = ['en', 'pl'];
       const currentIndex = langs.indexOf(lang);
       const nextIndex = (currentIndex + 1) % langs.length;
       setLang(langs[nextIndex]);
       play('click');
-  }, [lang, setLang, play]);
+  };
 
-  const handleOpenSettings = useCallback(() => {
-      openSettings();
-      play('click');
-  }, [openSettings, play]);
-
+  // Nav Items Configuration
   const NAV_ITEMS = [
     { id: 'forge', icon: Zap, label: t.nav.forge },
     { id: 'studio', icon: Sliders, label: t.nav.studio },
@@ -49,26 +55,28 @@ const Navbar: React.FC = memo(() => {
   return (
     <header className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-500 h-[72px] pt-safe backdrop-blur-xl border-b",
-      isOverclockedMode 
+      isPyriteMode 
         ? 'border-purple-500/10 bg-black/80 shadow-[0_4px_30px_rgba(0,0,0,0.5)]' 
         : 'border-white/5 bg-zinc-950/80 shadow-2xl'
     )}>
       <div className="px-6 h-full flex items-center justify-between max-w-7xl mx-auto">
         
+        {/* DESKTOP LAYOUT */}
         <div className="hidden md:flex items-center justify-between w-full">
+            {/* Logo Area */}
             <div className="flex items-center space-x-4 group cursor-default select-none">
               <div className={cn(
                 "p-2.5 rounded-xl border transition-all duration-500 bg-white/5",
-                isOverclockedMode 
+                isPyriteMode 
                   ? 'border-purple-500/20 group-hover:border-purple-500/50 group-hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]' 
                   : 'border-white/10 group-hover:border-yellow-500/50 group-hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]'
               )}>
-                <Logo className={cn("w-5 h-5", isOverclockedMode ? 'drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]' : '')} isPyriteMode={isOverclockedMode} />
+                <Logo className={cn("w-5 h-5", isPyriteMode ? 'drop-shadow-[0_0_5px_rgba(168,85,247,0.8)]' : '')} isPyriteMode={isPyriteMode} />
               </div>
               <div className="flex flex-col">
                   <span className={cn(
                     "text-sm font-bold tracking-tight bg-clip-text text-transparent uppercase leading-none mb-1",
-                    isOverclockedMode 
+                    isPyriteMode 
                       ? 'bg-gradient-to-r from-purple-300 via-pink-300 to-purple-300 animate-pulse' 
                       : 'bg-gradient-to-r from-yellow-200 to-yellow-600'
                   )}>
@@ -76,16 +84,17 @@ const Navbar: React.FC = memo(() => {
                   </span>
                   <span className={cn(
                     "text-[9px] tracking-[0.3em] font-mono opacity-60",
-                    isOverclockedMode ? 'text-purple-400' : 'text-zinc-400'
+                    isPyriteMode ? 'text-purple-400' : 'text-zinc-400'
                   )}>{t.nav.version}</span>
               </div>
             </div>
             
+            {/* Navigation Tabs with Sliding Pill */}
             <div className="flex items-center space-x-6">
               <LayoutGroup>
                 <div className={cn(
                   "flex space-x-1 p-1.5 rounded-xl border",
-                  isOverclockedMode ? 'bg-zinc-900/60 border-purple-500/10' : 'bg-black/40 border-white/5'
+                  isPyriteMode ? 'bg-zinc-900/60 border-purple-500/10' : 'bg-black/40 border-white/5'
                 )} role="tablist">
                   {NAV_ITEMS.map(item => {
                     const isActive = activeTab === item.id;
@@ -98,7 +107,7 @@ const Navbar: React.FC = memo(() => {
                         className={cn(
                           "relative px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                           isActive 
-                            ? (isOverclockedMode ? "text-purple-100" : "text-yellow-100") 
+                            ? (isPyriteMode ? "text-purple-100" : "text-yellow-100") 
                             : "text-zinc-500 hover:text-zinc-300"
                         )}
                         aria-label={`${t.nav.switchTo} ${item.label}`}
@@ -108,13 +117,13 @@ const Navbar: React.FC = memo(() => {
                             layoutId="nav-pill"
                             className={cn(
                               "absolute inset-0 rounded-lg shadow-sm",
-                              isOverclockedMode ? 'bg-purple-600/30' : 'bg-white/10'
+                              isPyriteMode ? 'bg-purple-600/30' : 'bg-white/10'
                             )}
                             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                           />
                         )}
                         <span className="relative z-10 flex items-center gap-2">
-                          <item.icon className={cn("w-3.5 h-3.5", isActive && (isOverclockedMode ? 'text-purple-300' : 'text-yellow-400'))} /> 
+                          <item.icon className={cn("w-3.5 h-3.5", isActive && (isPyriteMode ? 'text-purple-300' : 'text-yellow-400'))} /> 
                           {item.label}
                         </span>
                       </button>
@@ -125,46 +134,65 @@ const Navbar: React.FC = memo(() => {
               
               <div className="h-6 w-px bg-white/10" />
 
-              <div className="flex items-center gap-2">
+              {/* Utility Icons */}
+              <div className="flex items-center gap-3">
                   <NavBarButton onClick={handleToggleMute} active={isMuted} activeColor="text-red-400" label={isMuted ? t.nav.unmute : t.nav.mute}>
                       {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </NavBarButton>
+
+                  <NavBarButton onClick={handleTogglePyrite} isPyrite={isPyriteMode} label={isPyriteMode ? t.nav.pyriteToggleOff : t.nav.pyriteToggleOn} special>
+                      <Ghost className="w-4 h-4" />
                   </NavBarButton>
 
                   <button
                     onClick={handleCycleLang}
                     className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-white/5 text-zinc-500 hover:text-white transition-all text-[10px] font-mono font-bold border border-transparent hover:border-white/10 active:scale-95"
                     aria-label={t.nav.switchLang}
+                    title={t.nav.switchLang}
                   >
                     {lang.toUpperCase()}
                   </button>
 
-                  <NavBarButton onClick={handleOpenSettings} label={t.nav.settings}>
+                  <NavBarButton onClick={openSettings} label={t.nav.settings}>
                     <Settings className="w-4 h-4" />
                   </NavBarButton>
               </div>
             </div>
         </div>
 
+        {/* MOBILE LAYOUT */}
         <div className="md:hidden flex items-center justify-between w-full h-full">
             <div className="flex items-center space-x-3 select-none">
                 <div className={cn(
                     "p-2 rounded-xl border",
-                    isOverclockedMode ? 'border-purple-500/30 bg-purple-500/10' : 'border-yellow-500/20 bg-yellow-500/10'
+                    isPyriteMode ? 'border-purple-500/30 bg-purple-500/10' : 'border-yellow-500/20 bg-yellow-500/10'
                 )}>
-                    <Logo className={cn("w-5 h-5", isOverclockedMode ? 'text-purple-500' : 'text-yellow-500')} isPyriteMode={isOverclockedMode} />
+                    <Logo className={cn("w-5 h-5", isPyriteMode ? 'text-purple-500' : 'text-yellow-500')} isPyriteMode={isPyriteMode} />
                 </div>
                 <span className={cn(
                     "font-bold text-lg tracking-tight",
-                    isOverclockedMode ? 'text-purple-100 glitch-text' : 'text-zinc-100'
-                )} data-text={isOverclockedMode ? 'OVERCLOCKED' : 'FORGE'}>
-                    {isOverclockedMode ? 'OVERCLOCKED' : 'FORGE'}
+                    isPyriteMode ? 'text-purple-100 glitch-text' : 'text-zinc-100'
+                )} data-text={isPyriteMode ? 'OVERRIDE' : 'FORGE'}>
+                    {isPyriteMode ? 'OVERRIDE' : 'FORGE'}
                 </span>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+                <button 
+                    onClick={handleTogglePyrite} 
+                    className={cn(
+                        "p-2.5 rounded-full active:scale-90 transition-transform",
+                        isPyriteMode ? 'bg-purple-500/20 text-purple-400 animate-pulse' : 'text-zinc-500 bg-zinc-900/50'
+                    )} 
+                    aria-label={isPyriteMode ? t.nav.pyriteToggleOff : t.nav.pyriteToggleOn}
+                >
+                    <Ghost className="w-5 h-5" />
+                </button>
+                
                 <button
-                  onClick={handleOpenSettings}
+                  onClick={openSettings}
                   className="p-2.5 rounded-full hover:bg-white/10 text-zinc-400 bg-zinc-900/50 active:scale-90 transition-transform"
+                  aria-label={t.nav.settings}
                 >
                   <Settings className="w-5 h-5" />
                 </button>
@@ -173,19 +201,24 @@ const Navbar: React.FC = memo(() => {
       </div>
     </header>
   );
-});
+};
 
-const NavBarButton: React.FC<{ onClick: () => void, children: React.ReactNode, active?: boolean, activeColor?: string, label: string }> = ({ onClick, children, active, activeColor, label }) => (
+const NavBarButton: React.FC<{ onClick: () => void, children: React.ReactNode, active?: boolean, activeColor?: string, label: string, special?: boolean, isPyrite?: boolean }> = ({ onClick, children, active, activeColor, label, special, isPyrite }) => (
     <button
         onClick={onClick}
         className={cn(
         "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 relative group overflow-hidden active:scale-95",
-        active && activeColor ? activeColor : 'text-zinc-400 hover:text-white hover:bg-white/10'
+        special 
+            ? (isPyrite 
+                ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]' 
+                : 'text-zinc-400 hover:text-white hover:bg-white/10')
+            : (active && activeColor ? activeColor : 'text-zinc-400 hover:text-white hover:bg-white/10')
         )}
         title={label}
+        aria-label={label}
     >
         <div className="relative z-10">{children}</div>
     </button>
 );
 
-export default Navbar;
+export default memo(Navbar);

@@ -1,6 +1,6 @@
 
 import React, { useCallback, useState } from 'react';
-import { Upload, X, Music, AlertTriangle, Loader2, ScanEye, MicVocal, Guitar, Link as LinkIcon, Youtube } from 'lucide-react';
+import { Upload, X, Music, AlertTriangle, Loader2, ScanEye, MicVocal, Guitar } from 'lucide-react';
 import { BuilderTranslation } from '../../../types';
 import ThemedButton from '../../../components/shared/ThemedButton';
 import { cn } from '../../../lib/utils';
@@ -9,7 +9,6 @@ import { translations } from '../../../translations';
 
 interface AudioUploaderProps {
   onAudioSelected: (base64: string, mimeType: string) => void;
-  onUrlSelected?: (url: string) => void;
   onClear: () => void;
   isAnalyzing: boolean;
   t: BuilderTranslation;
@@ -17,7 +16,6 @@ interface AudioUploaderProps {
 }
 
 type UploadMode = 'analyze' | 'addVocals' | 'addInstrumentals';
-type InputMethod = 'file' | 'url';
 
 // INLINED WORKER CODE TO PREVENT URL RESOLUTION ERRORS
 const AUDIO_WORKER_CODE = `
@@ -46,7 +44,6 @@ self.onmessage = (e) => {
 
 const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({ 
   onAudioSelected, 
-  onUrlSelected,
   onClear, 
   isAnalyzing, 
   t, 
@@ -57,8 +54,6 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<UploadMode>('analyze');
-  const [method, setMethod] = useState<InputMethod>('file');
-  const [urlInput, setUrlInput] = useState('');
   
   const { lang } = useSettings();
   const tErrors = translations[lang].errors;
@@ -175,20 +170,9 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
     }
   };
 
-  const handleUrlSubmit = () => {
-      if (!urlInput.trim()) return;
-      if (!urlInput.includes('youtube.com') && !urlInput.includes('youtu.be')) {
-          setError("Only YouTube links supported.");
-          return;
-      }
-      setFileName(urlInput);
-      if (onUrlSelected) onUrlSelected(urlInput);
-  };
-
   const handleRemove = () => {
     setFileName(null);
     setError(null);
-    setUrlInput('');
     onClear();
   };
   
@@ -197,13 +181,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
     { id: 'addVocals', icon: MicVocal, label: t.audio.uploadModes.addVocals },
     { id: 'addInstrumentals', icon: Guitar, label: t.audio.uploadModes.addInstrumentals },
   ];
-  
-  // Use explicit labels if available in translation, fallback to generic
-  const dropLabel = mode === 'addVocals' 
-    ? (t.audio.dropLabels.addVocals || "Drop INSTRUMENTAL here to add AI Vocals")
-    : mode === 'addInstrumentals' 
-    ? (t.audio.dropLabels.addInstrumentals || "Drop VOCAL stem here to add Backing Track")
-    : t.audio.dropLabel;
+  const dropLabel = t.audio.dropLabels[mode] || t.audio.dropLabel;
 
   // Styles
   const borderColor = isPyriteMode ? 'border-purple-500/30' : 'border-blue-500/30';
@@ -216,7 +194,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
               <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3 overflow-hidden">
                       <div className={`p-2 rounded-lg ${isPyriteMode ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'}`}>
-                          {method === 'url' ? <Youtube className="w-5 h-5" /> : <Music className="w-5 h-5" />}
+                          <Music className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
                           <p className="text-xs font-bold text-zinc-300 truncate max-w-[200px]">{fileName}</p>
@@ -248,23 +226,7 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
 
   return (
     <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/30 space-y-3">
-        <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t.audio.title}</h4>
-            <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
-                <button 
-                    onClick={() => setMethod('file')}
-                    className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-all", method === 'file' ? (isPyriteMode ? "bg-purple-600 text-white" : "bg-zinc-700 text-white") : "text-zinc-500 hover:text-zinc-300")}
-                >
-                    File
-                </button>
-                <button 
-                    onClick={() => setMethod('url')}
-                    className={cn("px-2 py-1 rounded-md text-[9px] font-bold uppercase transition-all", method === 'url' ? (isPyriteMode ? "bg-purple-600 text-white" : "bg-zinc-700 text-white") : "text-zinc-500 hover:text-zinc-300")}
-                >
-                    Link
-                </button>
-            </div>
-        </div>
+        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t.audio.title}</h4>
         
         {/* Mode Selector */}
         <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-zinc-800 border border-zinc-700">
@@ -284,70 +246,39 @@ const AudioUploader: React.FC<AudioUploaderProps> = React.memo(({
             ))}
         </div>
         
-        {method === 'file' ? (
-            /* Drop Zone */
-            <div 
-            className={`relative w-full rounded-xl border-2 border-dashed transition-all duration-200 text-center p-6 ${dragActive ? `${activeBorder} ${bgActive}` : `border-zinc-800 hover:border-zinc-700 bg-zinc-900/30`}`}
-            onDragEnter={handleDrag} 
-            onDragLeave={handleDrag} 
-            onDragOver={handleDrag} 
-            onDrop={handleDrop}
-            >
-            <input 
-                type="file" 
-                accept="audio/mp3,audio/wav,audio/mpeg"
-                onChange={handleChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                disabled={isAnalyzing || isProcessing}
-            />
-            
-            <div className="flex flex-col items-center justify-center pointer-events-none">
-                <div className={`p-3 rounded-full mb-3 ${isPyriteMode ? 'bg-purple-900/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'}`}>
-                    {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
-                </div>
-                <p className="text-sm font-bold text-zinc-300 mb-1 px-4">{isProcessing ? t.audio.processing : dropLabel}</p>
-                <p className="text-xs text-zinc-500">{t.audio.limits}</p>
-            </div>
-            </div>
-        ) : (
-            /* URL Input */
-            <div className="space-y-2">
-                <div className="flex gap-2">
-                    <div className="relative flex-1">
-                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                        <input 
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            placeholder={t.audio.ytPlaceholder || "Paste YouTube URL..."}
-                            className={cn(
-                                "w-full pl-9 pr-4 py-3 bg-zinc-900/50 border rounded-xl text-sm text-white outline-none focus:ring-1",
-                                isPyriteMode ? "border-purple-500/30 focus:border-purple-500 focus:ring-purple-500/20" : "border-zinc-700 focus:border-zinc-500"
-                            )}
-                        />
-                    </div>
-                    <ThemedButton 
-                        onClick={handleUrlSubmit} 
-                        disabled={!urlInput} 
-                        variant={isPyriteMode ? 'pyrite' : 'default'}
-                        className="px-4"
-                    >
-                        {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : (t.audio.ytButton || "Scan")}
-                    </ThemedButton>
-                </div>
-                <p className="text-[10px] text-zinc-500 italic pl-1">
-                    {isPyriteMode ? "Intercepting remote sonic signatures..." : "Analyzes metadata via Search Grounding."}
-                </p>
-            </div>
-        )}
+        {/* Drop Zone */}
+        <div 
+          className={`relative w-full rounded-xl border-2 border-dashed transition-all duration-200 text-center p-6 ${dragActive ? `${activeBorder} ${bgActive}` : `border-zinc-800 hover:border-zinc-700 bg-zinc-900/30`}`}
+          onDragEnter={handleDrag} 
+          onDragLeave={handleDrag} 
+          onDragOver={handleDrag} 
+          onDrop={handleDrop}
+        >
+          <input 
+            type="file" 
+            accept="audio/mp3,audio/wav,audio/mpeg"
+            onChange={handleChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            disabled={isAnalyzing || isProcessing}
+          />
+          
+          <div className="flex flex-col items-center justify-center pointer-events-none">
+             <div className={`p-3 rounded-full mb-3 ${isPyriteMode ? 'bg-purple-900/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
+             </div>
+             <p className="text-sm font-bold text-zinc-300 mb-1">{isProcessing ? t.audio.processing : dropLabel}</p>
+             <p className="text-xs text-zinc-500">{t.audio.limits}</p>
+          </div>
 
-        {error && (
-            <div className="text-center animate-in fade-in slide-in-from-bottom-2">
-                <span className="text-[10px] text-red-400 font-bold bg-red-950/80 px-2 py-1 rounded border border-red-500/30 flex items-center justify-center inline-flex">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    {error}
-                </span>
-            </div>
-        )}
+          {error && (
+              <div className="absolute bottom-2 left-0 right-0 text-center animate-in fade-in slide-in-from-bottom-2">
+                  <span className="text-[10px] text-red-400 font-bold bg-red-950/80 px-2 py-1 rounded border border-red-500/30 flex items-center justify-center inline-flex">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      {error}
+                  </span>
+              </div>
+          )}
+        </div>
     </div>
   );
 });

@@ -3,8 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { LayoutGrid, Search, X } from 'lucide-react';
 import { Language, GenreTemplate } from '../../types';
 import { translations } from '../../translations';
+import { getAllTemplates } from '../generator/utils/templateManager';
 import TemplateCard from './components/TemplateCard';
-import { GENRE_TEMPLATES } from '../../data';
 
 interface GenreExplorerProps {
     lang: Language;
@@ -17,7 +17,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ lang, onLoadTemplate, isP
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
 
-    const templates = useMemo(() => GENRE_TEMPLATES, []);
+    const templates = useMemo(() => getAllTemplates(), []);
 
     const categories = useMemo(() => {
         const cats = new Set(templates.map(t => t.category));
@@ -26,6 +26,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ lang, onLoadTemplate, isP
 
     const filteredTemplates = useMemo(() => {
         return templates.filter(template => {
+            // Language Fallback Logic
             let name = template.name.en;
             if (lang === 'pl') name = template.name.pl;
 
@@ -78,7 +79,7 @@ const GenreExplorer: React.FC<GenreExplorerProps> = ({ lang, onLoadTemplate, isP
                                         : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                                 }`}
                             >
-                                {cat === 'All' ? t.all : cat}
+                                {cat}
                             </button>
                         ))}
                     </div>

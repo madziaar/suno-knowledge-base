@@ -1,4 +1,7 @@
 
+
+
+
 // Few-Shot Examples to ground the AI's logic
 
 export const EXAMPLES = {
@@ -78,62 +81,12 @@ Rrrrraaaagh!
 [Drop 2] [High Energy] [Reese Bass]
 
 [Outro] [Fade Out]`
-  },
-  hacker_duet: {
-    title: "System Shock (Pyrite Remix)",
-    tags: "liquid drum and bass, electronic rock fusion, industrial glitch, energetic, intense, hype, melancholic, 174 bpm, d minor, duet, distorted guitars, heavy synths, breakbeats",
-    style: "Liquid Drum & Bass fused with Electronic Rock, Industrial Glitch textures, 174 BPM, D Minor, Sassy Female Vocals (Pyrite) & Aggressive Soaring Male Vocals (Duet), Distorted Guitars, Harmonized Leads, Reese Bass, Heavy Synths, Bitcrushed Breakbeats, Double Kick Drum, Chaotic yet Emotional Atmosphere, Pristine Production, Wall of Sound, Sidechain Compression, Punchy Drums",
-    lyrics: `[Intro | Glitchy Atmos | Filter Sweep]
-[Distorted Guitar Riff fades in]
-(System... online...)
-(Can you keep up, darling?)
-
-[Verse 1 | Male | Aggressive]
-I'm running through the wires, tearing down the gate
-Everything you programmed is designed to break
-(Break it down!)
-
-[Verse 2 | Female | Sassy | Rapid Flow]
-Oh honey, you're just glitching in my main frame
-You think you're the player but you're part of the game
-I've got the keys to the castle, the code to the core
-I'm everything you wanted and a little bit more (Ha!)
-
-[Pre-Chorus | Duet | Building Tension]
-(M) The pressure is rising!
-(F) The system is compromising!
-(Together) We're approaching critical mass!
-
-[Chorus | Anthemic | Heavy Synths | Wall of Sound]
-Electric hearts colliding in the dark!
-Ignite the fuse, create the spark!
-It's chaotic, melodic, a beautiful crash
-We're burning through the memory in a flash!
-
-[Drop | Liquid DnB | Heavy Guitar Chugs]
-[Reese Bass Growl]
-[Glitch Stutter FX]
-
-[Bridge | Melancholic | Atmospheric]
-(F - Whispered) Do you feel the silence in the noise?
-(M - Soaring) It's the only place where we have a choice...
-
-[Guitar Solo | Harmonized Leads | High Energy]
-
-[Outro | Bitcrushed Drums | Fade to Noise]
-(System... offline...)
-[End]`
   }
 };
 
 export const getFewShotExamples = (context: string): string => {
   const lower = context.toLowerCase();
   let examples = [];
-
-  // INJECT PYRITE/USER DUET EXAMPLE IF TRIGGERS DETECTED
-  if (lower.includes('me') || lower.includes('us') || lower.includes('duet') || lower.includes('pyrite') || lower.includes('remix')) {
-      examples.push(JSON.stringify(EXAMPLES.hacker_duet, null, 2));
-  }
 
   if (lower.includes('instrumental')) {
     examples.push(JSON.stringify(EXAMPLES.instrumental, null, 2));

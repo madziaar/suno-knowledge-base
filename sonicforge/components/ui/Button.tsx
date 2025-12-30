@@ -1,17 +1,16 @@
 
-import React, { memo } from 'react';
+import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { triggerHaptic } from '../../lib/haptics';
 import { motion, HTMLMotionProps } from 'framer-motion';
 
-export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag" | "ref" | "children"> {
+export interface ButtonProps extends Omit<HTMLMotionProps<"button">, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag" | "ref"> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isPyrite?: boolean;
   isLoading?: boolean;
   icon?: React.ReactNode;
-  children?: React.ReactNode;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ 
@@ -56,47 +55,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     }
   };
 
-  // Fix: Cast 'ease' value to 'as const' to avoid string type mismatch in Framer Motion transitions
-  const loadingPulse = {
-    scale: [1, 0.98, 1],
-    opacity: [1, 0.9, 1],
-    boxShadow: isPyrite 
-      ? ["0 4px 20px rgba(147,51,234,0.4)", "0 0 30px rgba(168,85,247,0.6)", "0 4px 20px rgba(147,51,234,0.4)"]
-      : ["0 4px 20px rgba(234,179,8,0.3)", "0 0 30px rgba(234,179,8,0.6)", "0 4px 20px rgba(234,179,8,0.3)"],
-    transition: { 
-      duration: 2, 
-      repeat: Infinity, 
-      ease: "easeInOut" as const
-    }
-  };
-
   return (
     <motion.button
       ref={ref}
       className={cn(baseStyles, sizeStyles[size], variants[variant], className)}
       disabled={disabled || isLoading}
       onClick={handleClick}
-      whileHover={isLoading ? {} : { scale: 1.02 }}
-      whileTap={isLoading ? {} : { scale: 0.95 }}
-      animate={isLoading ? loadingPulse : { scale: 1, opacity: 1, boxShadow: "none" }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.95 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     >
       {isLoading && (
-        <>
-          {/* Subtle Spinner */}
-          <span className="absolute inset-0 flex items-center justify-center bg-inherit z-20">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </span>
-          
-          {/* Scanning Light Effect */}
-          <motion.div 
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent w-full -skew-x-12 z-10 pointer-events-none"
-            initial={{ x: "-100%" }}
-            animate={{ x: "200%" }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-          />
-        </>
+        <span className="absolute inset-0 flex items-center justify-center bg-inherit z-20">
+          <Loader2 className="w-4 h-4 animate-spin" />
+        </span>
       )}
       
       <span className={cn("flex items-center gap-2 relative z-10", isLoading ? "opacity-0" : "opacity-100")}>
@@ -104,7 +77,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
         {children}
       </span>
 
-      {/* Kinetic Shine for Primary/Pyrite (Idle State) */}
+      {/* Kinetic Shine for Primary/Pyrite */}
       {(variant === 'primary') && !disabled && !isLoading && (
         <>
             <motion.div 

@@ -1,247 +1,170 @@
 
 import { useCallback } from 'react';
-import { usePromptBuilder } from '../../../contexts/PromptContext';
+import { usePromptState } from '../../../contexts/PromptContext';
+import { usePromptActions } from './usePromptActions';
 import { useSettings } from '../../../contexts/SettingsContext';
 import { useUI } from '../../../contexts/UIContext';
 import { usePromptGenerator } from './usePromptGenerator';
 import { useHistoryActions } from './useHistoryActions';
-import { GeneratorState, GeneratedPrompt, BatchConstraints, AudioAnalysisResult } from '../../../types';
+import { GeneratorState, GeneratedPrompt, BatchConstraints } from '../../../types';
 import { StyleComponents } from '../utils/styleBuilder';
 import { quickEnhance, generateBatchVariations } from '../../../services/ai/tools';
-import { analyzeAudioReference, analyzeYouTubeReference } from '../../../services/ai/analysis';
-import { GeminiService } from '../../../services/ai/GeminiService';
 import { translations } from '../../../translations';
-import { sfx } from '../../../lib/audio';
+import { enhancePrompt, analyzePrompt } from '../utils/promptEnhancer';
+import { STRUCTURE_TEMPLATES } from '../data/genreDatabase';
+import { generateStructureSkeleton } from '../utils/lyricsFormatter';
 
 export const useGenerationWorkflow = (viewMode: 'forge' | 'studio') => {
-  const { 
-    inputs, 
-    expertInputs, 
-    isExpertMode, 
-    lyricSource, 
-    useGoogleSearch, 
-    result, 
-    researchData,
-    setResult, 
-    setState, 
-    updateInput, 
-    updateExpertInput,
-    setStatus
-  } = usePromptBuilder();
-
-  const { lang, isOverclockedMode: isPyriteMode } = useSettings();
+  const { inputs, expertInputs, isExpertMode, lyricSource, useGoogleSearch, result, researchData, enhancementLevel } = usePromptState();
+  const { setResult, setState } = usePromptActions();
+  const { lang, isPyriteMode } = useSettings();
   const { setGeneratorState, showToast } = useUI();
   const { saveToHistory } = useHistoryActions();
   
-  const { generate: apiGenerate, refine: apiRefine } = usePromptGenerator({ 
-    onStateChange: (s) => setGeneratorState(s) 
-  });
+  const { state, error, activeAgent, generate: apiGenerate, refine: apiRefine } = usePromptGenerator({ onStateChange: setGeneratorState });
 
   const tToast = translations[lang].toast;
 
-  const performAlchemyAnalysis = useCallback(async (base64: string, mimeType: string) => {
-      setStatus({ activeAgent: 'researcher', error: '' });
-      setGeneratorState(GeneratorState.ANALYZING);
-      showToast(translations[lang].builder.audio.analyzing, 'info');
-      sfx.play('click');
-
-      try {
-          const analysis: AudioAnalysisResult = await analyzeAudioReference(base64, mimeType, isPyriteMode);
-          applyAnalysisResult(analysis);
-      } catch (e: any) {
-          setStatus({ activeAgent: 'idle', error: e.message });
-          showToast(tToast.analysisError, 'error');
-          sfx.play('error');
-      } finally {
-          setGeneratorState(GeneratorState.IDLE);
-      }
-  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState, setStatus]);
-
-  const performYouTubeAnalysis = useCallback(async (url: string) => {
-      setStatus({ activeAgent: 'researcher', error: '' });
-      setGeneratorState(GeneratorState.ANALYZING);
-      showToast(translations[lang].builder.audio.analyzing, 'info');
-      sfx.play('click');
-
-      try {
-          const analysis: AudioAnalysisResult = await analyzeYouTubeReference(url, isPyriteMode);
-          applyAnalysisResult(analysis);
-      } catch (e: any) {
-          setStatus({ activeAgent: 'idle', error: e.message });
-          showToast(tToast.analysisError, 'error');
-          sfx.play('error');
-      } finally {
-          setGeneratorState(GeneratorState.IDLE);
-      }
-  }, [isPyriteMode, lang, showToast, tToast, setGeneratorState, setStatus]);
-
-  const applyAnalysisResult = (analysis: AudioAnalysisResult) => {
-      updateInput({
-          intent: `${analysis.style}. Error Margin: ${analysis.error_measure || 'Unknown'}. Confidence: ${analysis.confidence_score || 0}%`,
-          mood: analysis.mood,
-          instruments: analysis.instruments,
-      });
-
-      updateExpertInput({
-          genre: analysis.genre,
-          era: analysis.era,
-          bpm: analysis.bpm,
-          key: analysis.key
-      });
-
-      showToast(`${tToast.analysisComplete} (${analysis.confidence_score || 0}%)`, 'success');
-      sfx.play('success');
-  };
-
   const generate = useCallback(async (structuredStyle?: StyleComponents) => {
-    setStatus({ activeAgent: 'researcher', error: '' });
     setResult({ result: null, researchData: null });
     setState({ variations: [], isGeneratingVariations: false });
+
+    // Determine if we should force expert mode logic based on the active view
+    const useExpertLogic = viewMode === 'studio' || isExpertMode;
+
+    // --- AUTOMATED STUDIO MAGIC (Protocol V58) ---
+    // If we are in Easy or General mode, we perform "Studio" operations in the background
+    // 1. Auto-Enhance the Intent
+    // 2. Auto-Detect and Inject Structure
     
-    try {
-        const generationResult = await apiGenerate(
-          inputs,
-          expertInputs,
-          isExpertMode,
-          lyricSource,
-          isPyriteMode,
-          useGoogleSearch,
-          structuredStyle
-        );
-        
-        if (generationResult.success && generationResult.result) {
-          const res = generationResult.result;
-          const research = generationResult.research;
-          
-          setResult({ result: res, researchData: research });
-          showToast(tToast?.generated || "Sequence Generated", 'success');
-          
-          saveToHistory(
-            res,
-            inputs,
-            isExpertMode ? expertInputs : undefined,
-            isExpertMode,
-            lyricSource,
-            research || null
-          );
-        } else if (generationResult.error) {
-            setStatus({ activeAgent: 'idle', error: generationResult.error });
-            showToast(generationResult.error, 'error');
-        }
-    } catch (e: any) {
-        const msg = e.message || "An unexpected error occurred.";
-        setStatus({ activeAgent: 'idle', error: msg });
-        showToast(msg, 'error');
+    let effectiveInputs = { ...inputs };
+    let effectiveStructure = undefined;
+
+    if (!useExpertLogic && (inputs.mode === 'easy' || inputs.mode === 'general')) {
+       // 1. Auto-Enhance
+       const enhancedIntent = enhancePrompt(inputs.intent, enhancementLevel || 'medium');
+       effectiveInputs.intent = enhancedIntent;
+
+       // 2. Auto-Structure Detection
+       // We analyze the enhanced intent to guess the best structure
+       const analysis = analyzePrompt(enhancedIntent);
+       let targetTemplate = STRUCTURE_TEMPLATES.pop; // Default
+
+       if (analysis.genreContext === 'hiphop') targetTemplate = STRUCTURE_TEMPLATES.hiphop;
+       else if (analysis.genreContext === 'electronic') targetTemplate = STRUCTURE_TEMPLATES.electronic;
+       else if (analysis.genreContext === 'rock' || analysis.genreContext === 'metal') targetTemplate = STRUCTURE_TEMPLATES.punk; // Good energy structure
+       else if (analysis.genreContext === 'orchestral') targetTemplate = STRUCTURE_TEMPLATES.cinematic;
+       
+       // Format the template into a string string
+       effectiveStructure = targetTemplate.structure.map(s => `[${s}]`).join('\n');
+       
+       // UI Feedback for Magic
+       if (inputs.mode === 'easy') {
+           showToast(`Auto-Enhancing: ${analysis.genreContext.toUpperCase()} Protocol`, 'info');
+       }
     }
-  }, [apiGenerate, inputs, expertInputs, isExpertMode, lyricSource, isPyriteMode, useGoogleSearch, setResult, setState, showToast, tToast, saveToHistory, setStatus]);
+
+    const { success, result: genResult, research } = await apiGenerate(
+      effectiveInputs,
+      expertInputs,
+      useExpertLogic,
+      lyricSource,
+      isPyriteMode,
+      useGoogleSearch,
+      structuredStyle,
+      effectiveStructure // Pass the auto-detected structure
+    );
+    
+    if (success && genResult) {
+      setResult({ result: genResult, researchData: research });
+      showToast(tToast?.generated || "Generated", 'success');
+      
+      saveToHistory(
+        genResult,
+        effectiveInputs, // Save the ENHANCED inputs so user sees what happened
+        useExpertLogic ? expertInputs : undefined,
+        useExpertLogic,
+        lyricSource,
+        research || null
+      );
+    }
+  }, [apiGenerate, inputs, expertInputs, viewMode, isExpertMode, lyricSource, isPyriteMode, useGoogleSearch, setResult, setState, showToast, tToast, saveToHistory, enhancementLevel]);
 
   const refine = useCallback(async (instruction: string) => {
-      showToast("Refining Prompt...", 'info');
-      setGeneratorState(GeneratorState.GENERATING); 
+      showToast("Refining...", 'info');
+      setGeneratorState(GeneratorState.ANALYZING); 
       try {
-        const { success, result: refinedResult, error: refError } = await apiRefine(
+        const { success, result: refinedResult } = await apiRefine(
           result, 
           instruction, 
-          isPyriteMode
+          isPyriteMode, 
+          inputs.platform,
+          inputs.lyricsLanguage
         );
         if (success && refinedResult) {
-            setResult({ result: refinedResult, researchData: researchData });
-            showToast("Result Refined", 'success');
+            setResult({ result: refinedResult, researchData });
+            showToast("Update Complete", 'success');
         } else {
-            showToast(refError || "Refinement Failed", 'error');
+            showToast("Refinement Failed", 'info');
         }
-      } catch (e: any) {
-          showToast(e.message || "Refinement failed", 'error');
       } finally {
         setGeneratorState(GeneratorState.COMPLETE);
       }
-  }, [apiRefine, result, researchData, isPyriteMode, setResult, showToast, setGeneratorState]);
-
-  const optimizeDraft = useCallback(async () => {
-    setGeneratorState(GeneratorState.OPTIMIZING);
-    setStatus({ activeAgent: 'optimizer', error: '' });
-    showToast(lang === 'pl' ? "Optymalizacja architektury..." : "Optimizing architecture...", 'info');
-    sfx.play('click');
-    
-    try {
-        const service = new GeminiService();
-        service.initialize(inputs, expertInputs, isPyriteMode, lang);
-        const optimized = await service.optimizeDraft({ ...inputs, ...expertInputs });
-        
-        // Split back to inputs and expertInputs
-        const newInputs = { ...inputs };
-        const newExpert = { ...expertInputs };
-        
-        Object.keys(inputs).forEach(key => {
-            if ((optimized as any)[key] !== undefined) (newInputs as any)[key] = (optimized as any)[key];
-        });
-        Object.keys(expertInputs).forEach(key => {
-            if ((optimized as any)[key] !== undefined) (newExpert as any)[key] = (optimized as any)[key];
-        });
-
-        updateInput(newInputs);
-        updateExpertInput(newExpert);
-        showToast(lang === 'pl' ? "Architektura zoptymalizowana" : "Architecture Optimized", 'success');
-        sfx.play('success');
-    } catch (e) {
-        showToast("Optimization failed.", 'error');
-    } finally {
-        setGeneratorState(GeneratorState.IDLE);
-        setStatus({ activeAgent: 'idle' });
-    }
-  }, [inputs, expertInputs, isPyriteMode, lang, updateInput, updateExpertInput, showToast, setGeneratorState, setStatus]);
+  }, [apiRefine, result, inputs.platform, inputs.lyricsLanguage, isPyriteMode, researchData, setResult, showToast, setGeneratorState]);
 
   const enhance = useCallback(async (field: 'tags' | 'style', inputStr: string) => {
     if (!result) return;
     showToast("Enhancing...", 'info');
-    setGeneratorState(GeneratorState.GENERATING);
+    setGeneratorState(GeneratorState.ANALYZING);
     try {
         const enhanced = await quickEnhance(inputStr, field);
-        setResult({ result: { ...result, [field]: enhanced }, researchData: researchData });
-        showToast("Enhancement Complete", 'success');
+        setResult({ result: { ...result, [field]: enhanced }, researchData });
+        showToast("Enhanced!", 'success');
     } catch (e) {
-        showToast("Enhancement Failed", 'error');
+        showToast("Failed", 'info');
     } finally {
       setGeneratorState(GeneratorState.COMPLETE);
     }
   }, [result, researchData, setResult, showToast, setGeneratorState]);
 
-  const updateResultWrapper = useCallback((partial: Partial<GeneratedPrompt>) => {
+  const updateResult = useCallback((partial: Partial<GeneratedPrompt>) => {
       if (!result) return;
-      setResult({ result: { ...result, ...partial }, researchData: researchData });
-      showToast("Updated", 'success');
+      setResult({ result: { ...result, ...partial }, researchData });
+      showToast("Result Updated", 'success');
   }, [result, researchData, setResult, showToast]);
 
   const generateVariations = useCallback(async (count: number, level: 'light' | 'medium' | 'heavy', constraints: BatchConstraints) => {
     if (!result) return;
     setState({ variations: [], isGeneratingVariations: true });
-    showToast("Generating Variations...", 'info');
+    showToast("Generating variations...", 'info');
     try {
         const vars = await generateBatchVariations(result, count, level, isPyriteMode, constraints);
         setState({ variations: vars, isGeneratingVariations: false });
-        showToast(`${vars.length} variations ready`, 'success');
+        showToast(`${vars.length} variations generated!`, 'success');
     } catch (e: any) {
-        showToast("Variation failed.", 'error');
+        showToast(e.message || "Failed to generate variations.", 'error');
     } finally {
         setState({ isGeneratingVariations: false });
     }
   }, [result, isPyriteMode, setState, showToast]);
 
   const applyVariation = useCallback((variation: GeneratedPrompt) => {
-      setResult({ result: variation, researchData: null });
+      setResult({ result: variation, researchData });
       setState({ variations: [] }); 
-      showToast("Variation Selected", 'success');
-  }, [setResult, setState, showToast]);
+      showToast("Variation applied!", 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [result, researchData, setResult, setState, showToast]);
 
   return {
     generate,
     refine,
     enhance,
-    updateResult: updateResultWrapper,
+    updateResult,
     generateVariations,
     applyVariation,
-    performAlchemyAnalysis,
-    performYouTubeAnalysis,
-    optimizeDraft,
+    state,
+    error,
+    activeAgent,
+    researchData
   };
 };

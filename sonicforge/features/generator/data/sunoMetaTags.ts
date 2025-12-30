@@ -87,7 +87,9 @@ export const sunoMetaTags: SunoTag[] = [
   { id: 'v_southern', name: 'southern flow', category: 'vocals', description: { en: 'US Southern rap accent', pl: 'Południowy akcent rapu' }, impact: 'high', frequency: 50 },
   { id: 'v_westcoast_accent', name: 'west coast accent', category: 'vocals', description: { en: 'Laid back California rap style', pl: 'Wyluzowany styl kalifornijski' }, impact: 'medium', frequency: 40 },
 
-  // --- 4. PRODUCTION & INSTRUMENTS (KB Expanded) ---
+  // --- 4. PRODUCTION & INSTRUMENTS (v4.5 Expanded) ---
+  { id: 'p_fuller_mix', name: 'fuller mix', category: 'quality', description: { en: 'Rich, balanced frequency response', pl: 'Pełniejszy miks' }, impact: 'medium', frequency: 60 },
+  { id: 'p_wide_dynamic', name: 'wide dynamic range', category: 'quality', description: { en: 'Greater difference between loud and soft', pl: 'Szeroki zakres dynamiki' }, impact: 'medium', frequency: 50 },
   { id: 'p_phonk', name: 'phonk drum', category: 'production', description: { en: 'Essential for modern trap/hiphop authenticity', pl: 'Kluczowe dla autentyczności trapu' }, impact: 'high', frequency: 80 },
   { id: 'p_gated', name: 'gated reverb', category: 'production', description: { en: '80s drum sound, sharp decay', pl: 'Brzmienie perkusji z lat 80.' }, impact: 'high', frequency: 70 },
   { id: 'p_tape', name: 'tape saturation', category: 'production', description: { en: 'Analog warmth, slight distortion', pl: 'Analogowe ciepło' }, impact: 'high', frequency: 80 },

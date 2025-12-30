@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useCallback, memo } from 'react';
-import { Plus, X, ArrowUp, ArrowDown, AlertTriangle, ChevronDown, ChevronRight, Check, Copy, GripVertical, Eraser, Sparkles, RefreshCw, Loader2, Activity, ShieldCheck } from 'lucide-react';
+import { Plus, X, ArrowUp, ArrowDown, AlertTriangle, ChevronDown, ChevronRight, Check, Copy, GripVertical, Eraser, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { SongSection, BuilderTranslation } from '../../../types';
 import { SECTION_TYPES, MODIFIER_CATEGORIES } from '../data/expertOptions';
 import GlassPanel from '../../../components/shared/GlassPanel';
@@ -8,62 +8,9 @@ import SuggestionInput from '../../../components/shared/SuggestionInput';
 import { sfx } from '../../../lib/audio';
 import { cn } from '../../../lib/utils';
 import { detectStructure } from '../../../services/ai/tools';
-import { Reorder, useDragControls, motion } from 'framer-motion';
-import { useSettingsState } from '../../../contexts/SettingsContext';
+import { Reorder, useDragControls } from 'framer-motion';
+import { useSettings } from '../../../contexts/SettingsContext';
 import { translations } from '../../../translations';
-
-// --- VISUALIZATION SUB-COMPONENT ---
-const EnergyGraph = memo(({ sections, isPyriteMode }: { sections: SongSection[], isPyriteMode: boolean }) => {
-    const getEnergy = (type: string, mods: string[]) => {
-        const t = type.toLowerCase();
-        const m = mods.join(' ').toLowerCase();
-        let base = 50; // Verse default
-        
-        if (t.includes('intro') || t.includes('outro')) base = 30;
-        if (t.includes('chorus') || t.includes('drop')) base = 90;
-        if (t.includes('build') || t.includes('pre')) base = 70;
-        if (t.includes('bridge')) base = 60;
-        if (t.includes('breakdown') || t.includes('silence')) base = 20;
-        if (t.includes('solo')) base = 85;
-
-        if (m.includes('high energy') || m.includes('heavy') || m.includes('explosive')) base += 10;
-        if (m.includes('soft') || m.includes('low') || m.includes('ambient')) base -= 10;
-
-        return Math.min(100, Math.max(10, base));
-    };
-
-    return (
-        <div className="h-16 w-full flex items-end gap-1 px-1 mb-4 opacity-80 pointer-events-none">
-            {sections.map((s, i) => {
-                const energy = getEnergy(s.type, s.modifiers);
-                const height = `${energy}%`;
-                const isHigh = energy > 80;
-                
-                return (
-                    <motion.div
-                        key={s.id}
-                        layoutId={`bar-${s.id}`}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height, opacity: 1 }}
-                        className={cn(
-                            "flex-1 rounded-t-sm min-w-[4px] relative group transition-colors duration-500",
-                            isPyriteMode 
-                                ? (isHigh ? "bg-pink-500 shadow-[0_0_10px_#ec4899]" : "bg-purple-500/40")
-                                : (isHigh ? "bg-yellow-500 shadow-[0_0_8px_#eab308]" : "bg-blue-500/40")
-                        )}
-                    >
-                        <div className="absolute bottom-0 w-full h-1 bg-white/20" />
-                    </motion.div>
-                );
-            })}
-            {sections.length === 0 && (
-                <div className="w-full h-full flex items-center justify-center border-b border-dashed border-zinc-700">
-                    <span className="text-[9px] text-zinc-600 uppercase tracking-widest">Timeline Empty</span>
-                </div>
-            )}
-        </div>
-    );
-});
 
 // --- SUB-COMPONENT: Individual Section Item (Memoized) ---
 interface SectionItemProps {
@@ -253,7 +200,7 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detectedStructure, setDetectedStructure] = useState<SongSection[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { lang } = useSettingsState();
+  const { lang } = useSettings();
 
   // --- LYRICS PARSING LOGIC ---
   React.useEffect(() => {
@@ -346,15 +293,6 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
     }
   }, [setSections, lang]);
 
-  const addPowerEnding = useCallback(() => {
-      sfx.play('secret');
-      setSections(prev => [
-          ...(Array.isArray(prev) ? prev : []),
-          { id: crypto.randomUUID(), type: 'Instrumental Fade Out', modifiers: [] },
-          { id: crypto.randomUUID(), type: 'End', modifiers: [] }
-      ]);
-  }, [setSections]);
-
   const updateSectionType = useCallback((id: string, newType: string) => {
     setSections(prev => Array.isArray(prev) ? prev.map(s => s.id === id ? { ...s, type: newType } : s) : []);
   }, [setSections]);
@@ -412,12 +350,9 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
       {/* Header / Actions */}
       <div className="flex flex-col gap-3">
         <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-                <Activity className={cn("w-4 h-4", activeText)} />
-                <h3 className={`text-sm font-bold uppercase tracking-wider ${activeText}`}>
-                {t.structure || "Structure Builder"}
-                </h3>
-            </div>
+            <h3 className={`text-sm font-bold uppercase tracking-wider ${activeText}`}>
+            {t.structure || "Structure Builder"}
+            </h3>
             
             <div className="flex gap-2">
                 {detectedStructure.length === 0 && lyrics.length > 50 && (
@@ -431,10 +366,10 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
                                 : 'bg-blue-600/20 text-blue-700 border border-blue-500/30 hover:bg-blue-600/30',
                             isAnalyzing && "opacity-50 cursor-not-allowed"
                         )}
-                        title={t.expert.detectWithAI}
+                        title="Detect structure from lyrics using AI"
                     >
                         {isAnalyzing ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-                        {isAnalyzing ? (lang === 'pl' ? 'Skanowanie...' : 'Scanning...') : t.expert.detectWithAI}
+                        {isAnalyzing ? 'Scanning...' : 'Auto-Detect'}
                     </button>
                 )}
 
@@ -447,10 +382,10 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
                                 ? 'bg-green-600/20 text-green-300 border border-green-500/30 hover:bg-green-600/30' 
                                 : 'bg-green-600/20 text-green-700 border border-green-500/30 hover:bg-green-600/30'
                         )}
-                        title={t.expert.syncFromLyrics}
+                        title="Import detected structure from Lyrics input"
                     >
                         <RefreshCw className="w-3 h-3 mr-1.5" />
-                        {lang === 'pl' ? 'Synchronizuj' : 'Sync'} ({detectedStructure.length})
+                        Sync ({detectedStructure.length})
                     </button>
                 )}
 
@@ -458,10 +393,10 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
                     <button 
                         onClick={clearSections} 
                         className="flex items-center px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-950/20 text-red-400 border border-red-900/30 hover:bg-red-900/40 transition-colors"
-                        title={t.expert.clearAll}
+                        title={t.expert.clearAll || "Clear All"}
                     >
                         <Eraser className="w-3 h-3 mr-1.5" />
-                        {t.expert.clearAll}
+                        Clear All
                     </button>
                 )}
                 
@@ -480,9 +415,6 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
             </div>
         </div>
       </div>
-
-      {/* Pulse Timeline (Energy Graph) */}
-      <EnergyGraph sections={sections} isPyriteMode={isPyriteMode} />
 
       <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-1 pb-4 relative min-h-[100px]">
         {Array.isArray(sections) && sections.length > 0 ? (
@@ -506,20 +438,20 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
             </Reorder.Group>
         ) : (
           <div className="text-center py-8 text-zinc-600 border-2 border-dashed border-zinc-800 rounded-lg text-xs flex flex-col items-center">
-            <span className="mb-2">{t.expert.emptySequence}</span>
+            <span className="mb-2">Sequence is empty.</span>
             {detectedStructure.length > 0 ? (
                 <button 
                     onClick={handleSyncFromLyrics}
                     className="text-green-400 hover:text-green-300 underline font-bold"
                 >
-                    {t.expert.importFromLyrics.replace('{0}', String(detectedStructure.length))}
+                    Import {detectedStructure.length} sections from Lyrics
                 </button>
             ) : (
                 <button 
                     onClick={() => addSection('Intro')}
                     className="text-blue-400 hover:text-blue-300 underline"
                 >
-                    {t.expert.startWithIntro}
+                    Start with an Intro
                 </button>
             )}
           </div>
@@ -527,8 +459,8 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
 
         {/* Smart Suggestions Row */}
         {suggestions.length > 0 && (
-          <div className="pt-2 animate-in fade-in slide-in-from-top-2 flex flex-wrap gap-2">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1">
+          <div className="pt-2 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
               <Sparkles className={`w-3 h-3 ${isPyriteMode ? 'text-purple-500' : 'text-blue-500'} flex-shrink-0`} />
               {suggestions.map(sug => (
                 <button
@@ -541,21 +473,6 @@ const StructureBuilder: React.FC<StructureBuilderProps> = memo(({ sections, setS
                 </button>
               ))}
             </div>
-            
-            <button
-                type="button"
-                onClick={addPowerEnding}
-                className={cn(
-                    "flex-shrink-0 px-2 py-1 text-[10px] uppercase font-bold rounded border transition-all flex items-center gap-1",
-                    isPyriteMode 
-                        ? 'bg-pink-900/30 border-pink-500/30 text-pink-300 hover:bg-pink-500/30' 
-                        : 'bg-orange-900/30 border-orange-500/30 text-orange-300 hover:bg-orange-500/30'
-                )}
-                title="Add [Instrumental Fade Out][End]"
-            >
-                <ShieldCheck className="w-3 h-3" />
-                Power Ending
-            </button>
           </div>
         )}
       </div>

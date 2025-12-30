@@ -3,9 +3,9 @@ import React, { useMemo, useState } from 'react';
 import { HistoryItem } from '../../../types';
 import { Trash2, ArrowUpRight, FileAudio, Music, MicVocal, Star, CheckSquare, Square, Activity, Copy, GitCompare } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { scorePrompt } from '../../generator/utils';
+import { scorePrompt } from '../../generator/utils/promptAnalysis';
 import ContextMenu, { ContextMenuItem } from '../../../components/shared/ContextMenu';
-import { useSettingsState } from '../../../contexts/SettingsContext';
+import { useSettings } from '../../../contexts/SettingsContext';
 
 interface HistoryCardProps {
   item: HistoryItem;
@@ -30,8 +30,7 @@ const getIcon = (mode: string) => {
 };
 
 const HistoryCard: React.FC<HistoryCardProps> = React.memo(({ item, formatDate, onLoad, onDelete, onToggleFavorite, onSelect, isSelected, isCompareMode, t, style }) => {
-  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
-  const { isOverclockedMode: isPyriteMode } = useSettingsState();
+  const { isPyriteMode } = useSettings();
   const quality = useMemo(() => scorePrompt(item.result, 'suno'), [item.result]);
   
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number, y: number } | null>(null);

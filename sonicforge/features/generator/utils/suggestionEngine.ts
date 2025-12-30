@@ -2,7 +2,6 @@
 import { GENRE_DATABASE, MOOD_DESCRIPTORS, VOCAL_STYLES } from '../data/genreDatabase';
 import { INSTRUMENTS_SUNO, MOOD_INSTRUMENT_MAP, GENRE_INSTRUMENT_MAP } from '../data/autocompleteData';
 import { sunoMetaTags } from '../data/sunoMetaTags';
-import { CONFLICT_PAIRS } from '../data/descriptorBank';
 
 export interface Suggestion {
   type: 'instrument' | 'mood' | 'vocal' | 'meta' | 'general';
@@ -24,17 +23,17 @@ export const suggestInstruments = (genres: string[], mood?: string): string[] =>
   const lowerMood = mood?.toLowerCase().trim();
 
   // 1. Genre Specifics (High Priority)
+  // Check against Genre Database first
   GENRE_DATABASE.forEach(def => {
     if (activeGenres.includes(def.name.toLowerCase()) || def.subGenres.some(s => activeGenres.includes(s.toLowerCase()))) {
       def.instruments.forEach(inst => priorities.add(inst));
     }
   });
 
+  // Check against Genre Map (Fallback/Extras)
   Object.keys(GENRE_INSTRUMENT_MAP).forEach(key => {
     if (activeGenres.some(g => g.includes(key.toLowerCase()))) {
-      const { primary, secondary } = GENRE_INSTRUMENT_MAP[key];
-      primary.forEach(inst => priorities.add(inst));
-      secondary.forEach(inst => priorities.add(inst));
+      GENRE_INSTRUMENT_MAP[key].forEach(inst => priorities.add(inst));
     }
   });
 
@@ -48,12 +47,16 @@ export const suggestInstruments = (genres: string[], mood?: string): string[] =>
   }
 
   // 3. Construct Final List
+  // Priority items first, then the rest of the standard list
   const priorityList = Array.from(priorities);
   const otherInstruments = INSTRUMENTS_SUNO.filter(i => !priorities.has(i));
 
   return [...priorityList, ...otherInstruments];
 };
 
+/**
+ * fuzzy search for genres
+ */
 export const suggestGenres = (query: string): string[] => {
   if (!query) return [];
   const lower = query.toLowerCase();
@@ -72,28 +75,31 @@ export const suggestGenres = (query: string): string[] => {
 
 /**
  * Validates the combination of Genre, Mood, and Vocals for semantic conflicts.
- * Now uses shared CONFLICT_PAIRS.
  */
 export const validateCombination = (genre: string, mood: string, vocals: string): CompatibilityCheck => {
   const warnings: string[] = [];
-  const combinedContext = `${genre} ${mood} ${vocals}`.toLowerCase();
-
-  // Vocals vs Genre Conflicts (Hardcoded Criticals)
   const g = genre.toLowerCase();
+  const m = mood.toLowerCase();
   const v = vocals.toLowerCase();
+
+  // 1. Mood vs Genre Conflicts
+  if ((g.includes('metal') || g.includes('punk') || g.includes('aggressive')) && (m.includes('calm') || m.includes('relaxing') || m.includes('lullaby'))) {
+    warnings.push(`Mismatch: '${genre}' is typically aggressive, but mood is '${mood}'.`);
+  }
+  if ((g.includes('ambient') || g.includes('chill')) && (m.includes('aggressive') || m.includes('high energy'))) {
+    warnings.push(`Mismatch: '${genre}' is typically calm, but mood is '${mood}'.`);
+  }
+
+  // 2. Vocals vs Genre Conflicts
   if ((g.includes('instrumental') || g.includes('ambient')) && v.length > 0 && !v.includes('instrumental')) {
     warnings.push(`Note: '${genre}' is usually instrumental, but vocal style '${vocals}' is specified.`);
   }
-  
-  // Shared Semantic Conflicts
-  CONFLICT_PAIRS.forEach(pair => {
-      const hasA = pair.a.find(k => combinedContext.includes(k));
-      const hasB = pair.b.find(k => combinedContext.includes(k));
-      
-      if (hasA && hasB) {
-          warnings.push(`Conflict: '${hasA}' clashes with '${hasB}' (${pair.message}).`);
-      }
-  });
+  if (g.includes('acoustic') && (v.includes('autotune') || v.includes('robotic'))) {
+    warnings.push(`Clash: 'Autotune' vocals in an 'Acoustic' genre is unusual.`);
+  }
+  if (g.includes('classical') && (v.includes('rap') || v.includes('scream'))) {
+    warnings.push(`Unusual: '${vocals}' in 'Classical' music.`);
+  }
 
   return {
     isCompatible: warnings.length === 0,
@@ -114,19 +120,35 @@ export const getSmartSuggestions = (
   const suggestions: Suggestion[] = [];
   const combinedContext = (genres.join(' ') + ' ' + mood + ' ' + instruments + ' ' + currentInput).toLowerCase();
 
-  // 0. Instrumental Mode Suggestions
+  // 0. Instrumental Mode Suggestions (ENHANCED)
   if (mode === 'instrumental') {
       const genreText = genres.join(' ').toLowerCase();
       
-      if (genreText.includes('jazz') && !combinedContext.includes('[improv]')) 
-          suggestions.push({ type: 'meta', value: '[Improv]', reason: 'Key for Jazz' });
+      // Jazz specific
+      if (genreText.includes('jazz') || genreText.includes('fusion') || genreText.includes('blues')) {
+          if (!combinedContext.includes('[improv]')) suggestions.push({ type: 'meta', value: '[Improv]', reason: 'Key for Jazz' });
+          if (!combinedContext.includes('[trading 4s]')) suggestions.push({ type: 'meta', value: '[Trading 4s]', reason: 'Solo exchange' });
+      }
       
-      if ((genreText.includes('rock') || genreText.includes('metal')) && !combinedContext.includes('[solo]')) 
-          suggestions.push({ type: 'meta', value: '[Guitar Solo]', reason: 'Genre staple' });
+      // Rock/Metal specific
+      if (genreText.includes('rock') || genreText.includes('metal')) {
+          if (!combinedContext.includes('[riff]')) suggestions.push({ type: 'meta', value: '[Main Riff]', reason: 'Central guitar motif' });
+          if (!combinedContext.includes('[solo]')) suggestions.push({ type: 'meta', value: '[Guitar Solo]', reason: 'Genre staple' });
+      }
       
-      if ((genreText.includes('electronic') || genreText.includes('edm')) && !combinedContext.includes('[drop]')) 
-          suggestions.push({ type: 'meta', value: '[Drop]', reason: 'Main climax' });
+      // Electronic specific
+      if (genreText.includes('electronic') || genreText.includes('edm') || genreText.includes('trap') || genreText.includes('house')) {
+          if (!combinedContext.includes('[drop]')) suggestions.push({ type: 'meta', value: '[Drop]', reason: 'Main climax' });
+          if (!combinedContext.includes('[bassline]')) suggestions.push({ type: 'meta', value: '[Bassline]', reason: 'Groove focus' });
+      }
+      
+      // Cinematic/Ambient specific
+      if (genreText.includes('cinematic') || genreText.includes('ambient') || genreText.includes('score')) {
+           if (!combinedContext.includes('[crescendo]')) suggestions.push({ type: 'meta', value: '[Crescendo]', reason: 'Dynamic build' });
+           if (!combinedContext.includes('[silence]')) suggestions.push({ type: 'meta', value: '[Silence]', reason: 'Dramatic pause' });
+      }
 
+      // General Instrumental
       if (!combinedContext.includes('[theme]')) {
           suggestions.push({ type: 'meta', value: '[Theme A]', reason: 'Structure motif' });
       }
@@ -138,31 +160,49 @@ export const getSmartSuggestions = (
   genres.forEach(genre => {
     const g = genre.toLowerCase();
     
-    if (g.includes('trap') && !combinedContext.includes('phonk')) {
-      suggestions.push({ type: 'instrument', value: 'Phonk Drum', reason: 'Modern Trap requirement' });
+    if (g.includes('trap') && !combinedContext.includes('808')) {
+      suggestions.push({ type: 'instrument', value: '808 Bass', reason: 'Essential for Trap' });
+    }
+    if (g.includes('hip hop') && !combinedContext.includes('phonk drum')) {
+      suggestions.push({ type: 'instrument', value: 'Phonk Drum', reason: 'Fixes drum sound in v4.5' });
+    }
+    if (g.includes('synthwave') && !combinedContext.includes('analog')) {
+      suggestions.push({ type: 'instrument', value: 'Analog Synth', reason: 'Adds warmth to Synthwave' });
     }
     if (g.includes('metal') && !combinedContext.includes('distorted')) {
       suggestions.push({ type: 'general', value: 'Distorted Guitars', reason: 'Key for Metal sound' });
+    }
+    if (g.includes('lo-fi') && !combinedContext.includes('vinyl')) {
+      suggestions.push({ type: 'general', value: 'Vinyl Crackle', reason: 'Adds Lo-fi texture' });
     }
   });
 
   // 2. Missing Elements
   if (genres.length > 0 && !mood) {
-    suggestions.push({ type: 'mood', value: 'Atmospheric', reason: 'Enhances vibe' });
+    // Suggest mood based on genre
+    const genreDef = GENRE_DATABASE.find(def => genres.some(g => g.toLowerCase() === def.name.toLowerCase()));
+    if (genreDef) {
+       // Heuristic: map characteristics to mood
+       suggestions.push({ type: 'mood', value: 'Atmospheric', reason: 'Enhances vibe' });
+    }
   }
 
-  // 3. Meta Tag Suggestions
+  // 3. Meta Tag Suggestions based on Lyric Content
   if (currentInput.includes('[Verse]') && !currentInput.includes('[Chorus]')) {
-      suggestions.push({ type: 'meta', value: '[Chorus]', reason: 'Standard Structure' });
+      suggestions.push({ type: 'meta', value: '[Chorus]', reason: 'Song structure usually needs a Chorus' });
   }
 
-  return suggestions.slice(0, 4);
+  return suggestions.slice(0, 4); // Limit to 4 suggestions
 };
 
+/**
+ * Suggests meta tags based on the last typed line or context.
+ */
 export const suggestMetaTags = (partialLine: string): string[] => {
   const lower = partialLine.toLowerCase();
   
   if (lower.startsWith('[')) {
+    // User is typing a tag
     const search = lower.replace('[', '');
     return sunoMetaTags
       .filter(t => t.name.startsWith(search))

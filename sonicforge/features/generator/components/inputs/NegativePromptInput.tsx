@@ -1,17 +1,15 @@
+
 import React, { memo } from 'react';
 import { MinusCircle } from 'lucide-react';
 import { cn } from '../../../../lib/utils';
-import Tooltip from '../../../../components/Tooltip';
-import { BuilderTranslation } from '../../../../types';
 
 interface NegativePromptInputProps {
   value: string;
   onChange: (value: string) => void;
   isPyriteMode: boolean;
-  t: BuilderTranslation;
 }
 
-const NegativePromptInput: React.FC<NegativePromptInputProps> = memo(({ value, onChange, isPyriteMode, t }) => {
+const NegativePromptInput: React.FC<NegativePromptInputProps> = memo(({ value, onChange, isPyriteMode }) => {
   const summaryClass = cn(
     "flex items-center gap-2 cursor-pointer text-xs font-bold uppercase tracking-wider transition-colors list-none",
     isPyriteMode ? 'text-purple-400/70 hover:text-purple-300' : 'text-zinc-500 hover:text-zinc-300'
@@ -28,7 +26,6 @@ const NegativePromptInput: React.FC<NegativePromptInputProps> = memo(({ value, o
       <summary className={summaryClass}>
         <MinusCircle className="w-4 h-4" />
         Negative Prompt (Optional)
-        <Tooltip content={t.tooltips.negativePrompt} />
         <span className="text-zinc-600 text-[10px] ml-auto opacity-0 group-open:opacity-100 transition-opacity">
           (e.g., no guitar, avoid clichés about rain)
         </span>

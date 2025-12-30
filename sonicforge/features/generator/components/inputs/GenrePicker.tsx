@@ -1,11 +1,10 @@
 
 import React, { useState, useMemo, memo } from 'react';
-import { Search, X, Zap, AlertTriangle, Music, Check, Sparkles } from 'lucide-react';
+import { Search, X, Zap, AlertTriangle, Music, Check } from 'lucide-react';
 import { GENRE_DATABASE } from '../../data/genreDatabase';
 import { BuilderTranslation } from '../../../../types';
 import { cn } from '../../../../lib/utils';
 import { sfx } from '../../../../lib/audio';
-import Tooltip from '../../../../components/Tooltip';
 
 interface GenrePickerProps {
   value: string[];
@@ -29,40 +28,6 @@ const GenrePicker: React.FC<GenrePickerProps> = memo(({ value, onChange, isPyrit
       ? value.filter(g => g !== genreName)
       : [...value, genreName];
     onChange(newSelection);
-  };
-
-  const handleRefine = () => {
-    sfx.play('secret');
-    let newSelection = [...value];
-    let added = false;
-
-    // Analyze currently selected genres to find relevant refinements
-    // We prioritize the first selected genre as the "Anchor"
-    const primary = value[0];
-    
-    if (primary) {
-        // Find the definition in the DB (either main name or subgenre)
-        const def = GENRE_DATABASE.find(g => g.name === primary || g.subGenres.includes(primary));
-        
-        if (def) {
-             // Create a pool of potential refinements: Subgenres + Characteristics
-             const pool = [...def.subGenres, ...def.characteristics];
-             
-             // Filter out what's already selected
-             const available = pool.filter(p => !newSelection.includes(p));
-             
-             if (available.length > 0) {
-                 // Pick one random refinement to add
-                 const pick = available[Math.floor(Math.random() * available.length)];
-                 newSelection.push(pick);
-                 added = true;
-             }
-        }
-    }
-
-    if (added) {
-        onChange(newSelection);
-    }
   };
   
   const filteredGenres = useMemo(() => {
@@ -106,31 +71,11 @@ const GenrePicker: React.FC<GenrePickerProps> = memo(({ value, onChange, isPyrit
 
   return (
     <div className="p-4 rounded-xl border border-white/5 bg-black/20 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
-            <Music className="w-3 h-3 mr-1.5" />
-            {t.expert.genre || "Genre"}
-            </label>
-            <Tooltip content={t.tooltips.genre} />
-        </div>
-        
-        {/* Refine Button */}
-        {value.length > 0 && (
-             <button 
-                onClick={handleRefine}
-                className={cn(
-                    "flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-all border group",
-                    isPyriteMode 
-                        ? "bg-purple-900/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:shadow-[0_0_10px_rgba(168,85,247,0.3)]" 
-                        : "bg-yellow-900/20 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/20 hover:shadow-[0_0_10px_rgba(234,179,8,0.3)]"
-                )}
-                title="Deepen specificity by adding sub-genres or characteristics"
-             >
-                 <Sparkles className="w-3 h-3 group-hover:scale-110 transition-transform" />
-                 Refine
-             </button>
-        )}
+      <div className="flex items-center">
+        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center">
+          <Music className="w-3 h-3 mr-1.5" />
+          {t.expert.genre || "Genre"}
+        </label>
       </div>
 
       {/* Selected Chips */}

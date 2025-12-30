@@ -1,5 +1,5 @@
 
-import { SongConcept, ExpertInputs, GeneratedPrompt, GroundingChunk, SongSection } from './generator';
+import { SongConcept, ExpertInputs, GeneratedPrompt, GroundingChunk } from './generator';
 import { Platform } from './core';
 
 export interface HistoryItem {
@@ -11,7 +11,7 @@ export interface HistoryItem {
   result: GeneratedPrompt;
   lyricSource: 'ai' | 'user';
   researchData: { text: string; sources: GroundingChunk[] } | null;
-  isFavorite?: boolean;
+  isFavorite?: boolean; // New: Favorite status
 }
 
 export interface Preset {
@@ -41,42 +41,26 @@ export interface Persona {
   id: string;
   name: string;
   prompt: string;
-  avatar?: string;
 }
 
 // --- GENRE TEMPLATES ---
 
 export interface TemplateVariation {
   name: string;
-  modifications: string;
-  apply?: (base: GenreTemplate) => Partial<GenreTemplate>;
+  modifications: string; // Description of changes
+  apply?: (base: GenreTemplate) => Partial<GenreTemplate>; // Optional logic override
 }
 
 export interface GenreTemplate {
   id: string;
   name: { en: string, pl: string };
   category: string;
-  stylePrompt: string;
+  stylePrompt: string; // The "Golden" style string
   bpmRange: [number, number];
   recommendedKeys: string[];
-  commonStructure: string[];
-  metaTags: string[];
+  commonStructure: string[]; // e.g. ["Intro", "Verse", "Chorus"]
+  metaTags: string[]; // e.g. ["[Solo]", "[Drop]"]
   tips: string[];
   variations: TemplateVariation[];
-  exampleOutput: string;
-}
-
-export interface StoryArc {
-  id: string;
-  name: { en: string; pl: string };
-  description: { en: string; pl: string };
-  structure: SongSection[];
-}
-
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'success';
-
-export interface CloudConfig {
-  url: string;
-  key: string;
-  syncId: string;
+  exampleOutput: string; // For preview
 }

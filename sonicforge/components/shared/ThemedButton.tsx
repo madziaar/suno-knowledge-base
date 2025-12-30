@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -9,7 +9,7 @@ interface ThemedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
   icon?: React.ReactNode;
 }
 
-const ThemedButton: React.FC<ThemedButtonProps> = memo(({ 
+const ThemedButton: React.FC<ThemedButtonProps> = ({ 
   variant = 'default', 
   className = '', 
   children, 
@@ -59,6 +59,6 @@ const ThemedButton: React.FC<ThemedButtonProps> = memo(({
       )}
     </button>
   );
-});
+};
 
 export default ThemedButton;

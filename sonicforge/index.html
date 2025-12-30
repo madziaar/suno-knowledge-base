@@ -5,51 +5,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#09090b" />
-    <title>Sonic Forge V5 // Neural Music Architect</title>
+    <title>Pyrite's Sonic Forge V5</title>
     <link rel="manifest" href="/manifest.json" />
-    <link rel="preconnect" href="https://aistudiocdn.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
       :root {
         --font-sans: 'Space Grotesk', sans-serif;
         --font-mono: 'JetBrains Mono', monospace;
+        
+        /* Base Colors */
         --bg-depth: #030304;
         
-        /* Base / Standard Theme */
-        --accent-primary: 234, 179, 8;
-        --accent-glow: 250, 204, 21;
-        --accent-rgb: 234, 179, 8;
+        /* Pyrite Theme (Purple/Pink) */
+        --pyrite-primary: 168, 85, 247;
+        --pyrite-glow: 236, 72, 153;
         
+        /* Standard Theme (Yellow/Zinc) */
+        --std-primary: 234, 179, 8;
+        --std-glow: 250, 204, 21;
+
+        /* Texture - Refined for Clarity */
         --noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        
+        /* Safe Areas */
         --safe-top: env(safe-area-inset-top);
         --safe-bottom: env(safe-area-inset-bottom);
         --safe-left: env(safe-area-inset-left);
         --safe-right: env(safe-area-inset-right);
-      }
-
-      /* Persona: Pyrite (Fiery Magenta/Violet) */
-      .persona-pyrite {
-        --accent-primary: 168, 85, 247;
-        --accent-glow: 236, 72, 153;
-        --accent-rgb: 168, 85, 247;
-      }
-
-      /* Persona: Shin (Black with Red Accents) */
-      .persona-shin {
-        --bg-depth: #000000;
-        --accent-primary: 239, 68, 68;
-        --accent-glow: 153, 27, 27;
-        --accent-rgb: 239, 68, 68;
-      }
-
-      /* Persona: Twin Flames (Mixed Violet/Red) */
-      .persona-twin_flames {
-        --accent-primary: 139, 92, 246;
-        --accent-glow: 244, 63, 94;
-        --accent-rgb: 190, 24, 93;
       }
 
       body {
@@ -60,25 +43,55 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overscroll-behavior-y: none;
-        transition: background-color 0.8s ease;
       }
-
-      #root ::selection {
-        background: rgba(var(--accent-primary), 0.2);
-        color: white;
-        text-shadow: 0 0 8px rgba(var(--accent-primary), 0.3);
-      }
-
-      ::-webkit-scrollbar { width: 4px; height: 4px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; transition: background 0.2s ease; }
-      ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.2); }
       
-      [class*="persona-"] ::-webkit-scrollbar-thumb { background-color: rgba(var(--accent-primary), 0.15); }
-      [class*="persona-"] ::-webkit-scrollbar-thumb:hover { background-color: rgba(var(--accent-primary), 0.4); }
+      /* Refined Selection Styles */
+      #root ::selection {
+        background: rgba(234, 179, 8, 0.2);
+        color: #fef08a;
+        text-shadow: 0 0 8px rgba(234, 179, 8, 0.3);
+      }
+      .pyrite-mode #root ::selection {
+        background: rgba(168, 85, 247, 0.25);
+        color: #e9d5ff;
+        text-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+      }
+      
+      /* Ultra-Slim Scrollbar (4px) */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        transition: background 0.2s ease;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      .pyrite-mode ::-webkit-scrollbar-thumb {
+        background-color: rgba(168, 85, 247, 0.15);
+      }
+      .pyrite-mode ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(168, 85, 247, 0.4);
+      }
 
-      @keyframes shimmer { 0% { transform: translateX(-150%); } 100% { transform: translateX(150%); } }
-      @keyframes glitch-text { 
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      
+      /* Animations */
+      @keyframes shimmer {
+        0% { transform: translateX(-150%); }
+        100% { transform: translateX(150%); }
+      }
+
+      @keyframes glitch-text {
         0% { transform: translate(0); clip-path: inset(0 0 0 0); }
         20% { transform: translate(-2px, 1px); clip-path: inset(10% 0 60% 0); }
         40% { transform: translate(2px, -1px); clip-path: inset(40% 0 10% 0); }
@@ -86,27 +99,45 @@
         80% { transform: translate(1px, -2px); clip-path: inset(10% 0 80% 0); }
         100% { transform: translate(0); clip-path: inset(0 0 0 0); }
       }
+
       .glitch-text:hover {
         animation: glitch-text 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-        color: rgb(var(--accent-glow));
-        text-shadow: 2px 0px 0px rgba(var(--accent-primary), 0.5), -2px 0px 0px rgba(255, 0, 255, 0.3);
+        color: rgb(var(--pyrite-glow));
+        text-shadow: 2px 0px 0px rgba(var(--pyrite-primary), 0.5), -2px 0px 0px rgba(255, 0, 255, 0.3);
       }
-      @keyframes scanline { 0% { transform: translateY(-10%); opacity: 0; } 10% { opacity: 0.8; } 100% { transform: translateY(120%); opacity: 0; } }
+
+      /* CRT Scanline Effect - Subtle */
+      @keyframes scanline {
+        0% { transform: translateY(-10%); opacity: 0; }
+        10% { opacity: 0.8; }
+        100% { transform: translateY(120%); opacity: 0; }
+      }
       .scanline::after {
-        content: ''; position: absolute; left: 0; right: 0; top: 0; height: 60px;
-        background: linear-gradient(to bottom, transparent, rgba(var(--accent-primary), 0.03), transparent);
-        animation: scanline 8s infinite linear; pointer-events: none; z-index: 10; mix-blend-mode: overlay;
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 60px;
+        background: linear-gradient(to bottom, transparent, rgba(var(--pyrite-primary), 0.03), transparent);
+        animation: scanline 8s infinite linear;
+        pointer-events: none;
+        z-index: 10;
+        mix-blend-mode: overlay;
       }
-      @keyframes spin-slow {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+      
+      /* Utility for custom scrollbars in components */
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
       }
-      .animate-spin-slow {
-        animation: spin-slow 12s linear infinite;
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.05);
       }
-      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); }
-      .custom-scrollbar:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); }
+      .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.15);
+      }
+
+      /* Safe Area Utilities */
       .pb-safe { padding-bottom: var(--safe-bottom); }
       .pt-safe { padding-top: var(--safe-top); }
       .pl-safe { padding-left: var(--safe-left); }
@@ -127,7 +158,13 @@
     "tailwind-merge": "https://aistudiocdn.com/tailwind-merge@^3.4.0",
     "zod": "https://aistudiocdn.com/zod@^3.22.4",
     "framer-motion": "https://aistudiocdn.com/framer-motion@^11.0.0",
-    "@/": "./"
+    "@components/": "./components/",
+    "@features/": "./features/",
+    "@services/": "./services/",
+    "@types": "./types/index.ts",
+    "@hooks/": "./hooks/",
+    "@contexts": "./contexts/index.ts",
+    "@data/": "./data/"
   }
 }
 </script>
@@ -137,7 +174,8 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js').catch(error => {});
+          navigator.serviceWorker.register('./service-worker.js')
+            .catch(error => {});
         });
       }
     </script>

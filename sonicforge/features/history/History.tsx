@@ -7,15 +7,21 @@ import HistoryCard from './components/HistoryCard';
 import HistoryCompare from './components/HistoryCompare';
 import ThemedButton from '../../components/shared/ThemedButton';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
-import { useHistoryState, useHistoryDispatch, useSettingsState, useUIDispatch } from '../../contexts';
+import { useHistory } from '../../contexts';
+import { useSettings } from '../../contexts';
 
-const History: React.FC = () => {
-  const { history } = useHistoryState();
-  const { toggleFavorite, loadFromHistory, deleteFromHistory, clearHistory, exportHistory } = useHistoryDispatch();
-  // Fix: Alias isOverclockedMode to isPyriteMode as the component logic expects isPyriteMode
-  const { isOverclockedMode: isPyriteMode, lang } = useSettingsState();
-  const { setActiveTab, showToast } = useUIDispatch();
-  
+interface HistoryProps {
+  lang: Language;
+  onLoad: (item: HistoryItem) => void;
+  onDelete: (id: string) => void;
+  onClear: () => void;
+  onExportAll: () => void;
+  onSwitchToForge: () => void;
+}
+
+const History: React.FC<HistoryProps> = ({ lang, onLoad, onDelete, onClear, onExportAll, onSwitchToForge }) => {
+  const { history, toggleFavorite } = useHistory(); // Consume context
+  const { isPyriteMode } = useSettings();
   const t = translations[lang].history;
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +32,7 @@ const History: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ height: 0, width: 0 });
   
+  // Memoized Formatters
   const numberFormat = useMemo(() => new Intl.NumberFormat(lang === 'pl' ? 'pl-PL' : 'en-US'), [lang]);
   
   const formatDate = useCallback((timestamp: number) => {
@@ -50,7 +57,7 @@ const History: React.FC = () => {
   const handleSelectForCompare = (id: string) => {
       setSelectedIds(prev => {
           if (prev.includes(id)) return prev.filter(i => i !== id);
-          if (prev.length >= 2) return [prev[1], id];
+          if (prev.length >= 2) return [prev[1], id]; // Keep max 2, shift oldest out
           return [...prev, id];
       });
   };
@@ -63,13 +70,10 @@ const History: React.FC = () => {
       };
   }, [selectedIds, history]);
 
-  const handleExportAll = useCallback(() => {
-    const result = exportHistory();
-    showToast(result.message, result.success ? 'success' : 'info');
-  }, [exportHistory, showToast]);
-
+  // Resize Observer for Virtual List
   useEffect(() => {
     if (!containerRef.current) return;
+    
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
         setDimensions({
@@ -78,17 +82,19 @@ const History: React.FC = () => {
         });
       }
     });
+    
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
   const Row = ({ index, style }: ListChildComponentProps) => {
     const item = filteredHistory[index];
+    // Adjust style to add padding
     const itemStyle = {
         ...style,
         left: Number(style.left) + 4,
-        width: Number(style.width) - 16,
-        height: Number(style.height) - 10,
+        width: Number(style.width) - 16, // account for scrollbar + padding
+        height: Number(style.height) - 10, // gap
         top: Number(style.top) + 5
     };
 
@@ -97,8 +103,8 @@ const History: React.FC = () => {
             key={item.id}
             item={item}
             formatDate={formatDate}
-            onLoad={loadFromHistory}
-            onDelete={deleteFromHistory}
+            onLoad={onLoad}
+            onDelete={onDelete}
             onToggleFavorite={toggleFavorite}
             onSelect={handleSelectForCompare}
             isSelected={selectedIds.includes(item.id)}
@@ -114,8 +120,10 @@ const History: React.FC = () => {
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-zinc-600 border-2 border-dashed border-zinc-800 rounded-2xl p-8">
         <Database className="w-16 h-16 mb-6 opacity-20" />
         <p className="text-xl font-bold text-zinc-300 mb-2">{t.empty}</p>
-        <p className="text-sm text-zinc-500 mb-8 max-w-xs text-center">{t.emptyDesc}</p>
-        <ThemedButton onClick={() => setActiveTab('forge')} className="px-6 py-3 text-sm">
+        <p className="text-sm text-zinc-500 mb-8 max-w-xs text-center">
+            {t.emptyDesc}
+        </p>
+        <ThemedButton onClick={onSwitchToForge} className="px-6 py-3 text-sm">
             <Wand2 className="w-4 h-4 mr-2" />
             {t.createFirst}
         </ThemedButton>
@@ -164,14 +172,14 @@ const History: React.FC = () => {
             </button>
 
             <button
-                onClick={handleExportAll}
+                onClick={onExportAll}
                 className="flex items-center text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-3 py-2 rounded-lg transition-colors border border-transparent hover:border-blue-900"
                 title="Export All Archives as JSON"
             >
                 <Download className="w-4 h-4" />
             </button>
             <button
-                onClick={clearHistory}
+                onClick={onClear}
                 className="flex items-center text-xs text-red-500 hover:text-red-400 hover:bg-red-500/10 px-3 py-2 rounded-lg transition-colors border border-transparent hover:border-red-900"
                 title={t.clear}
             >
@@ -190,12 +198,13 @@ const History: React.FC = () => {
                 height={dimensions.height}
                 width={dimensions.width}
                 itemCount={filteredHistory.length}
-                itemSize={160}
+                itemSize={160} // Height of HistoryCard + Gap
             >
                 {Row}
             </List>
         )}
         
+        {/* Comparison Floating Action Button */}
         {isCompareMode && selectedIds.length > 0 && (
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 shadow-xl rounded-full px-4 py-2 flex items-center gap-3 animate-in slide-in-from-bottom-4 z-20">
                 <span className="text-xs font-bold text-zinc-300">

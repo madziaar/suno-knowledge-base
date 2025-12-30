@@ -37,6 +37,7 @@ export const lintStructure = (text: string, lang: 'en' | 'pl' = 'en'): LintResul
   }
 
   // 2. BAD HABITS (Parentheses for Structure)
+  // v4.5 is strict about this.
   if (/\((intro|verse|chorus|bridge|outro|solo|instrumental|drop)\s*\d*\)/i.test(text)) {
     results.push({
       severity: 'error',
@@ -46,15 +47,46 @@ export const lintStructure = (text: string, lang: 'en' | 'pl' = 'en'): LintResul
     });
   }
 
-  // 3. V4.5 PIPE OPERATOR CHECK
-  if (/\[[^\]]+ [^\]]+\]/.test(text) && !text.includes('|')) {
-      results.push({
-          severity: 'info',
-          message: lang === 'pl' ? 'Wskazówka: Użyj | do oddzielenia modyfikatorów (np. [Chorus | Anthemic]).' : 'Tip: Use | to separate modifiers (e.g. [Chorus | Anthemic]).'
-      });
+  // 3. ARCHITECTURAL CHECKS
+  // Check for duplicate sections without content
+  const structuralTags = text.match(/\[(.*?)\]/g);
+  
+  if (structuralTags && structuralTags.length > 2) {
+      for(let i = 0; i < structuralTags.length - 1; i++) {
+          if (structuralTags[i] === structuralTags[i+1]) {
+             // Check if there is text between them
+             const idx1 = text.indexOf(structuralTags[i]);
+             const idx2 = text.indexOf(structuralTags[i+1], idx1 + 1);
+             const content = text.substring(idx1 + structuralTags[i].length, idx2).trim();
+             if (!content) {
+                 results.push({
+                     severity: 'warning',
+                     message: lang === 'pl' 
+                        ? `Pusta sekcja wykryta: ${structuralTags[i]}` 
+                        : `Empty section detected: ${structuralTags[i]}`
+                 });
+             }
+          }
+      }
+  }
+
+  // Section Variety Check
+  if (structuralTags) {
+      const types = new Set(structuralTags.map(t => t.toLowerCase().replace(/[^a-z]/g, '').replace(/\d+/g,'')));
+      // Verse, Chorus, Intro, Outro...
+      const hasChorus = Array.from(types).some(t => t.includes('chorus') || t.includes('hook') || t.includes('drop'));
+      const hasVerse = Array.from(types).some(t => t.includes('verse'));
+      
+      if (hasVerse && !hasChorus && structuralTags.length > 3) {
+          results.push({
+              severity: 'info',
+              message: lang === 'pl' ? 'Utwór ma wiele sekcji, ale brak Refrenu/Hooka.' : 'Song has multiple sections but lacks a Chorus/Hook.'
+          });
+      }
   }
 
   // 4. STYLE CHECKS
+  // Check for lowercase structural tags
   if (/\[(intro|verse|chorus|bridge|outro)\]/.test(text)) {
       results.push({
           severity: 'info',
