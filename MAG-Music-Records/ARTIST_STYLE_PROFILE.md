@@ -1,39 +1,44 @@
 # Artist Style Profile
 
-**Project:** MAG Hardcore Drill Vol. 1
-**Created:** 2025-12-31
+**Project:** MAG Afro-Spiritual Mixtape Vol. 1
+**Updated:** 2025-12-31
 
 ---
 
 ## Signature Sound
 
+### Genre
+**Afro-Spiritual Gospel Fusion**
+- Spiritual/Gospel foundation with soulful choir elements
+- Arabic Maqam MELODIES (oud, ney, vocal bends) — MUSIC ONLY, not lyrics
+- Guinea-Bissau / Upper West African percussion (gumbe, call-and-response)
+- Deep bass, modern drums
+- Spiritual, conscious, prayerful atmosphere
+
 ### Vocal Energy
-**Aggressive & Raw**
-- Hard-hitting delivery
-- Street energy
-- Intimidating presence
-- London road influence
+**Deep & Grounded (Male) + Melodic & Spiritual (Female)**
+- Male: Deep, grounded, London delivery, calm authority
+- Female: Melodic, spiritual, chorus carrier
+- 80% of tracks feature BOTH male and female vocals
 
 ### Lyrical Themes
-**Dark & Introspective**
-- Pain and struggle
-- Mental battles
-- Real talk
-- Authentic experiences
-
-### Hook Style
-**Catchy & Repetitive**
-- Simple phrases that stick
-- Easy to remember
-- Crowd-ready chants
-- Earworm potential
+**Conscious & Spiritual**
+- Consciousness & awareness
+- Discipline & inner strength
+- Inner peace & calm
+- Ancestral memory & roots
+- Faith without preaching
+- Calm authority
 
 ### Language Mix
-**75% English (London Slang) + 25% Portuguese**
-- Verses: English with London road slang
-- Choruses/Melodies: Portuguese
-- Creates unique UK-Lusophone fusion
-- International appeal with authentic roots
+**Bilingual: London English + Lisbon Portuguese**
+
+| Language | Origin | Usage |
+|----------|--------|-------|
+| English | London, UK | Verses, storytelling, grounded delivery |
+| Portuguese | Lisbon, Portugal | Choruses, hooks, chants (simple, global) |
+
+**NOTE:** Arabic is for MUSICAL SOUNDS only (oud, ney, maqam scales) — NOT for lyrics!
 
 ---
 
@@ -41,58 +46,69 @@
 
 Always include in Suno prompts:
 ```
-UK Drill, Aggressive, Dark, 140 BPM, Heavy 808s,
-London street, Raw vocals, Portuguese hook,
-Bilingual, Melancholic undertones, Hard-hitting
+Afro-Spiritual, Arabic Maqam sounds, Gumbe percussion, Deep bass,
+Male and Female vocals, Conscious, Spiritual, Bilingual,
+London English verses, Lisbon Portuguese chorus,
+Oud melody, Ney flute, Call and response, Ancestral, Meditation
 ```
 
 ## Vocal Direction
 
-| Section | Language | Energy | Style |
-|---------|----------|--------|-------|
-| Intro | English | Building | Spoken/low |
-| Verse 1 | English (London slang) | Aggressive | Rapid flow |
-| Pre-Chorus | Mix | Rising | Melodic transition |
-| Chorus | Portuguese | Peak | Catchy, sung |
-| Verse 2 | English (London slang) | Aggressive | Harder than V1 |
-| Chorus | Portuguese | Peak | Catchy, sung |
-| Bridge | Portuguese/English | Emotional | Introspective |
-| Outro | English | Fading | Statement |
+| Section | Language | Voice | Energy |
+|---------|----------|-------|--------|
+| Intro | Portuguese/Instrumental | Either | Meditative |
+| Verse 1 | English (London) | Male | Grounded |
+| Pre-Chorus | Portuguese | Female | Rising |
+| Chorus | Portuguese (Lisbon) | Both | Peak spiritual |
+| Verse 2 | English (London) | Male | Deeper |
+| Bridge | Portuguese | Female | Ethereal |
+| Outro | Mix (PT/EN) | Both | Peaceful |
 
 ---
 
-## Reference Influences
+## Track Vocal Requirements
 
-### Sound References
-- UK Drill (140 BPM, sliding 808s)
-- Portuguese melody influence
-- Dark atmospheric pads
-- Aggressive vocal delivery
+- **80% of tracks**: Male + Female vocals
+- **20% of tracks**: Can be single voice (spiritual solos)
+- Always select BOTH voice options in Suno when applicable
 
-### Lyrical Tone
-- Street poetry
-- Survival stories
-- Inner demons
-- Triumph through struggle
+---
+
+## Musical Elements (NOT lyrics)
+
+### Arabic Musical Sounds to Include:
+- Oud (stringed instrument melodies)
+- Ney (flute sounds)
+- Maqam scales (Arabic melodic modes)
+- Middle Eastern percussion patterns
+- Vocal bends and ornaments in the MUSIC
+
+### West African Elements:
+- Gumbe percussion (Guinea-Bissau)
+- Call and response patterns
+- Polyrhythmic drums
 
 ---
 
 ## Do's and Don'ts
 
 ### DO Include
-- London slang (mandem, ting, wagwan, etc.)
-- Portuguese melodic phrases in hooks
-- Dark, moody atmospheres
-- Real, authentic content
-- Simple but impactful hooks
+- Lisbon Portuguese (clear, simple, chant-like)
+- London English (conscious, grounded)
+- Arabic MUSICAL sounds (oud, ney, maqam — NOT language)
+- Call and response patterns
+- Spiritual, meditative atmosphere
+- Gumbe percussion patterns
 
 ### DON'T Include
-- Overly pop/happy vibes
+- Arabic lyrics/words
+- Aggressive/violent content
+- Explicit language
 - Generic American slang
-- Corny punchlines
-- Overproduced clean vocals
-- Inauthentic flexing
+- Preaching or religious lecturing
+- Complex Portuguese (keep it simple, global)
+- Harsh electronic sounds
 
 ---
 
-*This profile informs all WANDA agents when generating content*
+*This profile governs all track generation for MAG Afro-Spiritual Mixtape Vol. 1*

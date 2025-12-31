@@ -1,113 +1,156 @@
-# MAG Hardcore Drill Vol. 1 — Tracklist
+# MAG Afro-Spiritual Mixtape Vol. 1 — Tracklist
 
 ## Album Info
 
 | Field | Value |
 |-------|-------|
-| **Title** | MAG Hardcore Drill Vol. 1 |
+| **Title** | MAG Afro-Spiritual Mixtape Vol. 1 |
 | **Artist** | MAG Music Records |
-| **Tracks** | 7 |
-| **Genre** | Hardcore Drill / UK Drill / Trap |
-| **Explicit** | Yes |
-| **Lead Single** | Track 2 |
+| **Tracks** | 10 |
+| **Genre** | Afro-Spiritual Fusion (Arabic Maqam × Gumbe) |
+| **Explicit** | No |
+| **Languages** | English (London) + Portuguese (Lisbon) + Arabic |
+
+---
 
 ## Track Map
 
-| # | Working Title | Chorus Lang | Verse Lang | Voice | Club Tags | Status |
-|---|---------------|-------------|------------|-------|-----------|--------|
-| 1 | Intro | — | — | — | Ambient, Build | Pending |
-| 2 | **[Lead Single]** | EN | EN/Mix | Male | Banger, Drop | **START** |
-| 3 | TBD | EN | EN | Male | High Energy | Pending |
-| 4 | TBD | EN | EN/Mix | Female | Sensual, Grind | Pending |
-| 5 | TBD | EN | EN | Male | Aggressive | Pending |
-| 6 | TBD | EN | EN/Mix | Both | Club, Peak | Pending |
-| 7 | Outro | — | — | — | Fade, Closure | Pending |
+| # | Title | Chorus Lang | Verse Lang | Vocals | Energy | Status |
+|---|-------|-------------|------------|--------|--------|--------|
+| 1 | **"Ascensão" (Ascension)** | Portuguese | English/Arabic | Both | Spiritual Opener | Pending |
+| 2 | **"Desert Rose"** | Arabic/Portuguese | English | Both | Meditative | Pending |
+| 3 | **"Roots of Gold"** | Portuguese | English | Both | Conscious | Pending |
+| 4 | **"Midnight Oasis"** | Arabic | English/Portuguese | Both | Sensual/Adult | Pending |
+| 5 | **"Warrior's Prayer"** | Portuguese/Arabic | English | Male | Powerful | Pending |
+| 6 | **"Lua Cheia" (Full Moon)** | Portuguese | English/Arabic | Female | Ethereal | Pending |
+| 7 | **"Kingdom Come"** | English/Arabic | Portuguese | Both | Anthem | Pending |
+| 8 | **"Saudade Eterna"** | Portuguese | English | Both | Emotional | Pending |
+| 9 | **"Sacred Fire"** | Arabic/Portuguese | English | Both | Club/Hypnotic | Pending |
+| 10 | **"Paz Interior" (Inner Peace)** | Portuguese/Arabic | English | Both | Closing | Pending |
+
+---
 
 ## Track Details
 
-### Track 1: Intro
-- **Type:** Instrumental/Ambient intro
-- **Length:** 0:45-1:15
-- **Purpose:** Set the mood, build anticipation
-- **Notes:** Dark, atmospheric, builds to Track 2
-
-### Track 2: [Lead Single] — START HERE
-- **Type:** Full track (lead single)
-- **Length:** 2:45-3:30
-- **BPM:** 140
-- **Mood:** Aggressive, street, confident
-- **Hook:** Highly repeatable, instant impact
-- **Notes:** This is the flagship track. Must be strongest.
-
-### Track 3: TBD
-- **Type:** Full track
-- **Length:** 2:30-3:15
-- **BPM:** 140-145
-- **Mood:** High energy, relentless
-- **Notes:** Maintains energy from Track 2
-
-### Track 4: TBD
-- **Type:** Full track
-- **Length:** 3:00-3:30
-- **BPM:** 85-95
-- **Mood:** Sensual, slower grind
-- **Notes:** Change of pace, club versatility
-
-### Track 5: TBD
-- **Type:** Full track
-- **Length:** 2:30-3:15
-- **BPM:** 140-150
-- **Mood:** Peak aggression
-- **Notes:** Hardest track on the mixtape
-
-### Track 6: TBD
-- **Type:** Full track
+### Track 1: "Ascensão" (Ascension) — SPIRITUAL OPENER
+- **Type:** Full track (opener)
 - **Length:** 3:00-3:30
 - **BPM:** 95-100
-- **Mood:** Club anthem, crowd participation
-- **Notes:** Designed for peak club hours
+- **Mood:** Spiritual awakening, dawn rising
+- **Vocals:** Male + Female
+- **Hook:** Portuguese chant "Ascensão, elevação" (Ascension, elevation)
+- **Arabic:** Opening bismillah, spiritual phrases
 
-### Track 7: Outro
-- **Type:** Instrumental/Ambient outro
-- **Length:** 1:00-1:30
-- **Purpose:** Close the album, leave impression
-- **Notes:** Can incorporate elements from earlier tracks
+### Track 2: "Desert Rose"
+- **Type:** Full track
+- **Length:** 3:00-3:30
+- **BPM:** 90-95
+- **Mood:** Meditative, beautiful, journey
+- **Vocals:** Male + Female
+- **Hook:** Arabic melody + Portuguese response
+- **Notes:** Oud prominent, Maqam scales
+
+### Track 3: "Roots of Gold"
+- **Type:** Full track
+- **Length:** 2:45-3:15
+- **BPM:** 98-102
+- **Mood:** Ancestral pride, heritage
+- **Vocals:** Male + Female
+- **Hook:** Portuguese "Raízes de ouro" (Roots of gold)
+- **Notes:** Gumbe percussion heavy, call-and-response
+
+### Track 4: "Midnight Oasis"
+- **Type:** Full track (Adult/Sensual)
+- **Length:** 3:15-3:45
+- **BPM:** 85-90
+- **Mood:** Sensual, hypnotic, late night
+- **Vocals:** Male + Female
+- **Hook:** Arabic phrases, slow grind
+- **Notes:** Club track, darker atmosphere
+
+### Track 5: "Warrior's Prayer"
+- **Type:** Full track
+- **Length:** 3:00-3:30
+- **BPM:** 100-105
+- **Mood:** Strength, discipline, focus
+- **Vocals:** Male (primary), Female (chorus support)
+- **Hook:** Portuguese/Arabic prayer fusion
+- **Notes:** Most powerful track, conviction
+
+### Track 6: "Lua Cheia" (Full Moon)
+- **Type:** Full track
+- **Length:** 3:00-3:30
+- **BPM:** 88-92
+- **Mood:** Feminine energy, mystery, beauty
+- **Vocals:** Female (primary), Male (support)
+- **Hook:** Portuguese "Lua cheia me guia" (Full moon guide me)
+- **Notes:** Ethereal, dreamy
+
+### Track 7: "Kingdom Come"
+- **Type:** Full track (Anthem)
+- **Length:** 3:15-3:45
+- **BPM:** 102-108
+- **Mood:** Triumphant, building, peak
+- **Vocals:** Male + Female
+- **Hook:** English/Arabic power anthem
+- **Notes:** Biggest track, crowd ready
+
+### Track 8: "Saudade Eterna"
+- **Type:** Full track
+- **Length:** 3:00-3:30
+- **BPM:** 85-90
+- **Mood:** Nostalgia, longing, emotion
+- **Vocals:** Male + Female
+- **Hook:** Portuguese "Saudade que nunca acaba" (Longing that never ends)
+- **Notes:** Most emotional track
+
+### Track 9: "Sacred Fire"
+- **Type:** Full track (Club/Hypnotic)
+- **Length:** 3:30-4:00
+- **BPM:** 95-100
+- **Mood:** Hypnotic, ritualistic, dance
+- **Vocals:** Male + Female
+- **Hook:** Arabic chant with Portuguese response
+- **Notes:** Club peak hours, trance-like
+
+### Track 10: "Paz Interior" (Inner Peace) — CLOSER
+- **Type:** Full track (Closing)
+- **Length:** 3:30-4:00
+- **BPM:** 80-85
+- **Mood:** Peace, resolution, gratitude
+- **Vocals:** Male + Female
+- **Hook:** Portuguese/Arabic peaceful fusion
+- **Notes:** Album closer, meditation feel
+
+---
+
+## Production Order
+
+1. Track 1 "Ascensão" - Opener sets the tone
+2. Track 7 "Kingdom Come" - Anthem establishes range
+3. Track 5 "Warrior's Prayer" - Power track
+4. Track 3 "Roots of Gold" - Heritage
+5. Track 2 "Desert Rose" - Meditative
+6. Track 9 "Sacred Fire" - Club track
+7. Track 4 "Midnight Oasis" - Adult/sensual
+8. Track 6 "Lua Cheia" - Feminine energy
+9. Track 8 "Saudade Eterna" - Emotional
+10. Track 10 "Paz Interior" - Closer
+
+---
 
 ## Language Key
 
-| Code | Language |
-|------|----------|
-| EN | English |
-| Mix | Multilingual (specify in track notes) |
-| — | Instrumental |
+| Code | Language | Origin |
+|------|----------|--------|
+| EN | English | London, UK |
+| PT | Portuguese | Lisbon, Portugal |
+| AR | Arabic | Classical/Modern |
 
 ## Voice Key
 
 | Voice | Description |
 |-------|-------------|
-| Male | Male vocal, aggressive delivery |
-| Female | Female vocal, confident/seductive |
-| Both | Duet or alternating |
-| — | Instrumental |
-
-## Club Tags Reference
-
-| Tag | Meaning |
-|-----|---------|
-| Banger | High energy, main floor |
-| Drop | Heavy bass drop moment |
-| Grind | Slower, sensual |
-| Peak | Peak hours energy |
-| Ambient | Atmospheric, transitional |
-| Build | Energy building |
-| Fade | Gradual ending |
-
-## Production Order
-
-1. **Track 2** (Lead Single) — Complete first
-2. Track 5 (Hardest track) — Establish range
-3. Track 3 — Maintain energy
-4. Track 6 — Club anthem
-5. Track 4 — Slower track
-6. Track 1 — Intro (once sound is established)
-7. Track 7 — Outro (close the project)
+| Male | Deep, grounded, London delivery |
+| Female | Melodic, spiritual, ethereal |
+| Both | Duet, call-and-response, harmony |

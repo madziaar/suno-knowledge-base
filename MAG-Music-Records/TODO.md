@@ -8,17 +8,17 @@
 ## Current Sprint: Track 2 (Lead Single)
 
 ### Prompt
-- [ ] Generate Suno prompt for Track 2
+- [x] Generate Suno prompt for Track 2
 - [ ] Review and refine prompt
 - [ ] Test prompt in Suno
 
 ### Lyrics
-- [ ] Generate lyrics for Track 2
-- [ ] Review flow and hook
-- [ ] Finalize section markers
+- [x] Generate lyrics for Track 2
+- [x] Review flow and hook
+- [x] Finalize section markers
 
 ### Audio
-- [ ] Generate audio in Suno
+- [x] Generate audio in Suno
 - [ ] Review output quality
 - [ ] Export final version
 

@@ -1,0 +1,39 @@
+=== TRACK 1: "ASCENSÃO" (ASCENSION) - SUNO PROMPT ===
+
+PROJECT: MAG Afro-Spiritual Mixtape Vol. 1
+TRACK: 1 - Spiritual Opener
+TITLE: Ascensão (Ascension)
+DATE: 2025-12-31
+
+---
+
+## STYLE TAGS (Paste into Suno "Styles" box)
+
+Afro-Spiritual, Arabic Maqam melody, Oud, Ney flute, Gumbe percussion, 98 BPM, Deep bass, Male and Female vocals, Conscious, Spiritual, Bilingual, London English verses, Lisbon Portuguese chorus, Call and response, Meditative, Dawn rising, Ethereal, West African rhythms
+
+---
+
+## SUNO SETTINGS
+
+☑️ Custom Mode
+☑️ Male Vocals - SELECT
+☑️ Female Vocals - SELECT
+Title: Ascensão
+
+---
+
+## TRACK SPECIFICATIONS
+
+| Element | Specification |
+|---------|---------------|
+| BPM | 95-100 |
+| Duration | 3:00-3:30 |
+| Voice | Male + Female (BOTH selected) |
+| Languages | English (London) + Portuguese (Lisbon) |
+| Musical Sounds | Arabic (oud, ney, maqam) + Gumbe |
+| Mood | Spiritual awakening, dawn rising, elevation |
+| Energy | Building, meditative to triumphant |
+
+---
+
+STATUS: PROMPT COMPLETE

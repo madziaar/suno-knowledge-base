@@ -1,0 +1,95 @@
+=== TRACK 2: LEAD SINGLE - SUNO PROMPT ===
+
+PROJECT: MAG Hardcore Drill Vol. 1
+TRACK: 2 (Lead Single)
+DATE: 2025-12-31
+
+---
+
+## STYLE TAGS (Paste into Suno "Styles" box)
+
+UK Drill, Aggressive, Dark, 140 BPM, Heavy 808s, Male vocals, Raw delivery, London street energy, Portuguese melodic hook, Bilingual, Hard-hitting, Bass-heavy, Menacing, Confident, Banger, Club anthem
+
+---
+
+## TRACK SPECIFICATIONS
+
+| Element | Specification |
+|---------|---------------|
+| BPM | 140 |
+| Duration | 2:45-3:30 |
+| Voice | Male, aggressive |
+| Language | 75% English (London slang), 25% Portuguese (hook) |
+| Mood | Aggressive, street, confident |
+| Energy | High, banger, drop-heavy |
+
+---
+
+## STRUCTURE GUIDE
+
+[Intro] - 8 bars - Dark atmospheric build, anticipation
+[Verse 1] - 16 bars - English with London slang, aggressive flow
+[Pre-Chorus] - 4 bars - Energy building, transition
+[Chorus] - 8 bars - Portuguese hook, catchy & repetitive, PEAK ENERGY
+[Verse 2] - 16 bars - Harder than verse 1, more aggressive
+[Chorus] - 8 bars - Portuguese hook repeat
+[Bridge] - 8 bars - Introspective moment, bilingual
+[Chorus] - 8 bars - Final hook with ad-libs
+[Outro] - 4 bars - Fade with statement
+
+---
+
+## PRODUCTION NOTES
+
+### MUST INCLUDE:
+- Sliding 808s (UK Drill signature)
+- Dark atmospheric pads
+- Hi-hat rolls on offbeats
+- Bass drop moments
+- Raw, unpolished vocal energy
+- Portuguese melodic phrases in hook
+
+### AVOID:
+- Pop/happy vibes
+- Generic American slang
+- Overproduced clean vocals
+- Corny punchlines
+- Trap hi-hats (use drill patterns)
+
+---
+
+## HOOK REQUIREMENTS
+
+The hook MUST be:
+- Simple (3-5 words max per phrase)
+- In Portuguese
+- Instantly memorable
+- Crowd-ready (easy to chant)
+- Repeated 3x minimum
+
+Example Hook Energy:
+"[Portuguese phrase] - [Portuguese phrase]" (repeat)
+Think: aggressive but melodic, intimidating but catchy
+
+---
+
+## REFERENCE SOUND
+
+Think: UK Drill darkness meets Portuguese street poetry
+Energy: Like walking into a dark club with bass shaking walls
+Confidence: Not bragging, just stating facts
+Authenticity: Real talk, real struggle, real triumph
+
+---
+
+## READY FOR SUNO
+
+1. Open Suno in Custom mode
+2. Paste LYRICS (from track_02_lyrics.txt) into Lyrics box
+3. Paste STYLE TAGS (above) into Styles box
+4. Generate and review
+5. Save best version to 03_audio_exports/
+
+---
+
+STATUS: PROMPT COMPLETE - AWAITING LYRICS
