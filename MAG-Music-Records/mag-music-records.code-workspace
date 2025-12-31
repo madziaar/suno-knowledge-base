@@ -1,0 +1,159 @@
+{
+    "folders": [
+        {
+            "name": "MAG Music Records",
+            "path": "."
+        }
+    ],
+    "settings": {
+        // Workspace-specific Terminal Configuration
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+        // Workspace-specific Editor Settings
+        "editor.wordWrap": "on",
+        "editor.fontSize": 14,
+        "editor.fontFamily": "'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace",
+
+        // Workspace-specific File Settings
+        "files.encoding": "utf8",
+        "files.eol": "\r\n",
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+
+        // Workspace-specific Search Exclusions
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/*.mp3": true,
+            "**/*.wav": true,
+            "**/*.flac": true,
+            "**/*.aac": true,
+            "**/*.m4a": true,
+            "**/*.ogg": true,
+            "**/audio/**": true,
+            "**/masters/**": true,
+            "**/stems/**": true,
+            "**/bounces/**": true
+        },
+
+        // Workspace-specific File Associations
+        "files.associations": {
+            "*.md": "markdown",
+            "*.yaml": "yaml",
+            "*.yml": "yaml",
+            "*.lrc": "plaintext"
+        },
+
+        // Markdown Settings
+        "markdown.preview.breaks": true,
+
+        // Git Settings
+        "git.enableSmartCommit": true,
+        "git.autofetch": true
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Run Daily Check",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\scripts\\daily-check.ps1"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "Validate Track",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\scripts\\validate-track.ps1",
+                    "-TrackNumber",
+                    "${input:trackNumber}"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "Setup Hooks",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\scripts\\setup-hooks.ps1"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "Start File Router",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\scripts\\file-router.ps1"
+                ],
+                "problemMatcher": [],
+                "isBackground": true
+            },
+            {
+                "label": "Generate Metadata",
+                "type": "shell",
+                "command": "powershell.exe",
+                "args": [
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\scripts\\generate-metadata.ps1",
+                    "-TrackNumber",
+                    "${input:trackNumber}"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "Open Release Tracker",
+                "type": "shell",
+                "command": "code",
+                "args": [
+                    "${workspaceFolder}\\docs\\release_tracker.md"
+                ],
+                "problemMatcher": []
+            },
+            {
+                "label": "Open Tracklist",
+                "type": "shell",
+                "command": "code",
+                "args": [
+                    "${workspaceFolder}\\docs\\TRACKLIST.md"
+                ],
+                "problemMatcher": []
+            }
+        ],
+        "inputs": [
+            {
+                "id": "trackNumber",
+                "type": "promptString",
+                "description": "Enter the track number (e.g., 01, 02, 03):",
+                "default": "01"
+            }
+        ]
+    },
+    "extensions": {
+        "recommendations": [
+            "yzhang.markdown-all-in-one",
+            "redhat.vscode-yaml",
+            "ms-vscode.powershell",
+            "eamodio.gitlens",
+            "Gruntfuggly.todo-tree",
+            "esbenp.prettier-vscode"
+        ]
+    }
+}

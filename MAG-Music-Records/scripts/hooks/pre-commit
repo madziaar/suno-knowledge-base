@@ -1,0 +1,18 @@
+#!/bin/sh
+# Git pre-commit hook - calls PowerShell script on Windows
+# This file must have no extension for Git to recognize it
+
+# Determine script directory
+SCRIPT_DIR="$(dirname "$0")"
+
+# Check if running on Windows (Git Bash, MSYS, etc.)
+if command -v powershell.exe &> /dev/null; then
+    powershell.exe -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-commit.ps1"
+    exit $?
+elif command -v pwsh &> /dev/null; then
+    pwsh -ExecutionPolicy Bypass -File "$SCRIPT_DIR/pre-commit.ps1"
+    exit $?
+else
+    echo "PowerShell not found. Please install PowerShell."
+    exit 1
+fi

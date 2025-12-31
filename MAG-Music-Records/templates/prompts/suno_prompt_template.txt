@@ -1,0 +1,21 @@
+[Style: _____________]
+[Sub-genre: _____________]
+[BPM: ___]
+[Key: ___ major/minor]
+[Mood: _____________, _____________, _____________]
+[Energy: Low/Medium/High, describe curve]
+[Instruments:
+  - Bass: _____________
+  - Drums: _____________
+  - Synths: _____________
+  - Other: _____________
+]
+[Vocals:
+  - Gender: Male/Female/Both
+  - Style: _____________
+  - Effects: None/Autotune/Heavy processing
+  - Adlibs: None/Sparse/Frequent
+]
+[Structure: Intro - _____ - _____ - _____ - Outro]
+[Explicit: Yes/No]
+[Special Instructions: _____________]

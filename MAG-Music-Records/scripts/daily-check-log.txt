@@ -1,0 +1,43 @@
+================================================================================
+MAG MUSIC RECORDS - DAILY CHECK LOG
+================================================================================
+Date: 2025-12-31 18:42:25
+Project: MAG Hardcore Drill Vol. 1
+
+ASSET COUNTS:
+- Prompts: 0/7
+- Lyrics: 0/5
+- Descriptions: 0/7
+- Artwork: 0 files
+- Audio: 0 files
+
+ISSUES FOUND:
+- Naming Issues: 0
+- Misplaced Files: 0
+- Release Blockers: 20
+
+COMPLETION: 11%
+
+BLOCKERS:
+Track 01: Missing prompt
+Track 01: Missing description
+Track 02: Missing prompt
+Track 02: Missing lyrics
+Track 02: Missing description
+Track 03: Missing prompt
+Track 03: Missing lyrics
+Track 03: Missing description
+Track 04: Missing prompt
+Track 04: Missing lyrics
+Track 04: Missing description
+Track 05: Missing prompt
+Track 05: Missing lyrics
+Track 05: Missing description
+Track 06: Missing prompt
+Track 06: Missing lyrics
+Track 06: Missing description
+Track 07: Missing prompt
+Track 07: Missing description
+Missing album cover artwork
+
+================================================================================
