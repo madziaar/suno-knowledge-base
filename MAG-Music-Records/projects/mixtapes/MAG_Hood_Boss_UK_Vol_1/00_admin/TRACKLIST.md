@@ -27,14 +27,14 @@
 
 | # | Title | UK Equivalent | Theme | BPM | Key | Lead Instrument |
 |---|-------|---------------|-------|-----|-----|-----------------|
-| 01 | Hood Boss Intro | Boss arrival | Introduction, establishing dominance | 85 | Cm | Piano + Strings |
+| 01 | Intro | Boss arrival | Introduction, establishing dominance | 85 | Cm | Piano + Strings |
 | 02 | Real Ones | Loyalty anthem | Trust, inner circle | 88 | Gm | Brass + Piano |
-| 03 | Stack Paper | Wealth anthem | Money, hustle, success | 90 | Am | Synth + Strings |
+| 03 | Stacks | Wealth anthem | Money, hustle, success | 90 | Am | Synth + Strings |
 | 04 | Road Love | Street romance | Loyalty, relationship | 82 | Fm | Piano + Pads |
 | 05 | Deep Bass | Sound culture | Bass, music, vibes | 92 | Dm | Bass-led + Keys |
-| 06 | If They Knew | Vulnerability | Behind the success | 80 | Em | Piano solo |
-| 07 | Pure Essence | Authenticity | Staying real, origins | 88 | Cm | Strings + Choir |
-| 08 | Stay That Way | Consistency | Values, principles | 85 | Gm | Organ + Piano |
+| 06 | Unknown | Vulnerability | Behind the success | 80 | Em | Piano solo |
+| 07 | Essence | Authenticity | Staying real, origins | 88 | Cm | Strings + Choir |
+| 08 | Steady | Consistency | Values, principles | 85 | Gm | Organ + Piano |
 | 09 | Cornerstone | Foundation | Faith, unshakeable | 90 | Am | Brass fanfare |
 | 10 | Blood Ties | Family loyalty | Brotherhood, family | 85 | Dm | Strings + Piano |
 | 11 | Flames | Competition | Enemies burn, rising | 95 | Fm | Aggressive brass |
@@ -59,7 +59,6 @@
 - **Allow it** - let it go, stop
 - **Peak** - bad situation, unfortunate
 - **Gwop/Ps** - money
-- **Skeng** - weapon (use sparingly)
 - **On job** - working
 - **Suttin'** - something
 - **Mad ting** - crazy situation
@@ -76,7 +75,7 @@
 
 ## TRACK DETAILS
 
-### Track 01: Hood Boss Intro
+### Track 01: Intro
 **Theme:** Boss arrival, establishing dominance
 **Vibe:** Cinematic intro, rising energy
 **Vocals:** Deep, measured, commanding
@@ -90,7 +89,7 @@
 **Key Lines:** Day ones, mandem, trust
 **UK Adaptation:** Real g's, day one bredrin
 
-### Track 03: Stack Paper
+### Track 03: Stacks
 **Theme:** Wealth accumulation
 **Vibe:** Flex, success
 **Vocals:** Boastful, celebratory
@@ -111,21 +110,21 @@
 **Key Lines:** Bass, sound, vibes
 **UK Adaptation:** UK bass culture, raves, sound systems
 
-### Track 06: If They Knew
+### Track 06: Unknown
 **Theme:** Vulnerability behind success
 **Vibe:** Introspective, emotional
 **Vocals:** Vulnerable, honest
 **Key Lines:** Struggles, pressure, loneliness
 **UK Adaptation:** What mandem don't see
 
-### Track 07: Pure Essence
+### Track 07: Essence
 **Theme:** Staying authentic
 **Vibe:** Confident, grounded
 **Vocals:** Wise, experienced
 **Key Lines:** Real recognize real, essence
 **UK Adaptation:** Keep it 100, original ting
 
-### Track 08: Stay That Way
+### Track 08: Steady
 **Theme:** Consistency, values
 **Vibe:** Motivational, steady
 **Vocals:** Assured, wise
@@ -177,6 +176,6 @@ track_[NN]_[short_name]_[type].[ext]
 ```
 
 Examples:
-- `track_01_hood_boss_intro_prompt.txt`
-- `track_01_hood_boss_intro_lyrics.txt`
+- `track_01_intro_prompt.txt`
+- `track_01_intro_lyrics.txt`
 - `track_02_real_ones_prompt.txt`

@@ -60,7 +60,6 @@ The sound should feel like Rick Ross performing in London - same tempo, same wei
 - **Big man ting** - serious matters
 - **You know the vibes** - you understand
 - **Suttin'** - something
-- **Skeng** - weapon (use sparingly)
 
 ### AVOID (Dated/American):
 - "Lit", "Gang gang", "Finna" (American)
@@ -71,14 +70,14 @@ The sound should feel like Rick Ross performing in London - same tempo, same wei
 
 | # | Title | Theme | BPM | Key |
 |---|-------|-------|-----|-----|
-| 01 | Hood Boss Intro | Boss arrival anthem | 85 | Cm |
+| 01 | Intro | Boss arrival anthem | 85 | Cm |
 | 02 | Real Ones | Loyalty, brotherhood | 88 | Gm |
-| 03 | Stack Paper | Wealth, success | 90 | Am |
+| 03 | Stacks | Wealth, success | 90 | Am |
 | 04 | Road Love | Street romance | 82 | Fm |
 | 05 | Deep Bass | UK bass culture | 92 | Dm |
-| 06 | If They Knew | Vulnerability | 80 | Em |
-| 07 | Pure Essence | Authenticity | 88 | Cm |
-| 08 | Stay That Way | Consistency | 85 | Gm |
+| 06 | Unknown | Vulnerability | 80 | Em |
+| 07 | Essence | Authenticity | 88 | Cm |
+| 08 | Steady | Consistency | 85 | Gm |
 | 09 | Cornerstone | Foundation, faith | 90 | Am |
 | 10 | Blood Ties | Family loyalty | 85 | Dm |
 | 11 | Flames | Competition | 95 | Fm |

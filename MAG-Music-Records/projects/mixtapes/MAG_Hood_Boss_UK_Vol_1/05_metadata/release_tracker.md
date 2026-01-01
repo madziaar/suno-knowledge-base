@@ -10,14 +10,14 @@
 
 | # | Title | Prompt | Lyrics | Audio | QC | Description | Release |
 |---|-------|--------|--------|-------|----|-----------|----|
-| 01 | Hood Boss Intro | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
+| 01 | Intro | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 02 | Real Ones | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
-| 03 | Stack Paper | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
+| 03 | Stacks | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 04 | Road Love | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 05 | Deep Bass | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
-| 06 | If They Knew | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
-| 07 | Pure Essence | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
-| 08 | Stay That Way | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
+| 06 | Unknown | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
+| 07 | Essence | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
+| 08 | Steady | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 09 | Cornerstone | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 10 | Blood Ties | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
 | 11 | Flames | [x] | [x] | [ ] | [ ] | [ ] | [ ] |
