@@ -12,18 +12,20 @@ Quick reference for all available agents in MAG Music Records.
                     │   (Central Router)   │
                     └──────────┬───────────┘
                                │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-        ▼                      ▼                      ▼
-┌───────────────┐    ┌─────────────────┐    ┌───────────────┐
-│  WANDA Mode   │    │  Utility Mode   │    │  Reference    │
-│    Agents     │    │    Agents       │    │  Documents    │
-├───────────────┤    ├─────────────────┤    ├───────────────┤
-│ PromptSmith   │    │ QualityGate     │    │ SOURCE_OF_    │
-│ Lyricist      │    │ ReleaseOps      │    │   TRUTH.md    │
-│ DescWriter    │    │ RepoOps         │    │ release_      │
-│               │    │                 │    │   tracker.md  │
-└───────────────┘    └─────────────────┘    └───────────────┘
+   ┌───────────────┬───────────┼───────────┬───────────────┐
+   │               │           │           │               │
+   ▼               ▼           ▼           ▼               ▼
+┌─────────┐  ┌──────────┐  ┌────────┐  ┌─────────┐  ┌──────────┐
+│  WANDA  │  │Production│  │Utility │  │ Quality │  │Reference │
+│  Mode   │  │  Agents  │  │Agents  │  │ Agents  │  │Documents │
+├─────────┤  ├──────────┤  ├────────┤  ├─────────┤  ├──────────┤
+│Prompt-  │  │BeatDoctor│  │Release │  │Quality- │  │SOURCE_OF_│
+│  Smith  │  │HumanTouch│  │  Ops   │  │  Gate   │  │TRUTH.md  │
+│Lyricist │  │VocalCoach│  │RepoOps │  │Culture- │  │release_  │
+│Desc-    │  │          │  │        │  │  Check  │  │tracker.md│
+│  Writer │  │          │  │        │  │Mix-     │  │          │
+│         │  │          │  │        │  │Engineer │  │          │
+└─────────┘  └──────────┘  └────────┘  └─────────┘  └──────────┘
 ```
 
 All requests flow through the Orchestrator, which checks status, validates prerequisites, and routes to the appropriate agent.
@@ -32,6 +34,7 @@ All requests flow through the Orchestrator, which checks status, validates prere
 
 ## Agent Overview
 
+### Core Agents
 | Agent | Activation | Purpose | Mode |
 |-------|------------|---------|------|
 | [Orchestrator](orchestrator.md) | *auto* | Central routing hub | Utility |
@@ -41,6 +44,15 @@ All requests flow through the Orchestrator, which checks status, validates prere
 | [DescWriter](descwriter.md) | `WANDA: Description` | Track descriptions | WANDA |
 | [QualityGate](qualitygate.md) | `@qc` | Quality control | Utility |
 | [ReleaseOps](releaseops.md) | `@release` | Distribution prep | Utility |
+
+### Production Enhancement Agents (NEW)
+| Agent | Activation | Purpose | Makes Music Less AI |
+|-------|------------|---------|---------------------|
+| [BeatDoctor](beatdoctor.md) | `@beat` | Sound design, instrumentation, reference tracks | Unique sounds per track |
+| [HumanTouch](humantouch.md) | `@humanize` | De-robotize lyrics, add imperfections | Natural speech patterns |
+| [VocalCoach](vocalcoach.md) | `@vocals` | Ad-libs, delivery notes, energy curves | Professional vocal direction |
+| [CultureCheck](culturecheck.md) | `@culture` | Regional slang accuracy, authenticity | Believable content |
+| [MixEngineer](mixengineer.md) | `@mix` | Post-production notes, EQ suggestions | Professional polish |
 
 ---
 
@@ -84,18 +96,33 @@ Utility agents provide structured reports and actions.
 
 ## Workflow Dependency Chain
 
+### Standard Workflow
 ```
 PLANNING → PROMPT → LYRICS → AUDIO → QC → DESCRIPTION → METADATA → RELEASE
                                           │
                                           └── Each stage requires previous stage complete
 ```
 
+### Enhanced Workflow (with Production Agents)
+```
+BEATDOCTOR → PROMPTSMITH → LYRICIST → HUMANTOUCH → VOCALCOACH → SUNO
+                                           │            │
+                                     CULTURECHECK  ─────┘
+                                           │
+                                        SUNO OUTPUT → MIXENGINEER → QC
+```
+
 | Stage | Agent | Prerequisite |
 |-------|-------|--------------|
-| Prompt | PromptSmith | None |
+| Sonic Blueprint | BeatDoctor | None (runs first for album planning) |
+| Prompt | PromptSmith | Sonic blueprint (optional) |
 | Lyrics | Lyricist | Prompt exists |
+| Humanize | HumanTouch | Lyrics exist |
+| Vocal Direction | VocalCoach | Humanized lyrics |
+| Culture Audit | CultureCheck | Humanized lyrics |
+| Mix Assessment | MixEngineer | Suno audio generated |
 | Description | DescWriter | Lyrics exist |
-| QC | QualityGate | Prompt + Lyrics + Description |
+| QC | QualityGate | All components |
 | Release | ReleaseOps | QC Pass |
 
 ---
@@ -108,13 +135,20 @@ All agent definitions are stored in `.claude/agents/`:
 .claude/agents/
 ├── index.md              # This file
 ├── SOURCE_OF_TRUTH.md    # Canonical definitions
-├── orchestrator.md       # Central router (NEW)
+├── orchestrator.md       # Central router
 ├── repo-ops.md           # RepoOps agent
 ├── promptsmith.md        # PromptSmith agent
 ├── lyricist.md           # Lyricist agent
 ├── descwriter.md         # DescWriter agent
 ├── qualitygate.md        # QualityGate agent
-└── releaseops.md         # ReleaseOps agent
+├── releaseops.md         # ReleaseOps agent
+│
+│   # Production Enhancement Agents
+├── beatdoctor.md         # Sound design & instrumentation
+├── humantouch.md         # De-robotize lyrics
+├── vocalcoach.md         # Vocal delivery guidance
+├── culturecheck.md       # Regional authenticity
+└── mixengineer.md        # Post-production notes
 ```
 
 ---

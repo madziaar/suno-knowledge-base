@@ -2,6 +2,7 @@
 
 **Project:** MAG Afro-Spiritual Mixtape Vol. 1
 **Updated:** 2025-12-31
+**Version:** 2.0 (Refined Language Balance)
 
 ---
 
@@ -10,15 +11,15 @@
 ### Genre
 **Afro-Spiritual Gospel Fusion**
 - Spiritual/Gospel foundation with soulful choir elements
-- Arabic Maqam MELODIES (oud, ney, vocal bends) — MUSIC ONLY, not lyrics
-- Guinea-Bissau / Upper West African percussion (gumbe, call-and-response)
-- Deep bass, modern drums
+- Arabic Maqam MELODIES (oud solo, ney flute intro, vocal bends) — MUSIC ONLY
+- West African percussion (gumbe, djembe breakdown, call-and-response)
+- Deep bass, live drums, lo-fi warmth
 - Spiritual, conscious, prayerful atmosphere
 
 ### Vocal Energy
 **Deep & Grounded (Male) + Melodic & Spiritual (Female)**
-- Male: Deep, grounded, London delivery, calm authority
-- Female: Melodic, spiritual, chorus carrier
+- Male: Deep, grounded, raspy, calm authority — ENGLISH verses/storytelling
+- Female: Melodic, spiritual, belted/whispered — PORTUGUESE hooks/chants
 - 80% of tracks feature BOTH male and female vocals
 
 ### Lyrical Themes
@@ -31,12 +32,22 @@
 - Calm authority
 
 ### Language Mix
-**Bilingual: London English + Lisbon Portuguese**
+**80% English / 20% Portuguese (Strategic Placement)**
 
-| Language | Origin | Usage |
-|----------|--------|-------|
-| English | London, UK | Verses, storytelling, grounded delivery |
-| Portuguese | Lisbon, Portugal | Choruses, hooks, chants (simple, global) |
+| Language | Percentage | Usage |
+|----------|------------|-------|
+| English | 80% | All verses, storytelling, bridges |
+| Portuguese | 20% | Hooks, chants, mantras (memorable phrases only) |
+
+### Core Portuguese Phrases (USE ONLY THESE)
+| Phrase | Meaning | Use In |
+|--------|---------|--------|
+| Paz interior | Inner peace | Track 10 hook |
+| Ascensão | Ascension | Track 1 hook |
+| Obrigado | Thank you | Outros, gratitude moments |
+| Saudade | Longing | Track 8 hook |
+| Fogo sagrado | Sacred fire | Track 9 hook |
+| Lua cheia | Full moon | Track 6 hook |
 
 **NOTE:** Arabic is for MUSICAL SOUNDS only (oud, ney, maqam scales) — NOT for lyrics!
 
@@ -56,13 +67,23 @@ Oud melody, Ney flute, Call and response, Ancestral, Meditation
 
 | Section | Language | Voice | Energy |
 |---------|----------|-------|--------|
-| Intro | Portuguese/Instrumental | Either | Meditative |
-| Verse 1 | English (London) | Male | Grounded |
-| Pre-Chorus | Portuguese | Female | Rising |
-| Chorus | Portuguese (Lisbon) | Both | Peak spiritual |
-| Verse 2 | English (London) | Male | Deeper |
-| Bridge | Portuguese | Female | Ethereal |
-| Outro | Mix (PT/EN) | Both | Peaceful |
+| Intro | Instrumental/Humming | Either | Meditative |
+| Verse 1 | English | Male | Grounded, storytelling |
+| Pre-Chorus | English | Female | Rising |
+| Chorus | English + PT hook | Both | Peak spiritual |
+| Verse 2 | English | Male | Deeper, raspy |
+| Bridge | English | Female | Ethereal, whispered |
+| Outro | English + "Obrigado" | Both | Peaceful, grateful |
+
+## Track Energy Arc
+
+| Tracks | Energy | Mood |
+|--------|--------|------|
+| 1-2 | Meditative | Spiritual openers |
+| 3-5 | Building | Conscious, powerful |
+| 6-7 | Peak | Anthem, hypnotic |
+| 8-9 | Sensual | Adult/club tracks |
+| 10 | Peaceful | Gratitude closer |
 
 ---
 
