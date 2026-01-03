@@ -2,15 +2,75 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## OPERATING PRINCIPLES — MANDATORY
+
+These principles are **enforced by default**. Do not skip them unless the user explicitly overrides.
+
+### 1. Interview Before Execution
+**NEVER assume requirements.** Before creating new content (tracks, albums, features):
+- Ask clarifying questions about intent, constraints, and expectations
+- Confirm what "done" looks like
+- Identify any exceptions to standard rules
+
+**Triggers for interview mode:**
+- New album or project creation
+- First-time track generation
+- Ambiguous or open-ended requests
+- Any request involving style deviations
+- User says: `/interview`, `let's plan`, `what do you need to know?`
+
+### 2. Spec Before Building
+**NEVER execute without a spec.** For non-trivial work:
+- Write requirements to disk at `00_admin/specs/SPEC_[name].md`
+- Include: deliverable, constraints, exceptions, acceptance criteria
+- Reference: style guides, compliance rules
+
+**Bypass only when:**
+- User provides explicit, complete requirements
+- Work is a simple revision to existing content
+- User says: `skip spec`, `just do it`, `WANDA:`
+
+### 3. Clarify Before Assuming
+When uncertain:
+- ASK, don't guess
+- Present options with tradeoffs
+- Wait for confirmation before proceeding
+
+### 4. Quality Over Speed
+- Check compliance BEFORE generating content
+- Run mental QC during generation
+- Flag potential issues proactively
+
+---
+
+## Quick Commands for Workflow Control
+
+| User Says | Claude Does |
+|-----------|-------------|
+| `/interview` | Enter interview mode, ask clarifying questions |
+| `/spec` | Write spec to disk, request approval |
+| `approve` / `proceed` | Begin execution from spec |
+| `skip spec` | Bypass spec, execute directly (user takes responsibility) |
+| `WANDA:` | Raw output mode, no discussion |
+| `pause` | Stop current work, await further instruction |
+
+---
+
 ## Project Overview
 
 **MAG Music Records** — Professional music production workflow for Suno AI content creation.
 
 **Foundation Sound:** Rick Ross "Hood Billionaire" Luxury Trap (74-96 BPM, orchestral, heavy 808s)
 
-**Active Projects:**
+**Active Projects:** (in `projects/mixtapes/`)
 - `MAG_Hood_Boss_Vol_1` — Portuguese luxury trap (12 tracks)
 - `MAG_Hood_Boss_UK_Vol_1` — UK English luxury trap (12 tracks)
+- `MAG_Refined_Vol_1` — UK Upper Class Reggae Fusion R&B EP (6 tracks)
+- `MAG_Refined_PT_Vol_1` — Portuguese Upper Class Reggae Fusion R&B EP (6 tracks) **[NEW]**
+
+**Project Detection:** Check `project_state.json` in project folder, or ask user which project.
 
 ---
 
@@ -58,7 +118,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `/lyrics [N]` | Generate lyrics (WANDA mode) |
 | `/desc [N]` | Generate description (max 1000 chars) |
 
-### Suno Automation
+### Suno Automation (requires Claude-in-Chrome MCP)
 | Command | Purpose |
 |---------|---------|
 | `/suno` | Open Suno, prepare workspace |
@@ -77,10 +137,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `/cover-album` | Generate album cover art |
 | `/upload-cover [N]` | Upload cover to Suno for track N |
 
+### Workflow Control
+| Command | Purpose |
+|---------|---------|
+| `/interview` | Enter interview mode, gather requirements |
+| `/spec [name]` | Create spec document, request approval |
+
 ### Management
 | Command | Purpose |
 |---------|---------|
 | `/status` | Show project progress |
+| `/audioqa [file]` | Automated audio technical analysis |
 | `/qc [N]` | Quality control check |
 | `/qc all` | QC all tracks |
 | `/release [N]` | Prepare track for distribution |
@@ -118,7 +185,7 @@ For creating new albums with regional/language variations:
 3. **Create project folder:** `projects/mixtapes/MAG_[Name]_Vol_[N]/`
 4. **Generate content:** Prompts → Lyrics → Suno → QC
 
-**Available variations:** `UK_ENGLISH` (more can be added)
+**Available variations:** `UK_UPPER_CLASS`, `PT_UPPER_CLASS`
 
 **Quick start:** `docs/ALBUM_FACTORY/NEW_ALBUM_PROMPT.md`
 
@@ -135,6 +202,7 @@ Production enhancement agents for professional quality output:
 | `@vocals` | VocalCoach | Ad-libs, delivery notes, energy curves |
 | `@culture` | CultureCheck | Regional slang accuracy, authenticity |
 | `@mix` | MixEngineer | Post-production notes, EQ suggestions |
+| `@audioqa` | AudioQA | Technical audio analysis, QA reports |
 | `@qc` | QualityGate | Quality control checklist |
 | `@release` | ReleaseOps | Distribution preparation |
 | `@repo` | RepoOps | Repository maintenance |
@@ -151,6 +219,7 @@ Agent definitions: `.claude/agents/`
 | `docs/MASTER_STYLE_GUIDE.md` | Canonical sound identity (Rick Ross foundation) |
 | `docs/SUNO_AI_GUIDE.md` | Suno AI prompting best practices |
 | `docs/ALBUM_FACTORY/README.md` | Album factory system guide |
+| `docs/audio_qa_playbook.md` | Audio QA system guide |
 | `.claude/commands/*.md` | Slash command definitions |
 | `.claude/agents/index.md` | Agent system overview |
 
@@ -183,6 +252,10 @@ Agent definitions: `.claude/agents/`
     ↓
 /download N                 # Download final audio
     ↓
+/audioqa [file]             # Technical audio analysis
+    ↓
+Human ear review            # Listen to flagged items
+    ↓
 /qc N                       # Quality control check
     ↓
 /release N                  # Prepare for distribution
@@ -191,6 +264,36 @@ Agent definitions: `.claude/agents/`
 **Batch workflow:**
 ```
 /track 1-12 → /generate-all → /select-all → /extend-all → /download all → /release album
+```
+
+**Parallel Agent Batch Processing (Faster):**
+```
+1. Launch parallel agents for prompts (2-3 tracks per agent)
+2. Launch parallel agents for lyrics (2-3 tracks per agent)
+3. Generate all in Suno (browser automation)
+4. Generate covers in Leonardo.ai (browser automation)
+5. Download covers from Leonardo.ai
+6. Select favorites → Create Suno playlist
+7. Download favorites → Release
+```
+
+---
+
+## Cover Art Workflow (Leonardo.ai)
+
+```
+1. Navigate to app.leonardo.ai/image-generation
+2. Set: Model=Lucid Origin, Size=1024x1024 (1:1), Style=Dynamic
+3. Enter prompt based on track theme
+4. Generate → Download → Save to 04_artwork/
+5. Use /upload-cover [N] to upload to Suno, or keep for distribution only
+```
+
+**Image Prompt Template:**
+```
+[Subject/Scene], [Mood], luxury aesthetic, cinematic lighting,
+[Color palette], high contrast, professional photography style,
+[Special elements], 8K quality
 ```
 
 ---
@@ -249,28 +352,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-hooks.ps1
 
 ---
 
-## Command Files
+## Architecture Notes
 
-All slash commands defined in `.claude/commands/`:
-```
-.claude/commands/
-├── track.md        # /track - Full track workflow
-├── prompt.md       # /prompt - Generate Suno prompt
-├── lyrics.md       # /lyrics - Generate lyrics
-├── desc.md         # /desc - Generate description
-├── status.md       # /status - Project status
-├── qc.md           # /qc - Quality control
-├── suno.md         # /suno - Open Suno workspace
-├── style.md        # /style - Artist style profile
-├── idea.md         # /idea - Add creative idea
-├── release.md      # /release - Release preparation
-├── generate.md     # /generate - Generate track in Suno
-├── generate-all.md # /generate-all - Batch generate
-├── listen.md       # /listen - Play versions
-├── select.md       # /select - Select best version
-├── extend.md       # /extend - Extend to full length
-├── download.md     # /download - Download from Suno
-├── cover.md        # /cover - Generate track cover art
-├── cover-album.md  # /cover-album - Generate album cover
-└── upload-cover.md # /upload-cover - Upload cover to Suno
-```
+- **Commands** (`.claude/commands/`): Define slash command behavior and workflows
+- **Agents** (`.claude/agents/`): Specialized roles with `@` activation (e.g., `@qc`, `@beat`)
+- **Browser automation**: Suno/Leonardo commands use Claude-in-Chrome MCP tools
+- **State tracking**: `project_state.json` tracks per-track progress within each project

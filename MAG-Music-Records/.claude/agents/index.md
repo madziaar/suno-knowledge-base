@@ -54,6 +54,11 @@ All requests flow through the Orchestrator, which checks status, validates prere
 | [CultureCheck](culturecheck.md) | `@culture` | Regional slang accuracy, authenticity | Believable content |
 | [MixEngineer](mixengineer.md) | `@mix` | Post-production notes, EQ suggestions | Professional polish |
 
+### Audio Analysis Agents
+| Agent | Activation | Purpose | Notes |
+|-------|------------|---------|-------|
+| [AudioQA](audio-qa-engineer.md) | `@audioqa` | Technical audio analysis, QA reports | Automated checks + human ear flags |
+
 ---
 
 ## Canonical References
@@ -148,7 +153,10 @@ All agent definitions are stored in `.claude/agents/`:
 ├── humantouch.md         # De-robotize lyrics
 ├── vocalcoach.md         # Vocal delivery guidance
 ├── culturecheck.md       # Regional authenticity
-└── mixengineer.md        # Post-production notes
+├── mixengineer.md        # Post-production notes
+│
+│   # Audio Analysis Agents
+└── audio-qa-engineer.md  # Technical audio QA
 ```
 
 ---
