@@ -62,13 +62,15 @@ When uncertain:
 
 **MAG Music Records** — Professional music production workflow for Suno AI content creation.
 
-**Foundation Sound:** Rick Ross "Hood Billionaire" Luxury Trap (74-96 BPM, orchestral, heavy 808s)
-
 **Active Projects:** (in `projects/mixtapes/`)
-- `MAG_Hood_Boss_Vol_1` — Portuguese luxury trap (12 tracks)
-- `MAG_Hood_Boss_UK_Vol_1` — UK English luxury trap (12 tracks)
-- `MAG_Refined_Vol_1` — UK Upper Class Reggae Fusion R&B EP (6 tracks)
-- `MAG_Refined_PT_Vol_1` — Portuguese Upper Class Reggae Fusion R&B EP (6 tracks) **[NEW]**
+
+| Project | Language | Style | Tracks |
+|---------|----------|-------|--------|
+| `MAG_Hood_Boss_Vol_1` | Portuguese | Luxury Trap | 12 |
+| `MAG_Hood_Boss_UK_Vol_1` | UK English | Luxury Trap | 12 |
+| `MAG_Refined_Vol_1` | UK English | Reggae Fusion R&B | 6 |
+| `MAG_Refined_PT_Vol_1` | Portuguese + Creole | Reggae Fusion R&B + Latin Club | 8 |
+| `MAG_Hardcore_Drill_Vol_1` | Portuguese | Luxury Trap | 10 |
 
 **Project Detection:** Check `project_state.json` in project folder, or ask user which project.
 
@@ -90,21 +92,47 @@ When uncertain:
 - Explicit drug references
 
 ### Allowed
-- Genre characteristics (luxury trap, cinematic)
-- Mood/energy descriptions (boss energy, triumphant)
-- Vocal tone descriptions (deep, commanding)
+- Genre characteristics (luxury trap, cinematic, reggae fusion)
+- Mood/energy descriptions (boss energy, triumphant, romantic)
+- Vocal tone descriptions (deep, commanding, smooth)
 - BPM ranges (not matched with other elements)
 
 ---
 
-## Critical Style Rules
+## Suno Prompting Safety
 
-**THIS IS NOT DRILL.** All MAG productions follow Rick Ross luxury trap style:
+**CRITICAL:** Certain words trigger Suno's content filters and block generation.
+
+### Avoid in Prompts
+- **Artist names:** Akon, Rick Ross, R. Kelly, etc.
+- **Song names:** "Don't Matter", "Snake", etc.
+- **Potentially flagged terms:** "skank" (use "offbeat" instead)
+- **Direct style references:** "Akon Don't Matter vibes" → "Carefree Island Vibes"
+
+### Safe Alternatives
+| Blocked | Use Instead |
+|---------|-------------|
+| Reggae Skank Guitar | Offbeat Reggae Guitar |
+| Akon vibes | Carefree Island Vibes |
+| Artist-style references | Genre/mood descriptions |
+
+---
+
+## Style Rules by Project Type
+
+### Luxury Trap Projects (Hood Boss, Hardcore Drill)
 - **BPM:** 74-96 (NEVER exceed 100)
 - **808s:** Heavy, sustained, booming (NOT sliding drill 808s)
 - **Production:** Orchestral strings, brass fanfares, piano, cinematic
 - **Vocals:** Deep, commanding, authoritative male voice
 - **Delivery:** Slow, deliberate, measured (NOT fast/aggressive)
+
+### Reggae Fusion R&B Projects (Refined)
+- **BPM:** 95-108 (island groove tempo)
+- **Production:** Rhodes chords, island percussion, warm synth pads
+- **808s:** Melodic bassline (NOT heavy trap 808s)
+- **Vocals:** Smooth, melodic male vocals with tasteful auto-tune
+- **Elements:** Latin/Middle Eastern influences for club tracks
 
 ---
 
@@ -122,7 +150,6 @@ When uncertain:
 | Command | Purpose |
 |---------|---------|
 | `/suno` | Open Suno, prepare workspace |
-| `/suno [N]` | Open Suno with Track N loaded |
 | `/generate [N]` | Generate track N in Suno (browser automation) |
 | `/generate-all` | Batch generate all tracks |
 | `/listen [N]` | Play track versions in Suno |
@@ -137,27 +164,21 @@ When uncertain:
 | `/cover-album` | Generate album cover art |
 | `/upload-cover [N]` | Upload cover to Suno for track N |
 
-### Workflow Control
-| Command | Purpose |
-|---------|---------|
-| `/interview` | Enter interview mode, gather requirements |
-| `/spec [name]` | Create spec document, request approval |
-
 ### Management
 | Command | Purpose |
 |---------|---------|
 | `/status` | Show project progress |
 | `/audioqa [file]` | Automated audio technical analysis |
 | `/qc [N]` | Quality control check |
-| `/qc all` | QC all tracks |
 | `/release [N]` | Prepare track for distribution |
-| `/release album` | Prepare full album |
 
 ### Creative
 | Command | Purpose |
 |---------|---------|
 | `/style` | Review artist style profile |
 | `/idea [text]` | Add creative idea to backlog |
+| `/interview` | Enter interview mode |
+| `/spec [name]` | Create spec document |
 
 ---
 
@@ -185,9 +206,7 @@ For creating new albums with regional/language variations:
 3. **Create project folder:** `projects/mixtapes/MAG_[Name]_Vol_[N]/`
 4. **Generate content:** Prompts → Lyrics → Suno → QC
 
-**Available variations:** `UK_UPPER_CLASS`, `PT_UPPER_CLASS`
-
-**Quick start:** `docs/ALBUM_FACTORY/NEW_ALBUM_PROMPT.md`
+**Available variations:** `UK_UPPER_CLASS`, `PT_UPPER_CLASS`, `UK_ENGLISH`
 
 ---
 
@@ -211,12 +230,36 @@ Agent definitions: `.claude/agents/`
 
 ---
 
+## Audio QA System
+
+Automated technical analysis using Python/librosa.
+
+### Setup
+```bash
+pip install librosa numpy soundfile scipy
+```
+
+### Usage
+```bash
+python tools/audio_qa/analyze.py <audio_file> [--output report.json]
+```
+
+### What's Automated vs Human-Required
+
+**Automated:** BPM, loudness (LUFS), true peak, dynamic range, clipping, frequency balance, stereo width, phase correlation, silence detection
+
+**Human ear required:** Vocal clarity, 808 tone quality, mix balance, emotional impact, genre authenticity
+
+See `docs/audio_qa_playbook.md` for full details.
+
+---
+
 ## Key Reference Files
 
 | File | Purpose |
 |------|---------|
 | `docs/COMPLIANCE_AND_SAFETY.md` | **CRITICAL** - Copyright compliance rules |
-| `docs/MASTER_STYLE_GUIDE.md` | Canonical sound identity (Rick Ross foundation) |
+| `docs/MASTER_STYLE_GUIDE.md` | Canonical sound identity |
 | `docs/SUNO_AI_GUIDE.md` | Suno AI prompting best practices |
 | `docs/ALBUM_FACTORY/README.md` | Album factory system guide |
 | `docs/audio_qa_playbook.md` | Audio QA system guide |
@@ -225,10 +268,21 @@ Agent definitions: `.claude/agents/`
 
 ---
 
-## Suno Prompt Template
+## Suno Prompt Templates
 
+### Luxury Trap
 ```
-[Language] Luxury Trap, Cinematic Hip-Hop, [BPM] BPM, Grand Orchestral Strings, Brass Fanfare, Deep Commanding Male Vocals, Heavy 808 Bass, [Mood], [Special Elements], Professional Mix
+[Language] Luxury Trap, Cinematic Hip-Hop, [BPM] BPM, Grand Orchestral Strings, Brass Fanfare, Deep Commanding Male Vocals, Heavy 808 Bass, [Mood], Professional Mix
+```
+
+### Reggae Fusion R&B
+```
+[Language] Reggae Fusion R&B, [BPM] BPM, Island Percussion, Warm Rhodes Chords, Melodic Bassline, Offbeat Guitar, Smooth Melodic Male Vocals, [Mood], Professional Mix
+```
+
+### Latin/Arabic Club
+```
+[Language] Latin R&B Club, [BPM] BPM, Middle Eastern Strings, Latin Percussion, Exotic Scales, Groovy Bassline, Sensual Male Vocals, Dance Floor Energy, Professional Mix
 ```
 
 ---
@@ -248,8 +302,6 @@ Agent definitions: `.claude/agents/`
     ↓
 /cover N                    # Generate cover art
     ↓
-/upload-cover N             # Upload cover to Suno
-    ↓
 /download N                 # Download final audio
     ↓
 /audioqa [file]             # Technical audio analysis
@@ -261,22 +313,6 @@ Human ear review            # Listen to flagged items
 /release N                  # Prepare for distribution
 ```
 
-**Batch workflow:**
-```
-/track 1-12 → /generate-all → /select-all → /extend-all → /download all → /release album
-```
-
-**Parallel Agent Batch Processing (Faster):**
-```
-1. Launch parallel agents for prompts (2-3 tracks per agent)
-2. Launch parallel agents for lyrics (2-3 tracks per agent)
-3. Generate all in Suno (browser automation)
-4. Generate covers in Leonardo.ai (browser automation)
-5. Download covers from Leonardo.ai
-6. Select favorites → Create Suno playlist
-7. Download favorites → Release
-```
-
 ---
 
 ## Cover Art Workflow (Leonardo.ai)
@@ -286,14 +322,7 @@ Human ear review            # Listen to flagged items
 2. Set: Model=Lucid Origin, Size=1024x1024 (1:1), Style=Dynamic
 3. Enter prompt based on track theme
 4. Generate → Download → Save to 04_artwork/
-5. Use /upload-cover [N] to upload to Suno, or keep for distribution only
-```
-
-**Image Prompt Template:**
-```
-[Subject/Scene], [Mood], luxury aesthetic, cinematic lighting,
-[Color palette], high contrast, professional photography style,
-[Special elements], 8K quality
+5. Use /upload-cover [N] to upload to Suno
 ```
 
 ---
@@ -303,7 +332,7 @@ Human ear review            # Listen to flagged items
 ```
 track_[NN]_[short_name]_[type].[ext]
 ```
-Examples: `track_02_hood_boss_prompt.txt`, `track_02_hood_boss_lyrics.txt`
+Examples: `track_02_hood_boss_prompt.txt`, `track_07_serpente_lyrics.txt`
 
 ---
 
@@ -343,8 +372,6 @@ projects/mixtapes/MAG_[Album]_Vol_[N]/
 
 **NOT Committed:** Audio files (wav/mp3/flac), .env, secrets
 
-Pre-commit hooks block audio files and secrets automatically.
-
 **Setup hooks (one-time):**
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-hooks.ps1
@@ -355,6 +382,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-hooks.ps1
 ## Architecture Notes
 
 - **Commands** (`.claude/commands/`): Define slash command behavior and workflows
-- **Agents** (`.claude/agents/`): Specialized roles with `@` activation (e.g., `@qc`, `@beat`)
+- **Agents** (`.claude/agents/`): Specialized roles with `@` activation
+- **Tools** (`tools/`): Python scripts for audio analysis
 - **Browser automation**: Suno/Leonardo commands use Claude-in-Chrome MCP tools
 - **State tracking**: `project_state.json` tracks per-track progress within each project
