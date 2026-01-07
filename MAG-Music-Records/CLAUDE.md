@@ -61,6 +61,20 @@ When uncertain:
 - Run mental QC during generation
 - Flag potential issues proactively
 
+### 6. Never Fake Timestamps
+**NEVER create LRC/subtitle files with estimated or guessed timings.** For lyric videos:
+- Audio file MUST exist before generating LRC
+- Use Whisper AI or CapCut Auto Captions for accurate timestamps
+- If audio doesn't exist → STOP and request download from Suno
+- If Whisper fails → Use CapCut Auto Captions as fallback
+- NEVER fall back to manual estimates based on song structure
+
+**Video Production Quality Gates:**
+1. **Audio Gate:** No video work without audio file
+2. **LRC Verification:** LRC must be from actual transcription
+3. **Preview Check:** Generate preview, get user approval before full render
+4. **Final QC:** User must verify sync before delivery
+
 ---
 
 ## Quick Commands for Workflow Control

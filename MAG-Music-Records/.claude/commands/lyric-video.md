@@ -5,6 +5,46 @@
 
 ---
 
+## ⛔ CRITICAL: Quality Gates
+
+> **This workflow has MANDATORY checkpoints to prevent bad exports.**
+
+### Gate 1: Audio Existence (HARD STOP)
+```
+IF audio file does NOT exist in 03_audio_exports/:
+  → STOP IMMEDIATELY
+  → Tell user: "Audio required. Use /download [N] first."
+  → DO NOT proceed to any other step
+```
+
+### Gate 2: LRC Source Verification
+```
+IF LRC exists, CHECK HOW IT WAS CREATED:
+  → Was it created from Whisper/CapCut Auto Captions? ✓ Proceed
+  → Was it created with estimated timings? ✗ DELETE and regenerate!
+
+The LRC file MUST have been generated from actual audio transcription.
+```
+
+### Gate 3: Preview Sync Check (MANDATORY)
+```
+BEFORE full render, you MUST:
+  1. Generate a quick preview (30 seconds)
+  2. Play preview for user to verify sync
+  3. Get explicit approval: "Sync looks good"
+
+DO NOT proceed to full render without preview approval.
+```
+
+### Gate 4: Final QC Before Delivery
+```
+BEFORE delivering video as complete:
+  1. Verify file exists and has reasonable size
+  2. Confirm with user they've watched and approved
+```
+
+---
+
 ## Purpose
 
 Full automated workflow to generate a lyric video from audio, combining:
@@ -16,8 +56,8 @@ Full automated workflow to generate a lyric video from audio, combining:
 
 ## Prerequisites
 
-1. **Audio file:** `03_audio_exports/track_[NN]_*_final.mp3`
-2. **LRC/SRT file:** `09_video/lrc/track_[NN].srt` (run `/lrc [N]` first)
+1. **Audio file:** `03_audio_exports/track_[NN]_*_final.mp3` ⚠️ **REQUIRED - HARD STOP IF MISSING**
+2. **LRC/SRT file:** `09_video/lrc/track_[NN].srt` (run `/lrc [N]` first) ⚠️ **Must be from audio transcription**
 3. **Stock footage:** `09_video/stock/track_[NN]/` (run `/stock [N]` first)
 4. **FFmpeg installed:** Must be in system PATH
 
@@ -25,16 +65,22 @@ Full automated workflow to generate a lyric video from audio, combining:
 
 ## Full Workflow
 
-### Step 1: Verify Prerequisites
+### Step 1: Verify Prerequisites (GATE 1 & 2)
 ```
-Check for:
-- Audio file exists
-- LRC/SRT file exists (if not, run /lrc [N])
-- Stock footage exists (if not, run /stock [N])
-- FFmpeg is installed
+MANDATORY CHECKS:
+1. ✓ Audio file exists in 03_audio_exports/
+   → If NO: STOP! Tell user to download audio first.
+
+2. ✓ LRC file exists and was created from audio
+   → If from estimated timings: DELETE and regenerate with Whisper/CapCut
+
+3. ✓ Stock footage available
+   → If NO: Can proceed with solid color background for preview
+
+4. ✓ FFmpeg installed
 ```
 
-### Step 2: Generate Preview (Optional)
+### Step 2: Generate Preview (GATE 3 - MANDATORY)
 ```bash
 python tools/video_render/preview.py \
   --audio "03_audio_exports/track_02_final.mp3" \

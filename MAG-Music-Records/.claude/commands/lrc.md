@@ -5,6 +5,32 @@
 
 ---
 
+## ⛔ CRITICAL: Audio Gate
+
+> **NEVER create LRC files with estimated/guessed timings.**
+>
+> This command REQUIRES the actual audio file to generate accurate timestamps.
+> If audio doesn't exist, **STOP IMMEDIATELY** and inform the user.
+
+### Pre-Execution Check (MANDATORY)
+
+```
+1. CHECK: Does audio file exist in 03_audio_exports/?
+   - If YES → Proceed with Whisper transcription
+   - If NO → STOP! Tell user: "Audio file required. Use /download [N] to get audio from Suno first."
+
+2. NEVER guess or estimate timestamps based on:
+   - Typical song structure
+   - Line count divided by duration
+   - Previous track timings
+
+3. If Whisper fails or is unavailable:
+   - Use CapCut Auto Captions (browser automation)
+   - DO NOT fall back to manual estimates
+```
+
+---
+
 ## Purpose
 
 Generate synchronized LRC/SRT subtitle files from audio using Whisper AI transcription, then align with source lyrics for accuracy.
@@ -13,7 +39,7 @@ Generate synchronized LRC/SRT subtitle files from audio using Whisper AI transcr
 
 ## Prerequisites
 
-1. **Audio file exists:** `03_audio_exports/track_[NN]_*_final.mp3`
+1. **Audio file exists:** `03_audio_exports/track_[NN]_*_final.mp3` ⚠️ **REQUIRED - NO EXCEPTIONS**
 2. **Lyrics file exists:** `02_lyrics/track_[NN]_*_lyrics.txt`
 3. **Python dependencies installed:**
    ```bash
