@@ -2,6 +2,27 @@
 
 All notable changes to SunoSync will be documented in this file.
 
+## [2.1.3] - 2025-01-07
+
+### Added
+- **Playlist/Workspace Subfolders**: 
+  - Added new "Playlist/Workspace Folders" toggle in Settings.
+  - When enabled, downloads selected from a specific workspace or playlist will be organized into a subfolder named after that playlist (e.g., `Downloads/My Cool Playlist/Song.mp3`).
+  - Works for both "Scan & Download" and "Preload & Download" modes.
+- **Artwork Support**:
+  - Downloaded songs now include a `cover.jpg` file in the same folder.
+  - The Library tab now displays the album art thumbnail next to the song title for a richer experience.
+
+### Fixed
+- **"Ghost Song" Bug**: Fixed issue where "Unknown" songs with missing IDs would appear in the queue or cause scanner errors. Added strict filtering to reject invalid song data.
+- **Progress Bar**: Fixed the bottom status progress bar not updating during batch downloads. It now smoothly tracks overall completion.
+- **Song Cache / Download Cleanup**: 
+    - Fixed issue where failed or interrupted downloads left partial files (0kb or incomplete) that tricked the cache into thinking the song was downloaded.
+    - Added strict file size verification (minimum 1KB and matches Content-Length).
+    - Added automatic cleanup to delete partial files on failure.
+- **Updater Logic**: Fixed incorrect "Update Available" prompt where newer local versions were asked to downgrade. Now correctly compares semantic versions (major.minor.patch).
+- **Mode 1 (Preload) Logic**: Fixed `TypeError` crash and ensured subfolder logic applies correctly when downloading preloaded songs.
+
 ## [2.1] - 2025-01
 
 ### Added
