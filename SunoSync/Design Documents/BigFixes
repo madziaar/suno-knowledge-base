@@ -1,0 +1,35 @@
+@Codebase I have user feedback for SunoSync that I need to fix.
+
+1. Fix "Ghost Song" Bug (Priority): Users report a final song named "Unknown" that never finishes downloading.
+
+Diagnosis: The scraper/parser is likely treating an empty footer or "Load More" element as a song.
+
+Fix: In the function where we parse songs (e.g., fetchSongs or similar), add a Strict Filter before adding to the queue.
+
+Logic: if (!song.id || !song.title || song.title === 'Unknown') return;
+
+2. Fix Progress Bar: The bottom progress bar stays at 0% during batch downloads.
+
+Fix: Ensure the DownloadManager emits a progress event that calculates: (completedCount / totalCount) * 100.
+
+Verify MainView.tsx is actually listening to this event and updating the state.
+
+3. Feature: Artwork Support (WAV & Library):
+
+In Library: The LibraryView should display the song's artwork thumbnail next to the title.
+
+On Disk (WAV Support): Since embedding art in WAV is unstable, please update the download logic to save a cover.jpg file alongside the audio file if it doesn't exist. This ensures Windows Explorer displays the art.
+
+4. Feature: Playlist Subfolders:
+
+Current Behavior: Downloads go into Base/Year/Month/.
+
+New Behavior:
+
+If the user is downloading a Playlist or Workspace, create a subfolder with that name: Base/My_Cool_Playlist/.
+
+If it's just individual tracks, keep the date-based folder.
+
+Implementation: Pass a contextName or groupName to the download function. Sanitize the name (remove special characters) and use it as the folder name.
+
+Task: Implement these 4 fixes/features across the Electron backend and React frontend.

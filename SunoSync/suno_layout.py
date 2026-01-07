@@ -88,8 +88,11 @@ def create_settings_card(parent, app, base_path):
     app.track_folder_var = ctk.BooleanVar(value=False)
     add_toggle(2, 0, "Stem Track Folder", app.track_folder_var)
 
+    app.playlist_folder_var = ctk.BooleanVar(value=False)
+    add_toggle(2, 1, "Playlist/Workspace Folders", app.playlist_folder_var)
+
     app.smart_resume_var = ctk.BooleanVar(value=False)
-    add_toggle(2, 1, "Smart Resume", app.smart_resume_var)
+    add_toggle(3, 1, "Smart Resume", app.smart_resume_var)
     
     app.disable_sounds_var = ctk.BooleanVar(value=False)
     add_toggle(3, 0, "Disable Notification Sounds", app.disable_sounds_var)

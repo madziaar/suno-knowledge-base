@@ -353,6 +353,20 @@ def read_song_metadata(filepath):
                 except Exception:
                     pass  # Silently fail if .txt file can't be read
         
+        # Check for Artwork (Design Doc Item 3)
+        image_path = None
+        # 1. Check same name .jpg
+        jpg_path = os.path.splitext(filepath)[0] + ".jpg"
+        if os.path.exists(jpg_path):
+            image_path = jpg_path
+        else:
+            # 2. Check cover.jpg in folder
+            cover_path = os.path.join(os.path.dirname(filepath), "cover.jpg")
+            if os.path.exists(cover_path):
+                image_path = cover_path
+        
+        result['image_path'] = image_path
+        
         # Get UUID
         result['id'] = get_uuid_from_file(filepath)
         

@@ -1,4 +1,6 @@
 import os
+import shutil
+import datetime
 import customtkinter as ctk
 from suno_widgets import CollapsibleCard
 from suno_layout import create_settings_card
@@ -76,6 +78,11 @@ class SettingsTab(ctk.CTkFrame):
                       command=self.open_debug).pack(anchor="w", padx=5)
         ctk.CTkLabel(debug_frame, text="View raw internal logs and API responses.\nUseful for troubleshooting errors or reporting bugs.", 
                      text_color="gray", font=("Segoe UI", 11), justify="left").pack(anchor="w", padx=5, pady=(2,0))
+                     
+        ctk.CTkButton(debug_frame, text="📤 Export Log File", width=120, fg_color="#333", hover_color="#444", 
+                      command=self.export_log).pack(anchor="w", padx=5, pady=(10, 0))
+        ctk.CTkLabel(debug_frame, text="Save the 'debug.log' file to share with developer.", 
+                     text_color="gray", font=("Segoe UI", 11), justify="left").pack(anchor="w", padx=5, pady=(2,0))
         
         self.save_btn = ctk.CTkButton(self, text="Save Settings", command=self.save_settings, width=200)
         self.save_btn.pack(pady=20)
@@ -90,6 +97,7 @@ class SettingsTab(ctk.CTkFrame):
         self.organize_var = ctk.BooleanVar(value=False)
         self.save_lyrics_var = ctk.BooleanVar(value=True)
         self.track_folder_var = ctk.BooleanVar(value=False)
+        self.playlist_folder_var = ctk.BooleanVar(value=False)
         self.smart_resume_var = ctk.BooleanVar(value=False)
         
         # Dummy variables for "app" interface if needed by other components, 
@@ -125,6 +133,33 @@ class SettingsTab(ctk.CTkFrame):
          except Exception as e:
              print(f"Error accessing debug: {e}")
 
+    def export_log(self):
+        from tkinter import filedialog, messagebox
+        
+        # Check if debug.log exists
+        log_file = "debug.log"
+        if not os.path.exists(log_file):
+            messagebox.showerror("Error", "No debug log found (debug.log missing).")
+            return
+            
+        # timestamp for filename
+        ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        default_name = f"SunoSync_Log_{ts}.txt"
+        
+        target = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
+            initialfile=default_name,
+            title="Export Debug Log"
+        )
+        
+        if target:
+            try:
+                shutil.copy(log_file, target)
+                messagebox.showinfo("Success", f"Log exported to:\n{target}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export log: {e}")
+
     def load_settings(self):
         c = self.config_manager
         self.path_var.set(c.get("path", ""))
@@ -135,6 +170,7 @@ class SettingsTab(ctk.CTkFrame):
         self.organize_var.set(c.get("organize", False))
         self.save_lyrics_var.set(c.get("save_lyrics", True))
         self.track_folder_var.set(c.get("track_folder", False))
+        self.playlist_folder_var.set(c.get("playlist_folder", False))
         self.smart_resume_var.set(c.get("smart_resume", False))
         self.disable_sounds_var.set(c.get("disable_sounds", False))
         self.force_rescan_var.set(c.get("force_rescan", False))
@@ -147,6 +183,7 @@ class SettingsTab(ctk.CTkFrame):
         c.set("organize", self.organize_var.get())
         c.set("save_lyrics", self.save_lyrics_var.get())
         c.set("track_folder", self.track_folder_var.get())
+        c.set("playlist_folder", self.playlist_folder_var.get())
         c.set("smart_resume", self.smart_resume_var.get())
         c.set("disable_sounds", self.disable_sounds_var.get())
         c.set("force_rescan", self.force_rescan_var.get())

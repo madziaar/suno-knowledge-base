@@ -63,7 +63,8 @@ class SunoDownloader:
     def configure(self, token, directory, max_pages, start_page, 
                   organize_by_month, embed_metadata_enabled, prefer_wav, download_delay, 
                   filter_settings=None, scan_only=False, target_songs=None, save_lyrics=True,
-                  organize_by_track=False, stems_only=False, smart_resume=False, force_rescan=False):
+                  organize_by_track=False, stems_only=False, smart_resume=False, force_rescan=False,
+                  organize_by_playlist=False):
         self.config = {
             "token": token,
             "directory": directory,
@@ -79,10 +80,9 @@ class SunoDownloader:
             "target_songs": target_songs or [], # List of dicts or UUIDs
             "organize_by_track": organize_by_track,
             "stems_only": stems_only,
-            "organize_by_track": organize_by_track,
-            "stems_only": stems_only,
             "smart_resume": smart_resume,
-            "force_rescan": force_rescan
+            "force_rescan": force_rescan,
+            "organize_by_playlist": organize_by_playlist
         }
         self.rate_limiter = RateLimiter(self.config["download_delay"])
 
@@ -145,6 +145,17 @@ class SunoDownloader:
         headers = {"Authorization": f"Bearer {token}"}
         existing_uuids = get_downloaded_uuids(directory)
 
+        # Shared Subfolder Logic (for both Mode 1 and 2)
+        workspace_id = filters.get("workspace_id")
+        subfolder_name = None
+        do_organize = self.config.get("organize_by_playlist")
+        ws_name = filters.get("workspace_name")
+        
+        if do_organize and workspace_id and ws_name:
+             # If it's a workspace/playlist download, we use the name as subfolder
+            subfolder_name = sanitize_filename(ws_name)
+            self._log(f"DEBUG: (Pre-Calc) Subfolder set to: {subfolder_name}", "info")
+
         # Mode 1: Download Specific Songs (from Preload)
         if target_songs:
             self.signals.status_changed.emit(f"Downloading {len(target_songs)} selected songs...")
@@ -163,16 +174,24 @@ class SunoDownloader:
                             token,
                             existing_uuids,
                             self.rate_limiter,
+                            subfolder_name
                         )
                     )
                 
                 # Wait for futures but check stop event
+                total_tasks = len(futures)
+                completed_tasks = 0
+                
                 for future in futures:
                     if self.is_stopped():
                         executor.shutdown(wait=False, cancel_futures=True)
                         break
                     try:
                         future.result()
+                        completed_tasks += 1
+                        if total_tasks > 0:
+                            p = int((completed_tasks / total_tasks) * 100)
+                            self.signals.progress_updated.emit(p)
                     except Exception as e:
                         import traceback
                         error_msg = f"Download error: {str(e)}\n{traceback.format_exc()}"
@@ -240,6 +259,19 @@ class SunoDownloader:
         if not is_playlist:
             separator = "&" if "?" in base_url else "?"
             base_url += f"{separator}page="
+            
+        subfolder_name = None
+        # Only create subfolder if enabled in settings
+        do_organize = self.config.get("organize_by_playlist")
+        ws_name = filters.get("workspace_name")
+        self._log(f"DEBUG: Organize Playlist: {do_organize}, WS Name: {ws_name}, WS ID: {workspace_id}", "info")
+        
+        if do_organize and workspace_id and ws_name:
+             # If it's a workspace/playlist download, we use the name as subfolder
+            subfolder_name = sanitize_filename(ws_name)
+            self._log(f"DEBUG: Subfolder set to: {subfolder_name}", "info")
+        else:
+            self._log("DEBUG: No subfolder will be used.", "info")
 
         self._log(f"API URL: {base_url}...", "info")
 
@@ -487,8 +519,13 @@ class SunoDownloader:
                         if not song_data:
                             continue
 
-                        # B. EXTRACT VARIABLES
+                        # Ghost Song Fix (Design Doc Item 1)
+                        if not song_data.get("id"):
+                             continue
+                             
                         title = song_data.get("title", "") or "Unknown Title"
+                        if title == "Unknown Title" and not song_data.get("id"):
+                             continue
                         
                         # Robust Liked Check
                         is_liked_bool = song_data.get("is_liked", False)
@@ -624,8 +661,12 @@ class SunoDownloader:
                                     token,
                                     uuid_cache,
                                     self.rate_limiter,
+                                    subfolder_name
                                 )
                             )
+
+                        total_page_tasks = len(futures)
+                        completed_page_tasks = 0
 
                         for future in futures:
                             if self.is_stopped():
@@ -633,6 +674,10 @@ class SunoDownloader:
                                 break
                             try:
                                 future.result()
+                                completed_page_tasks += 1
+                                if total_page_tasks > 0:
+                                    p = int((completed_page_tasks / total_page_tasks) * 100)
+                                    self.signals.progress_updated.emit(p)
                             except Exception:
                                 pass
 
@@ -735,7 +780,7 @@ class SunoDownloader:
         
         return all_playlists
 
-    def download_single_song(self, clip, directory, headers, token, existing_uuids, rate_limiter):
+    def download_single_song(self, clip, directory, headers, token, existing_uuids, rate_limiter, subfolder_name=None):
         if self.is_stopped():
             return
 
@@ -789,7 +834,14 @@ class SunoDownloader:
             return
 
         target_dir = directory
-        if self.config.get("organize_by_month") and created_at:
+        
+        if subfolder_name:
+            try:
+                target_dir = os.path.join(directory, subfolder_name)
+                if not os.path.exists(target_dir):
+                    os.makedirs(target_dir)
+            except: pass
+        elif self.config.get("organize_by_month") and created_at:
             try:
                 month_folder = created_at[:7]
                 target_dir = os.path.join(directory, month_folder)
@@ -839,10 +891,22 @@ class SunoDownloader:
                             if total_size > 0:
                                 percent = int(downloaded * 100 / total_size)
                                 self.signals.song_updated.emit(uuid, "Downloading", percent)
+                # Verification: Check file size
+                if downloaded < 1024: # Minimum 1KB
+                    raise Exception(f"Downloaded file too small ({downloaded} bytes)")
+                if total_size > 0 and downloaded < total_size:
+                    raise Exception(f"Incomplete download ({downloaded}/{total_size} bytes)")
+                
                 break
             except Exception as exc:
+                # Cleanup failed file
+                if os.path.exists(out_path):
+                    try:
+                        os.remove(out_path)
+                    except: pass
+                
                 if attempt < max_retries - 1:
-                    self._log(f"  Retry {attempt+1}/{max_retries}...", "info")
+                    self._log(f"  Retry {attempt+1}/{max_retries}: {exc}", "info")
                     time.sleep(2)
                 else:
                     self._log(f"Failed: {title} - {exc}", "error")
@@ -882,6 +946,25 @@ class SunoDownloader:
                 )
             
             existing_uuids.add(uuid)
+            
+            # Save Artwork separately (Design Doc Item 3)
+            # We want to ensure Windows Explorer shows it.
+            if thumb_data:
+                try:
+                    # 1. Save as {filename}.jpg
+                    jpg_path = os.path.splitext(out_path)[0] + ".jpg"
+                    if not os.path.exists(jpg_path):
+                        with open(jpg_path, "wb") as f_img:
+                            f_img.write(thumb_data)
+                    
+                    # 2. Save as cover.jpg (Folder View)
+                    cover_path = os.path.join(os.path.dirname(out_path), "cover.jpg")
+                    if not os.path.exists(cover_path):
+                         with open(cover_path, "wb") as f_cov:
+                            f_cov.write(thumb_data)
+                except Exception as ex:
+                    self._log(f"Failed to save artwork file: {ex}", "warning")
+            
             self._log(f"✓ {title}", "success", thumbnail_data=thumb_data)
             self.signals.song_finished.emit(uuid, True, out_path)
         except Exception as exc:

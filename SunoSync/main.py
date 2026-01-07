@@ -422,7 +422,7 @@ class SunoSyncApp(ctk.CTk):
     
     def check_changelog(self):
         """Show changelog on first launch of new version."""
-        current_version = "2.1.1"
+        current_version = "2.1.3"
         last_version = None
         state_file = "window_state.json"
         data = {}

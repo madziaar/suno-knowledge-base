@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "SunoSync"
-#define MyAppVersion "2.1.1"
+#define MyAppVersion "2.1.2"
 #define MyAppPublisher "InternetThot"
 #define MyAppURL "https://github.com/InternetThot/SunoSync"
 #define MyAppExeName "SunoSync.exe"
@@ -23,7 +23,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputDir=Output
-OutputBaseFilename=SunoSync_v2.1.1_Setup
+OutputBaseFilename=SunoSync_v2.1.2_Setup
 SetupIconFile=resources\icon.ico
 Compression=lzma
 SolidCompression=yes

@@ -290,7 +290,9 @@ class WorkspaceBrowser(ctk.CTkToplevel):
             
     def _create_item(self, parent, ws):
         name = ws.get("name", "Untitled")
-        count = ws.get('clip_count', ws.get('num_tracks', 0))
+        name = ws.get("name", "Untitled")
+        # Check various keys for count
+        count = ws.get('clip_count') or ws.get('num_tracks') or ws.get('total_clips') or ws.get('num_total_results') or ws.get('size') or 0
         date = ws.get('updated_at', '')[:10]
         
         card = ctk.CTkButton(parent, text=f"{name}\n{count} Songs • {date}", 
@@ -361,17 +363,64 @@ class LibraryRow(ctk.CTkFrame):
         # Import tooltip
         from tooltip import ToolTip
         
-        # 1. Title - Left aligned with truncation
+        # 0. Artwork
+        self.image_path = data.get("image_path")
+        self.thumb_lbl = None
+        if self.image_path and os.path.exists(self.image_path):
+            try:
+                from PIL import Image
+                img = Image.open(self.image_path)
+                # Resize to small square
+                img = img.resize((30, 30), Image.Resampling.LANCZOS)
+                ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(30, 30))
+                self.thumb_lbl = ctk.CTkLabel(self, text="", image=ctk_img)
+                self.thumb_lbl.grid(row=0, column=0, sticky="w", padx=(5, 5), pady=5)
+            except:
+                pass
+
+        # 1. Title - Left aligned with truncation (Shifted right due to image)
         title = data.get("title", "Unknown")
         title_truncated = False
-        # Reduced from 50 to 35 to prevent layout overflow
-        if len(title) > 35:
-            title_display = title[:32] + "..."
+        # Reduced from 35 to 25 to accommodate image
+        if len(title) > 25:
+            title_display = title[:22] + "..."
             title_truncated = True
         else:
             title_display = title
         self.title_lbl = ctk.CTkLabel(self, text=title_display, anchor="w", font=("Segoe UI", 11))
-        self.title_lbl.grid(row=0, column=0, sticky="ew", padx=(10, 5), pady=5)
+        # Use column 0 but add padding if image exists, or use a frame?
+        # A Better way is to put image and title in same column 0 or split column 0.
+        # But for simplicity, let's just push title to the right within column 0 using padding.
+        
+        # ACTUALLY: Let's refactor columns slightly to be cleaner.
+        # Current: 0=Title, 1=Artist, 2=Genre, 3=BPM, 4=Duration
+        # New: 0=Image(fixed 40), 1=Title, 2=Artist...
+        
+        # But Library header uses fixed columns. We shouldn't change grid structure too much or header breaks.
+        # Let's put Image AND Title in Column 0 using a sub-frame or just pack them?
+        # Grid is easier. Let's put Image at x=5, Title at x=40
+        
+        # Wait, I cannot easily nest grid inside grid cell without a frame.
+        # Let's use a frame for Column 0
+        self.title_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.title_frame.grid(row=0, column=0, sticky="ew", padx=(5, 5))
+        
+        if self.thumb_lbl:
+            self.thumb_lbl.destroy() # Re-create inside frame
+            try:
+                 # Re-load image (can't reuse ctk_image object easily if we didn't save it, but we have code above)
+                 # Let's just do it all inside here.
+                 from PIL import Image
+                 img = Image.open(self.image_path)
+                 img = img.resize((30, 30), Image.Resampling.LANCZOS)
+                 ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(30, 30))
+                 self.thumb_lbl = ctk.CTkLabel(self.title_frame, text="", image=ctk_img, width=30)
+                 self.thumb_lbl.pack(side="left", padx=(0, 5))
+            except: pass
+
+        self.title_lbl = ctk.CTkLabel(self.title_frame, text=title_display, anchor="w", font=("Segoe UI", 11))
+        self.title_lbl.pack(side="left", fill="x", expand=True)
+
         if title_truncated:
             ToolTip(self.title_lbl, title)
         

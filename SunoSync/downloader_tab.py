@@ -213,38 +213,20 @@ class DownloaderTab(ctk.CTkFrame):
         self.progress_bar.set(0)
 
     def init_variables(self):
-        # Variables previously created by create_settings_card
-        base_path = os.getcwd()
-        self.path_var = ctk.StringVar(value=os.path.join(base_path, "Suno_Downloads"))
-        self.path_display_var = ctk.StringVar()
-        
-        self.embed_thumb_var = ctk.BooleanVar(value=True)
-        self.download_wav_var = ctk.BooleanVar(value=False)
-        self.organize_var = ctk.BooleanVar(value=False)
-        self.save_lyrics_var = ctk.BooleanVar(value=True)
-        self.track_folder_var = ctk.BooleanVar(value=False)
-        self.smart_resume_var = ctk.BooleanVar(value=False)
-        self.disable_sounds_var = ctk.BooleanVar(value=False)
-        self.force_rescan_var = ctk.BooleanVar(value=False)
+        # Variables specific to Downloader Tab
+        # Shared settings (Path, Toggles) are now managed solely by SettingsTab and ConfigManager
+        pass
         
     def load_config(self):
         c = self.config_manager
         # Variables were created by layout helpers
         if hasattr(self, 'token_var'): self.token_var.set(c.get("token", ""))
         
-        # Path
-        p = c.get("path", "")
-        if p: self.path_var.set(p)
-        self.path_display_var.set(truncate_path(self.path_var.get()))
-
-        # Toggles
-        self.embed_thumb_var.set(c.get("embed_metadata", True))
-        self.organize_var.set(c.get("organize", False))
-        self.save_lyrics_var.set(c.get("save_lyrics", True))
-        self.download_wav_var.set(c.get("prefer_wav", False))
-        self.track_folder_var.set(c.get("track_folder", False))
-        self.smart_resume_var.set(c.get("smart_resume", False))
-        self.disable_sounds_var.set(c.get("disable_sounds", False))
+        # Variables were created by layout helpers
+        if hasattr(self, 'token_var'): self.token_var.set(c.get("token", ""))
+        
+        # Shared Settings are not loaded into local vars anymore to avoid conflicts
+        # They are read directly from config_manager when needed.
 
         # Inputs
         if hasattr(self, 'rate_limit_var'): self.rate_limit_var.set(c.get("download_delay", 0.5))
@@ -254,20 +236,22 @@ class DownloaderTab(ctk.CTkFrame):
         # Filters
         self.filter_settings = c.get("filter_settings", {})
         self._update_filter_btn_text()
+        
+        # Restore Workspace/Playlist Button Text
+        ws_name = self.filter_settings.get("workspace_name")
+        ws_type = self.filter_settings.get("type")
+        
+        if ws_name:
+            if ws_type == "workspace":
+                 if hasattr(self, 'workspace_btn'): self.workspace_btn.configure(text=truncate_path(ws_name, 12))
+            elif ws_type == "playlist":
+                 if hasattr(self, 'playlist_btn'): self.playlist_btn.configure(text=truncate_path(ws_name, 12))
 
     def save_config(self):
         c = self.config_manager
         if hasattr(self, 'token_var'): c.set("token", self.token_var.get())
-        c.set("path", self.path_var.get())
-        
-        # Toggles & Inputs
-        c.set("embed_metadata", self.embed_thumb_var.get())
-        c.set("organize", self.organize_var.get())
-        c.set("save_lyrics", self.save_lyrics_var.get())
-        c.set("prefer_wav", self.download_wav_var.get())
-        c.set("track_folder", self.track_folder_var.get())
-        c.set("smart_resume", self.smart_resume_var.get())
-        c.set("disable_sounds", self.disable_sounds_var.get())
+        # Do NOT save shared settings here (path, toggles) - let SettingsTab handle them
+
         
         if hasattr(self, 'rate_limit_var'): c.set("download_delay", self.rate_limit_var.get())
         if hasattr(self, 'max_pages_var'): c.set("max_pages", self.max_pages_var.get())
@@ -333,8 +317,14 @@ class DownloaderTab(ctk.CTkFrame):
             self.save_config()
             
             name = item.get("name") or "Selected"
-            btn = self.workspace_btn if mode == "workspaces" else self.playlist_btn
-            btn.configure(text=truncate_path(name, 12))
+            
+            # Update appropriate button and reset the other
+            if mode == "workspaces":
+                self.workspace_btn.configure(text=truncate_path(name, 12))
+                self.playlist_btn.configure(text="Playlists")
+            else:
+                self.playlist_btn.configure(text=truncate_path(name, 12))
+                self.workspace_btn.configure(text="Workspaces")
             
             messagebox.showinfo("Selected", f"Selected {mode[:-1]}: {name}")
 
@@ -421,8 +411,12 @@ class DownloaderTab(ctk.CTkFrame):
         self.downloader.signals.song_started.connect(self.on_song_started)
         self.downloader.signals.song_updated.connect(self.on_song_updated)
         self.downloader.signals.song_finished.connect(self.on_song_finished)
+        self.downloader.signals.progress_updated.connect(self.on_progress_updated)
         
         threading.Thread(target=self.downloader.run, daemon=True).start()
+        
+    def on_progress_updated(self, percent):
+        self.gui_queue.put(("progress", percent))
 
     def stop_download(self):
         self.downloader.stop()
@@ -450,24 +444,26 @@ class DownloaderTab(ctk.CTkFrame):
                  self.update_status("Stopped", "normal")
 
     def _configure_downloader(self, scan_only):
-        if not hasattr(self, 'path_var'):
-            self.init_variables()
+        c = self.config_manager
+        base_path = os.getcwd()
+        default_path = os.path.join(base_path, "Suno_Downloads")
             
         self.downloader.configure(
             token=self.token_var.get(),
-            directory=self.path_var.get(),
+            directory=c.get("path", default_path),
             max_pages=self.max_pages_var.get(),
             start_page=max(1, self.start_page_var.get()), # Enforce minimum 1
-            organize_by_month=self.organize_var.get(),
-            embed_metadata_enabled=self.embed_thumb_var.get(),
-            save_lyrics=self.save_lyrics_var.get(),
-            prefer_wav=self.download_wav_var.get(),
+            organize_by_month=c.get("organize", False),
+            embed_metadata_enabled=c.get("embed_metadata", True),
+            save_lyrics=c.get("save_lyrics", True),
+            prefer_wav=c.get("prefer_wav", False),
             download_delay=self.rate_limit_var.get(),
             filter_settings=self.filter_settings,
-            organize_by_track=self.track_folder_var.get(),
-            smart_resume=self.smart_resume_var.get(),
+            organize_by_track=c.get("track_folder", False),
+            smart_resume=c.get("smart_resume", False),
             scan_only=scan_only,
-            force_rescan=self.config_manager.get("force_rescan", False)
+            force_rescan=c.get("force_rescan", False),
+            organize_by_playlist=c.get("playlist_folder", False)
         )
 
     # --- GUI Queue Processing ---
@@ -484,6 +480,10 @@ class DownloaderTab(ctk.CTkFrame):
                     self._add_song_card(msg[1])
                 elif action == "update_song":
                     self._update_song_card(msg[1], msg[2], msg[3])
+                elif action == "progress":
+                    # Update main progress bar
+                    percent = msg[1]
+                    self.progress_bar.set(percent / 100.0)
                 elif action == "log":
                     text = msg[1]
                     self.debug_logs.append(text)
