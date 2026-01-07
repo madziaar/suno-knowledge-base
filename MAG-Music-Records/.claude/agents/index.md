@@ -59,6 +59,14 @@ All requests flow through the Orchestrator, which checks status, validates prere
 |-------|------------|---------|-------|
 | [AudioQA](audio-qa-engineer.md) | `@audioqa` | Technical audio analysis, QA reports | Automated checks + human ear flags |
 
+### Distribution & Marketing Agents (NEW)
+| Agent | Activation | Purpose | Makes Release Process Easier |
+|-------|------------|---------|------------------------------|
+| [DistroUploader](distro-uploader.md) | `@distro` | DistroKid upload automation, metadata formatting | Saves 15+ min per track |
+| [SocialMedia](social-media.md) | `@social` | Social media content generation | Auto-generates IG, TikTok, Twitter, YouTube content |
+| [MetadataValidator](metadata-validator.md) | `@metadata` | Validate metadata completeness | Catches errors before upload |
+| [SetlistCurator](setlist-curator.md) | `@setlist` | Optimize track sequencing for better listening | BPM flow, energy arc analysis |
+
 ---
 
 ## Canonical References
@@ -156,7 +164,13 @@ All agent definitions are stored in `.claude/agents/`:
 ├── mixengineer.md        # Post-production notes
 │
 │   # Audio Analysis Agents
-└── audio-qa-engineer.md  # Technical audio QA
+├── audio-qa-engineer.md  # Technical audio QA
+│
+│   # Distribution & Marketing Agents (NEW)
+├── distro-uploader.md    # DistroKid automation
+├── social-media.md       # Social content generation
+├── metadata-validator.md # Metadata validation
+└── setlist-curator.md    # Track sequencing optimizer
 ```
 
 ---
@@ -235,6 +249,10 @@ ORCHESTRATOR_CONTEXT:
 │  @qc Track N               Quality control report           │
 │  @release Track N          Release prep checklist           │
 │  @repo status              Repository health check          │
+│  @distro Track N           DistroKid upload package (NEW)   │
+│  @social Track N           Social media content (NEW)       │
+│  @metadata Track N         Validate metadata (NEW)          │
+│  @setlist [project]        Optimize tracklist (NEW)         │
 ├─────────────────────────────────────────────────────────────┤
 │  STATUS: "What's the status?" or "Where are we at?"         │
 │  HELP: Reference this index or CLAUDE.md                    │
