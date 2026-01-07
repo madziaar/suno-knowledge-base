@@ -21,7 +21,25 @@ These principles are **enforced by default**. Do not skip them unless the user e
 - Any request involving style deviations
 - User says: `/interview`, `let's plan`, `what do you need to know?`
 
-### 2. Spec Before Building
+### 2. Cultural Research Before Content
+**NEVER generate lyrics/content without cultural research.** For any new song or project:
+- Activate `@research` agent automatically
+- Research reference song's meaning, vibe, cultural context
+- Find authentic phrases and speech patterns for the style
+- Create Cultural Brief at `08_decisions/CULTURAL_BRIEF.md`
+- Get user approval on Cultural Brief before generating content
+
+**This applies to:**
+- New album or EP creation
+- Any new track generation
+- Style changes or new vibes
+- Reference songs provided by user
+
+**Bypass only when:**
+- User says: `skip research`, `WANDA:`
+- Simple revision to existing lyrics
+
+### 3. Spec Before Building
 **NEVER execute without a spec.** For non-trivial work:
 - Write requirements to disk at `00_admin/specs/SPEC_[name].md`
 - Include: deliverable, constraints, exceptions, acceptance criteria
@@ -32,13 +50,13 @@ These principles are **enforced by default**. Do not skip them unless the user e
 - Work is a simple revision to existing content
 - User says: `skip spec`, `just do it`, `WANDA:`
 
-### 3. Clarify Before Assuming
+### 4. Clarify Before Assuming
 When uncertain:
 - ASK, don't guess
 - Present options with tradeoffs
 - Wait for confirmation before proceeding
 
-### 4. Quality Over Speed
+### 5. Quality Over Speed
 - Check compliance BEFORE generating content
 - Run mental QC during generation
 - Flag potential issues proactively
@@ -164,6 +182,14 @@ When uncertain:
 | `/cover-album` | Generate album cover art |
 | `/upload-cover [N]` | Upload cover to Suno for track N |
 
+### Video Production (Lyric Videos)
+| Command | Purpose |
+|---------|---------|
+| `/lrc [N]` | Generate LRC/SRT subtitles from audio (Whisper AI) |
+| `/stock [N]` | Find and download stock footage (Pexels/Pixabay) |
+| `/lyric-video [N]` | Full lyric video workflow |
+| `/lyric-video-all` | Batch generate videos for entire album |
+
 ### Management
 | Command | Purpose |
 |---------|---------|
@@ -216,6 +242,7 @@ Production enhancement agents for professional quality output:
 
 | Command | Agent | Purpose |
 |---------|-------|---------|
+| `@research` | CulturalResearcher | **CRITICAL** - Cultural research before content creation |
 | `@beat` | BeatDoctor | Sound design, instrumentation notes |
 | `@humanize` | HumanTouch | De-robotize lyrics, add natural imperfections |
 | `@vocals` | VocalCoach | Ad-libs, delivery notes, energy curves |
@@ -225,6 +252,12 @@ Production enhancement agents for professional quality output:
 | `@qc` | QualityGate | Quality control checklist |
 | `@release` | ReleaseOps | Distribution preparation |
 | `@repo` | RepoOps | Repository maintenance |
+| `@lyricvideo` | VideoProducer | Lyric video workflow orchestration |
+| `@lrc` | LyricSync | Generate LRC/SRT from audio |
+| `@stockfinder` | StockFinder | Find stock footage for videos |
+
+**Hidden Agents** (orchestration, not user-invocable):
+- Orchestrator, PromptSmith, Lyricist, DescWriter
 
 Agent definitions: `.claude/agents/`
 
@@ -311,6 +344,16 @@ Human ear review            # Listen to flagged items
 /qc N                       # Quality control check
     ↓
 /release N                  # Prepare for distribution
+    ↓
+====== VIDEO PHASE ======
+    ↓
+/lrc N                      # Generate LRC subtitles
+    ↓
+/stock N                    # Find stock footage
+    ↓
+/lyric-video N              # Render lyric video
+    ↓
+Upload to YouTube/TikTok    # Distribution
 ```
 
 ---
@@ -361,6 +404,11 @@ projects/mixtapes/MAG_[Album]_Vol_[N]/
 ├── 06_release/
 ├── 07_archive/
 ├── 08_decisions/
+├── 09_video/             (lyric video assets)
+│   ├── lrc/              (LRC/SRT/ASS files)
+│   ├── stock/            (stock footage by track)
+│   ├── renders/          (final videos)
+│   └── thumbnails/
 └── project_state.json    (track status)
 ```
 

@@ -1,0 +1,96 @@
+{
+  "project": "MAG_Steppers_Vol_1",
+  "artist": "MAG",
+  "genre": "Chicago Stepping R&B Soul",
+  "language": "English (UK)",
+  "total_tracks": 6,
+  "status": "pre_production_complete",
+  "created": "2026-01-04",
+  "updated": "2026-01-04",
+  "cultural_brief": "08_decisions/CULTURAL_BRIEF.md",
+  "tracks": {
+    "1": {
+      "title": "Step With Me",
+      "bpm": 98,
+      "key": "G Major",
+      "theme": "Invitation to dance",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    },
+    "2": {
+      "title": "First Touch",
+      "bpm": 100,
+      "key": "C Major",
+      "theme": "Initial connection",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    },
+    "3": {
+      "title": "Glide",
+      "bpm": 102,
+      "key": "D Major",
+      "theme": "Moving together",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    },
+    "4": {
+      "title": "Hold You Close",
+      "bpm": 95,
+      "key": "A Minor",
+      "theme": "Intimate romance",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    },
+    "5": {
+      "title": "On The Floor",
+      "bpm": 108,
+      "key": "E Major",
+      "theme": "Celebration",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    },
+    "6": {
+      "title": "Forever Steppin'",
+      "bpm": 96,
+      "key": "G Major",
+      "theme": "Commitment",
+      "prompt": "complete",
+      "lyrics": "complete",
+      "generated": false,
+      "selected_version": null,
+      "cover": false,
+      "downloaded": false,
+      "qc_passed": false
+    }
+  },
+  "uk_elements": [
+    "proper", "gorgeous", "lovely", "darling", "love",
+    "innit", "sorted", "fit", "brilliant", "fancy",
+    "chatting up", "getting on", "well fit"
+  ]
+}

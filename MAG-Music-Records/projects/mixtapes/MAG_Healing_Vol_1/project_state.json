@@ -1,0 +1,18 @@
+{
+  "project": "MAG_Healing_Vol_1",
+  "language": "UK English",
+  "style": "UK Afroswing",
+  "tracks_total": 6,
+  "created": "2026-01-04",
+  "status": "generated",
+  "reference": "Healing by Tion Wayne (2023)",
+  "suno_workspace": "MAG Healing Vol 1",
+  "tracks": {
+    "1": {"title": "Healing", "status": "generated", "bpm": 105},
+    "2": {"title": "Level Up", "status": "generated", "bpm": 106},
+    "3": {"title": "Real Ones", "status": "generated", "bpm": 104},
+    "4": {"title": "Made It", "status": "generated", "bpm": 108},
+    "5": {"title": "Looking Back", "status": "generated", "bpm": 100},
+    "6": {"title": "Celebrate", "status": "generated", "bpm": 110}
+  }
+}
