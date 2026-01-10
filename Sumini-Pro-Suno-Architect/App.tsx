@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { GenerateContentResponse } from "@google/genai";
+import { Analytics } from "@vercel/analytics/react";
 import { Message, GeneratorMode, ParsedSong, LyricsLanguage, StudioSettings } from './types';
 import { generateContentResponse, enhanceStyle } from './services/geminiService';
 import { MessageList } from './components/MessageList';
@@ -486,6 +487,9 @@ const App: React.FC = () => {
            <span className="text-xs font-bold">{errorToast}</span>
         </div>
       )}
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
 
     </div>
   );
