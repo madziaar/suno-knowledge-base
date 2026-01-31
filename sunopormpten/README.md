@@ -1,6 +1,10 @@
 ```markdown
 # Suno AI Song Syntax
 
+**[English Version Available Here / Versión en Inglés Disponible Aquí](./README_EN.md)**
+
+---
+
 Es importante indicar la duración en el prompt, ejemplo 
 Duration ≈ 3 min 45 s
 en el prompt final.
