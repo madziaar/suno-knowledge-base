@@ -57,6 +57,7 @@ dist/
 *.pyz
 *.exe
 *.zip
+*.spec
 
 # Temporary files
 temp_*.html
@@ -65,4 +66,3 @@ temp_*.html
 # Duplicate/old directories
 SunoSyncMac/
 SunoSync-Mac/
-

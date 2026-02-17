@@ -1,35 +1,33 @@
 # -*- mode: python ; coding: utf-8 -*-
+
 import sys
-import os
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_all
 
 block_cipher = None
 
+# Collect data needed for customtkinter
+datas = []
+binaries = []
+hiddenimports = ['PIL._tkinter_finder', 'babel.numbers']
+
 # Collect CustomTkinter assets
-ctk_datas = collect_data_files('customtkinter')
-
-# Helper to find resources
-def get_resource_path(relative_path):
-    return os.path.join(os.getcwd(), relative_path)
-
-# Data files to bundle
-# Format: (source_path, dest_folder)
-added_files = [
-    ('resources', 'resources'),
-    ('assets', 'assets'),
-    ('config.json', '.'),  # Default config template if needed, or rely on app creating it
-    ('window_state.json', '.'),
-]
-
-# Add CustomTkinter data
-added_files.extend(ctk_datas)
+tmp_ret = collect_all('customtkinter')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=added_files,
-    hiddenimports=['PIL', 'PIL._tkinter_finder', 'babel.numbers', 'vlc', 'requests', 'mutagen', 'sentry_sdk', 'qrcode', 'plyer'],
+    binaries=binaries,
+    datas=[
+        ('assets', 'assets'),
+        ('resources', 'resources'),
+        ('ui', 'ui'),
+        ('core', 'core'),
+        ('services', 'services'),
+        ('version.json', '.'),
+        ('CHANGELOG.txt', '.')
+    ],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -44,29 +42,22 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='SunoSync',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='resources/icon.ico',
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='SunoSync',
+    icon=None,
 )

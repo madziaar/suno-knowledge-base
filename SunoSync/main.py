@@ -48,18 +48,19 @@ if getattr(sys, 'frozen', False):
     # But just in case logging setup failed or something resets it:
     pass
 
-from suno_widgets import WorkspaceBrowser
-from config_manager import ConfigManager
-from suno_downloader import SunoDownloader
-from sidebar import Sidebar
-from library_tab import LibraryTab
-from downloader_tab import DownloaderTab
-from settings_tab import SettingsTab
-from player_widget import PlayerWidget
-from theme_manager import ThemeManager
-from mobile_server import MobileServer
-from media_keys import MediaKeyHandler
-from bug_reporter import show_crash_popup
+from ui.widgets import WorkspaceBrowser
+from core.config_manager import ConfigManager
+from core.downloader import SunoDownloader
+from ui.sidebar import Sidebar
+from ui.library import LibraryTab
+from ui.downloader_tab import DownloaderTab
+from ui.settings import SettingsTab
+from ui.player import PlayerWidget
+from core.theme import ThemeManager
+
+from services.media_keys import MediaKeyHandler
+from services.bug_reporter import show_crash_popup
+from services.token_server import TokenServer
 
 import sentry_sdk
 
@@ -122,7 +123,7 @@ def resource_path(relative_path):
             base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
 
-from updater import Updater
+from services.updater import Updater
 import webbrowser
 
 class SunoSyncApp(ctk.CTk):
@@ -179,6 +180,7 @@ class SunoSyncApp(ctk.CTk):
         # Initialize Managers and Theme
         self.theme = ThemeManager() # Kept passing for tabs that still use it
         self.theme.apply_treeview_style()
+        self.configure(fg_color=self.theme.bg_dark)
         
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         
@@ -192,11 +194,15 @@ class SunoSyncApp(ctk.CTk):
         # Show splash
         self.after(100, self.show_splash)
         
-        # Mobile Server
-        self.mobile_server = None
+
 
         # Check for updates
         Updater.check_for_updates(self.show_update_bar)
+
+        # Start Token Server (for Chrome Extension)
+        self.token_server = TokenServer()
+        self.token_server.on_token(self._on_extension_token)
+        self.token_server.start()
 
     def show_update_bar(self, version, url):
         """Display the update bar at the top of the app."""
@@ -279,7 +285,7 @@ class SunoSyncApp(ctk.CTk):
         # Content Area (Right)
         # We use a container frame for content
         self.content_area = ctk.CTkFrame(self, fg_color="transparent")
-        self.content_area.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
+        self.content_area.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
         
         # Initialize Views
         # IMPORTANT: These classes (DownloaderTab, LibraryTab, etc.) need to be instantiated.
@@ -295,7 +301,7 @@ class SunoSyncApp(ctk.CTk):
             # Player is at the bottom? The original had it at bottom.
             # Updated layout: Persistent player bar at bottom row.
             
-            self.player = PlayerWidget(self, bg_color="#18181b")
+            self.player = PlayerWidget(self, bg_color=self.theme.player_bg)
             self.player.grid(row=1, column=0, columnspan=2, sticky="ew")
             self.player.set_tags_file(TAGS_FILE)
 
@@ -305,8 +311,8 @@ class SunoSyncApp(ctk.CTk):
             self.views["library"] = self.library
             
             # --- New Tabs ---
-            from dashboard_tab import DashboardTab
-            from prompt_vault import VaultTab
+            from ui.dashboard import DashboardTab
+            from ui.vault import VaultTab
             
             self.dashboard = DashboardTab(self.content_area, library_tab=self.library)
             self.views["dashboard"] = self.dashboard
@@ -315,7 +321,7 @@ class SunoSyncApp(ctk.CTk):
             self.views["vault"] = self.vault
             
             # Create Lyrics Panel (hidden by default)
-            from lyrics_panel import LyricsPanel
+            from ui.lyrics import LyricsPanel
             self.lyrics_panel = LyricsPanel(self)
             self.lyrics_panel.grid(row=0, column=2, rowspan=2, sticky="ns")
             self.lyrics_panel.grid_remove()  # Start hidden
@@ -399,13 +405,7 @@ class SunoSyncApp(ctk.CTk):
         #      messagebox.showinfo("Settings", "Settings are currently located in the Downloader tab.\nDedicated settings page coming soon.")
         #      return
         
-        if view_name == "mobile_sync":
-            self.show_mobile_qr()
-            return
 
-        if view_name == "radio":
-            self.show_radio()
-            return
 
         if self.current_view:
             self.current_view.pack_forget()
@@ -419,6 +419,12 @@ class SunoSyncApp(ctk.CTk):
             # Refresh Dashboard/Vault on view switch
             if view_name in ["dashboard", "vault"] and hasattr(view, 'refresh'):
                 view.refresh()
+            
+            # Refresh Settings/Downloader to ensure sync
+            if view_name == "settings" and hasattr(view, 'load_settings'):
+                 view.load_settings()
+            elif view_name == "downloader" and hasattr(view, 'load_config'):
+                 view.load_config()
     
     def check_changelog(self):
         """Show changelog on first launch of new version."""
@@ -476,6 +482,9 @@ class SunoSyncApp(ctk.CTk):
                 
         if hasattr(self, 'media_keys'):
             self.media_keys.stop()
+
+        if hasattr(self, 'token_server'):
+            self.token_server.stop()
                 
         self.destroy()
         sys.exit()
@@ -495,6 +504,19 @@ class SunoSyncApp(ctk.CTk):
                 self.library.refresh_library()
             except Exception as e:
                 print(f"Library refresh error: {e}")
+
+    def _on_extension_token(self, token):
+        """Callback fired when Chrome extension pushes a new token."""
+        try:
+            # Update config
+            self.config_manager.set("token", token)
+            self.config_manager.save_config()
+            
+            # Update downloader tab UI (must run on main thread)
+            if hasattr(self, 'downloader') and hasattr(self.downloader, 'set_token_from_extension'):
+                self.after(0, lambda t=token: self.downloader.set_token_from_extension(t))
+        except Exception as e:
+            print(f"Extension token callback error: {e}")
 
     def on_play_song(self, event):
         if hasattr(self.library, 'current_playlist') and hasattr(self.library, 'current_index'):
@@ -587,83 +609,7 @@ class SunoSyncApp(ctk.CTk):
             
             self.player.set_mini_btn_icon(False)
 
-    def show_mobile_qr(self):
-        """Show QR Code for mobile connection."""
-        # Always re-read path in case user changed it
-        current_path = self.config_manager.get("path", os.path.join(base_path, "Suno_Downloads"))
-        
-        if not self.mobile_server:
-            self.mobile_server = MobileServer(current_path)
-        else:
-            # Update path if changed
-            self.mobile_server.download_folder = current_path
-            
-        print(f"[Mobile] Starting server on path: {current_path}")
-            
-        url, qr_image = self.mobile_server.start_server()
-        
-        if not url:
-            messagebox.showerror("Error", "Could not start mobile server.")
-            return
 
-        # Create Popup
-        top = ctk.CTkToplevel(self)
-        top.title("Scan to Play")
-        top.geometry("400x500")
-        top.attributes("-topmost", True)
-        
-        # Center Content
-        frame = ctk.CTkFrame(top)
-        frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        ctk.CTkLabel(frame, text="Mobile Bridge", font=("Segoe UI", 20, "bold")).pack(pady=(10, 20))
-        
-        # Display QR
-        # Fix for qrcode returning a wrapper class
-        pil_image = qr_image
-        if not isinstance(qr_image, Image.Image):
-             # For some qrcode versions, make_image returns a wrapper
-             if hasattr(qr_image, "get_image"):
-                 pil_image = qr_image.get_image()
-             # Fallback: force convert if possible, or it might just be a type check failure
-             # but usually .convert("RGB") returns a pure PIL Image
-             try:
-                pil_image = pil_image.convert("RGB")
-             except:
-                pass
-
-        ctk_qr = ctk.CTkImage(light_image=pil_image, dark_image=pil_image, size=(250, 250))
-        label_qr = ctk.CTkLabel(frame, image=ctk_qr, text="")
-        label_qr.pack(pady=10)
-        
-        ctk.CTkLabel(frame, text="Scan with your phone camera", text_color="gray").pack(pady=5)
-        
-        # URL Link
-        link_label = ctk.CTkLabel(frame, text=url, font=("Consolas", 14, "underline"), text_color="#3b8ed0", cursor="hand2")
-        link_label.pack(pady=10)
-        link_label.bind("<Button-1>", lambda e: webbrowser.open(url))
-        
-        ctk.CTkLabel(frame, text="Keep this app open to stream music.", font=("Segoe UI", 12)).pack(side="bottom", pady=20)
-
-        def on_close():
-            if self.mobile_server:
-                self.mobile_server.stop_server()
-            top.destroy()
-            
-        top.protocol("WM_DELETE_WINDOW", on_close)
-
-
-    def show_radio(self):
-        """Open Radio Station Manager."""
-        from radio_window import RadioWindow
-        
-        # Check if already open (basic check)
-        if hasattr(self, 'radio_window') and self.radio_window.winfo_exists():
-            self.radio_window.lift()
-            self.radio_window.focus()
-            return
-            
-        self.radio_window = RadioWindow(self)
 
 if __name__ == "__main__":
     # High DPI fix
