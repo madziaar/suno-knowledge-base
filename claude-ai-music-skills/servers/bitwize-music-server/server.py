@@ -7717,6 +7717,10 @@ async def publish_sheet_music(
     if base_url:
         for item in uploaded:
             urls[item["filename"]] = f"{base_url}/{item['r2_key']}"
+    else:
+        # Use relative R2 keys when no public_url is configured
+        for item in uploaded:
+            urls[item["filename"]] = item["r2_key"]
 
     # --- Persist URLs to track/album frontmatter ---
     frontmatter_updated = False
@@ -7724,9 +7728,7 @@ async def publish_sheet_music(
     album_updated = False
     fm_reason = None
 
-    if not base_url:
-        fm_reason = "No public_url configured"
-    elif not urls:
+    if not urls:
         fm_reason = "No files uploaded successfully"
     else:
         import re
@@ -7741,9 +7743,9 @@ async def publish_sheet_music(
 
             # Group single URLs by track number
             # Singles are named like "01 - The Mountain.pdf"
-            track_urls = {}  # {1: {"pdf": url, "xml": url, "midi": url}, ...}
+            track_urls = {}  # {1: {"pdf": url, "musicxml": url, "midi": url}, ...}
             songbook_urls = {}  # {"songbook": url}
-            ext_to_key = {".pdf": "pdf", ".xml": "xml", ".mid": "midi", ".midi": "midi"}
+            ext_to_key = {".pdf": "pdf", ".xml": "musicxml", ".mid": "midi", ".midi": "midi"}
 
             for item in uploaded:
                 filename = item["filename"]

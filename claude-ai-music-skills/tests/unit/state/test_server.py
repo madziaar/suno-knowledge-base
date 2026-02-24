@@ -13336,7 +13336,7 @@ class TestPublishSheetMusic:
         fm = yaml.safe_load(fm_text)
         assert "sheet_music" in fm
         assert "pdf" in fm["sheet_music"]
-        assert "xml" in fm["sheet_music"]
+        assert "musicxml" in fm["sheet_music"]
         assert fm["sheet_music"]["pdf"].startswith("https://cdn.example.com/")
 
         # Verify track 2 has only pdf (no xml was uploaded for track 2)
@@ -13344,7 +13344,7 @@ class TestPublishSheetMusic:
         fm2 = yaml.safe_load(track2_text.split("---")[1])
         assert "sheet_music" in fm2
         assert "pdf" in fm2["sheet_music"]
-        assert "xml" not in fm2["sheet_music"]
+        assert "musicxml" not in fm2["sheet_music"]
 
     def test_persists_songbook_url_to_album_readme(self, tmp_path):
         """Album README gets sheet_music.songbook URL."""
@@ -13368,8 +13368,10 @@ class TestPublishSheetMusic:
         assert "songbook" in fm["sheet_music"]
         assert "cdn.example.com" in fm["sheet_music"]["songbook"]
 
-    def test_no_frontmatter_update_without_public_url(self, tmp_path):
-        """When no public_url, result has frontmatter_updated: false."""
+    def test_frontmatter_uses_relative_keys_without_public_url(self, tmp_path):
+        """When no public_url, frontmatter uses relative R2 keys."""
+        import yaml
+
         state, mock_cloud_mod, mock_config, content_dir, _ = (
             self._setup_publish_env(tmp_path, public_url=None)
         )
@@ -13381,11 +13383,14 @@ class TestPublishSheetMusic:
              patch("tools.shared.config.load_config", return_value=mock_config):
             result = json.loads(_run(server.publish_sheet_music("test-album")))
 
-        assert result["frontmatter_updated"] is False
-        assert "No public_url" in result.get("frontmatter_reason", "")
-        # Track files should be unchanged
+        assert result["frontmatter_updated"] is True
+        # Track files should have relative R2 key paths (no https://)
         track1_text = (content_dir / "tracks" / "01-first-track.md").read_text()
-        assert "sheet_music" not in track1_text
+        fm = yaml.safe_load(track1_text.split("---")[1])
+        assert "sheet_music" in fm
+        assert "pdf" in fm["sheet_music"]
+        assert not fm["sheet_music"]["pdf"].startswith("https://")
+        assert "test-artist/" in fm["sheet_music"]["pdf"]
 
     def test_idempotent_frontmatter_update(self, tmp_path):
         """Running publish twice overwrites, doesn't duplicate."""

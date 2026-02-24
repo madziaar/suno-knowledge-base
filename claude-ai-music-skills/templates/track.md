@@ -5,7 +5,7 @@ explicit: false
 suno_url: ""
 sheet_music:
   pdf: ""
-  xml: ""
+  musicxml: ""
   midi: ""
 ---
 
