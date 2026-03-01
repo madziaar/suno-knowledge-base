@@ -6,6 +6,12 @@ This project uses [Conventional Commits](https://conventionalcommits.org/) and [
 
 ## [Unreleased]
 
+## [0.68.0] - 2026-03-01
+
+### Changed
+- **Suno target duration guidance** — lyric-writer word count targets updated to produce 3:30–5:00 minute tracks (previous targets produced 2:00–2:30); genre-specific word counts, structure recommendations, and instrumental tag runtime estimates added to craft-reference.md
+- **Length check updated** — quality check #8 now flags songs under 200 words as "likely too short for target duration" and lowers hard-fail thresholds to 400/600 words (non-hip-hop/hip-hop)
+
 ## [0.67.0] - 2026-02-23
 
 ### Added
