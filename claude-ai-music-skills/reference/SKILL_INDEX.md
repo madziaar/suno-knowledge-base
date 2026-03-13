@@ -218,6 +218,23 @@ What to have ready before using each skill:
     -> [Generate in Suno] -> /mix-engineer (optional) -> /mastering-engineer -> /release-director
 ```
 
+### OST Album
+```
+/new-album <name> <genre>
+    -> /album-conceptualizer (plan world, leitmotifs, scene mapping)
+    -> /lyric-writer (for vocal tracks — auto-invokes /suno-engineer)
+    -> [For instrumental tracks: /suno-engineer directly with Instrumental: On]
+    -> /pronunciation-specialist (for vocal tracks)
+    -> /lyric-reviewer (for vocal tracks)
+    -> /pre-generation-check (validate all gates)
+    -> [Generate in Suno — use Instrumental: On for instrumental tracks]
+    -> /mix-engineer (optional: polish raw audio)
+    -> /mastering-engineer (master audio)
+    -> /album-art-director (world-themed artwork)
+    -> /promo-director (optional: promo videos)
+    -> /release-director (release to platforms)
+```
+
 ### Resume Existing Work
 ```
 /resume <album-name>

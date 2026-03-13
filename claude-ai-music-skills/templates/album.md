@@ -70,6 +70,34 @@ sheet_music:
 
 *Seeded by album-conceptualizer during Phase 4. Updated by lyric-writer as tracks are written.*
 
+<!-- OST: Include this section for OST albums (video game, film, TV, anime, etc.). Remove if not an OST. -->
+
+## World / Setting
+
+| Attribute | Detail |
+|-----------|--------|
+| **Media Type** | [Video Game / Film / TV Series / Anime / Theater / Podcast] |
+| **Title** | [Fictional property name] |
+| **Genre** | [Platformer / RPG / Noir / Sci-fi / Slice-of-life / etc.] |
+| **Setting** | [Fantasy / Sci-fi / Post-apocalyptic / Modern / Historical / etc.] |
+| **Era/Aesthetic** | [8-bit retro / Cinematic / Noir / Cel-shaded / etc.] |
+
+### Locations & Scenes
+
+| # | Location/Scene | Mood | Track(s) |
+|---|---------------|------|----------|
+| 1 | [Location or scene name] | [Mood description] | XX |
+
+### Leitmotif Plan
+
+| Theme | Represents | First Appears | Variations |
+|-------|-----------|---------------|------------|
+| [Main theme melody] | [What it represents] | Track XX | Track XX (minor key), Track XX (orchestral) |
+
+*Leitmotifs are tracked here AND in the Motifs & Threads section. This table focuses on musical themes; Motifs & Threads tracks lyrical/textual callbacks.*
+
+<!-- END OST -->
+
 ## Sonic Palette
 
 - **Beats**: [Production style description]

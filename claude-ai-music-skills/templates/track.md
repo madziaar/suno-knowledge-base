@@ -111,7 +111,7 @@ Space is not a constraint. Thoroughness is the priority.]
 
 [Describe the track's narrative, themes, and purpose in the album. What story does this track tell? What emotions should it evoke?]
 
-<!-- CONCEPT/NARRATIVE ALBUMS: Include this section for concept, narrative, thematic, or character study albums. Remove for standalone tracks or collection albums. -->
+<!-- CONCEPT/NARRATIVE ALBUMS: Include this section for concept, narrative, thematic, character study, or OST albums. Remove for standalone tracks or collection albums. -->
 
 ## Cross-References
 

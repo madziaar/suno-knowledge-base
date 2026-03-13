@@ -132,6 +132,51 @@ Style: Cinematic photography, warm tones, gentle movement
 
 ---
 
+## OST Albums
+
+**Visual strategy**: World immersion and media-appropriate aesthetic
+
+**Approaches**:
+
+1. **Media UI Aesthetic**
+   - Pixel art frames, HUD elements (games); film strip borders, clapperboard (film); episode cards (TV/anime)
+   - Retro CRT scanlines, neon-on-dark (retro games); grain/vignette (film noir); cel-shading (anime)
+   - Typography matching the fictional media's era and style
+
+2. **World Landscape**
+   - Sweeping environment art of the imagined world
+   - Vista, dungeon entrance, neon city, noir alleyway, school rooftop
+   - Cinematic and immersive, like concept art or a movie poster
+   - Rich color palette matching the world's mood
+
+3. **Iconic Item/Symbol**
+   - Single meaningful object from the fictional world (sword, badge, controller, artifact, mask)
+   - Rendered in the album's visual style
+   - Clean focal point, reads well at thumbnail
+   - Glowing effects, particle trails for dynamism
+
+**Example - Retro Sci-Fi Platformer OST**:
+```
+Concept: Nostalgic sci-fi adventure through pixelated galaxies
+Visual: Pixel-art spaceship flying through a neon star field,
+        trail of musical notes dissolving into pixels behind it,
+        CRT scanline overlay, deep space purple and electric cyan,
+        centered composition with retro game UI health bar at top
+Style: Pixel art meets synthwave, retro-futuristic, vibrant neon on dark
+```
+
+**Example - Noir Detective Film OST**:
+```
+Concept: Smoky jazz underworld of a fictional 1940s city
+Visual: Rain-slicked city street at night, lone streetlamp casting
+        a pool of light, saxophone silhouette in a foggy window above,
+        film noir high-contrast black and white with amber highlights,
+        vintage movie poster composition with art deco typography
+Style: Film noir photography, high contrast, moody, cinematic grain
+```
+
+---
+
 ## Handling Problematic Content
 
 ### Avoiding Copyright Issues
