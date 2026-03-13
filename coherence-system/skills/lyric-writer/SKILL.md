@@ -411,7 +411,7 @@ For true crime/documentary tracks, see [documentary-standards.md](documentary-st
 ### When to Activate
 
 Activate when **all** of these are true:
-- Album type is **Narrative**, **Thematic**, **Character Study**, or **Documentary**
+- Album type is **Narrative**, **Thematic**, **Character Study**, **Documentary**, or **OST**
 - Current track number is **> 1** (track 01 establishes — it doesn't reference)
 
 ### Process
