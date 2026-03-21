@@ -36,7 +36,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 | Version | Highlights |
 |---------|------------|
-| **0.70** | Voice-checker skill, cross-track referencing & iterative refinement for lyric-writer, pypdf CVE fix |
+| **0.70** | OST album type, voice-checker skill, cross-track referencing & iterative refinement for lyric-writer, pypdf CVE fix |
 | **0.69** | Target Duration planning — per-album/track duration targets threaded through planning, writing, prompting, and review; duration-to-word-count mapping |
 | **0.68** | Suno target duration guidance — word count targets updated for 3:30–5:00 min tracks, instrumental tag runtime, under-200-word "too short" flag |
 | **0.67** | Sheet music URL persistence to frontmatter, `prepare_singles.py` replaces `fix_titles.py`, songbook title page/TOC/footers, `musicxml` key naming |
