@@ -8,17 +8,17 @@ A complete AI music production workflow for Suno. Install as a Claude Code plugi
 > If you run into issues, feel free to [open an issue](https://github.com/bitwize-music-studio/claude-ai-music-skills/issues) or submit a PR.
 
 > [!WARNING]
-> **Claude Code Max plan recommended** ($200/month). This plugin uses 50 specialized skills that spawn subagents across Opus, Sonnet, and Haiku models. Session startup, automatic lyric reviews, multi-agent research workflows, and full album production pipelines are all token-intensive. The standard Pro plan will hit rate limits quickly during any multi-track session.
+> **Claude Code Max plan recommended** ($200/month). This plugin uses 51 specialized skills that spawn subagents across Opus, Sonnet, and Haiku models. Session startup, automatic lyric reviews, multi-agent research workflows, and full album production pipelines are all token-intensive. The standard Pro plan will hit rate limits quickly during any multi-track session.
 
 [![Static Validation](https://github.com/bitwize-music-studio/claude-ai-music-skills/actions/workflows/test.yml/badge.svg)](https://github.com/bitwize-music-studio/claude-ai-music-skills/actions/workflows/test.yml)
 [![Model Updater](https://github.com/bitwize-music-studio/claude-ai-music-skills/actions/workflows/model-updater.yml/badge.svg)](https://github.com/bitwize-music-studio/claude-ai-music-skills/actions/workflows/model-updater.yml)
 ![Version](https://img.shields.io/badge/version-0.69.0-blue)
-![Skills](https://img.shields.io/badge/skills-50-green)
+![Skills](https://img.shields.io/badge/skills-51-green)
 ![Tests](https://img.shields.io/badge/tests-2348-brightgreen)
 
 ## What Is This?
 
-This is a collection of **50 specialized skills** that turn Claude Code into a full music production assistant. It handles everything from album concept development to lyrics, Suno prompts, mastering, and release.
+This is a collection of **51 specialized skills** that turn Claude Code into a full music production assistant. It handles everything from album concept development to lyrics, Suno prompts, mastering, and release.
 
 **What you get:**
 - Structured workflow from idea to released album
@@ -36,6 +36,7 @@ See [CHANGELOG.md](CHANGELOG.md) for full history.
 
 | Version | Highlights |
 |---------|------------|
+| **0.70** | Voice-checker skill, cross-track referencing & iterative refinement for lyric-writer, pypdf CVE fix |
 | **0.69** | Target Duration planning — per-album/track duration targets threaded through planning, writing, prompting, and review; duration-to-word-count mapping |
 | **0.68** | Suno target duration guidance — word count targets updated for 3:30–5:00 min tracks, instrumental tag runtime, under-200-word "too short" flag |
 | **0.67** | Sheet music URL persistence to frontmatter, `prepare_singles.py` replaces `fix_titles.py`, songbook title page/TOC/footers, `musicxml` key naming |
