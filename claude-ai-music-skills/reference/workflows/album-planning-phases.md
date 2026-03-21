@@ -7,7 +7,7 @@
 **MUST answer before proceeding:**
 - Who is the artist? (Existing or new?)
 - What genre(s)? (Primary category: hip-hop, electronic, country, folk, rock)
-- What album type? (Documentary, Narrative, Thematic, Character Study, Collection)
+- What album type? (Documentary, Narrative, Thematic, Character Study, Collection, Original Soundtrack (OST))
 - How many tracks? (Full album ~10-15, EP ~4-6, Single)
 - Is this true-story/documentary? (Determines research requirements)
 

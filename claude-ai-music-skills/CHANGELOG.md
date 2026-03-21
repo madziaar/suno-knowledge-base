@@ -6,6 +6,17 @@ This project uses [Conventional Commits](https://conventionalcommits.org/) and [
 
 ## [Unreleased]
 
+## [0.70.0] - 2026-03-20
+
+### Added
+- **`voice-checker` skill** — Reviews lyrics and prose for AI-written patterns (abstract noun stacking, over-explained metaphors, cliche escalation, missing idiosyncrasy, prose AI tells); advisory Warning/Info severity
+- **Cross-track referencing** — lyric-writer supports callbacks, motifs, and character threads across tracks for concept/narrative albums; new Motifs & Threads and Cross-References template sections
+- **Iterative refinement passes** — lyric-writer tighten/strengthen/flow refinement patterns added to craft-reference
+
+### Fixed
+- **Domain correction** — `bitwize-music.com` → `bitwizemusic.com` in config example and tests
+- **pypdf CVE fix** — bumped 6.7.1 → 6.7.5 (CVE-2026-27628, CVE-2026-27888, CVE-2026-28351, CVE-2026-28804)
+
 ## [0.69.0] - 2026-03-03
 
 ### Added

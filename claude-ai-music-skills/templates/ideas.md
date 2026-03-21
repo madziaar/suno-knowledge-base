@@ -9,7 +9,7 @@ Capture album concepts here before they become full projects.
 ### [Idea Title]
 
 **Genre**: [hip-hop / electronic / country / folk / rock]
-**Type**: [Documentary / Narrative / Thematic / Character Study / Collection]
+**Type**: [Documentary / Narrative / Thematic / Character Study / Collection / Original Soundtrack (OST)]
 **Tracks**: [Estimated count]
 
 **Concept**: [1-2 sentence pitch]

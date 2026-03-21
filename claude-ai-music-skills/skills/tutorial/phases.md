@@ -11,7 +11,7 @@ Reference for the tutorial skill. Work through these phases with the user before
 Questions to answer:
 - Who is the artist? (Existing or new?)
 - What genre(s)? (Primary category: hip-hop, electronic, country, folk, rock)
-- What album type? (Documentary, Narrative, Thematic, Character Study, Collection)
+- What album type? (Documentary, Narrative, Thematic, Character Study, Collection, Original Soundtrack (OST))
 - How many tracks? (Full album ~10-15, EP ~4-6, Single)
 - Is this true-story/documentary? (Determines research requirements)
 
@@ -146,3 +146,4 @@ Before creating any track files:
 | **Thematic** | United by theme, not plot | Sub-themes, emotional journey, motifs |
 | **Character Study** | Deep dive into a person | Aspects, time periods, through-line |
 | **Collection** | Standalone songs, loose connection | Unifying element, flow, variety |
+| **OST** | Music evoking a fictional media property's world and moments | Media type, world, leitmotifs, genre palette, vocal/instrumental mix |

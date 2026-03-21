@@ -208,10 +208,18 @@ Combine up to 3 genres for unique sound:
 Check target duration: track Target Duration → album Target Duration → genre default.
 
 **How duration affects structure:**
+- **Under 2:00**: 1–2 sections + `[End]`. Minimal tags. Add `"short"` or `"concise"` in style prompt. Good for title screens, cutscenes, interludes.
 - **Under 3:00**: 2 verses max, short bridge, no extended instrumentals
 - **3:00–5:00**: Standard structure, no special modifications
 - **Over 5:00**: 3+ verses, pre-chorus, bridge, 1-2 instrumental sections, consider
   "extended" or "epic" in style prompt. Note: Suno V5 max ~8 minutes.
+
+**Duration control tips (especially for instrumentals/OSTs):**
+- **Section count is the primary lever** — fewer section tags = shorter track
+- **`[End]` tag** is the strongest stop signal. Place after `[Outro]` to force termination.
+- **No exact duration parameter exists** — expect 2–3 generations to hit target length
+- **Trim in post** — generate slightly long and fade/cut to exact length
+- **For very short tracks** (~1:00–1:30): `[Intro]` → `[Main Theme]` → `[End]` with Instrumental: On
 
 ---
 
