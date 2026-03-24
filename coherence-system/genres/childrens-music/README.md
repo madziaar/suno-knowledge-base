@@ -49,7 +49,7 @@ Today, children's music is dominated by YouTube and streaming. Cocomelon (founde
 | Pete Seeger | *Birds, Beasts, Bugs & Fishes* (1955), *Abiyoyo* (1958) | 1950s-1990s | Folk singalong, call-and-response, activism |
 | Ella Jenkins | *Call and Response* (1957), *You'll Sing a Song and I'll Sing a Song* (1966) | 1957-2024 | Multicultural singalong, call-and-response pioneer |
 | Rolf Zuckowski | *Rolfs Vogelhochzeit* (1978), *Winterkinder* (1987), *Im Kindergarten* (1994) | 1978-present | German Kinderlieder, seasonal songs, educational |
-| Fredrik Vahle | *Anne Kaffeekanne*, *Die 100 schönsten Lieder* | 1970s-present | German Kinderlieder, nature songs, playful narratives |
+| Fredrik Vahle | *Anne Kaffeekanne* (1984), *Die 100 schönsten Lieder* | 1968-present | German Kinderlieder, nature songs, playful narratives |
 | Detlev Jöcker | *1, 2, 3 im Sauseschritt* | 1982-present | Movement songs, learning songs, kindergarten music |
 | Raffi | *Singable Songs for the Very Young* (1976), *Baby Beluga* (1980), *Bananaphone* (1994) | 1976-present | Acoustic singalong, gentle folk-pop, eco-awareness |
 | The Wiggles | *The Wiggles* (1991), *Yummy Yummy* (1994), *ReWiggled* (2022) | 1991-present | Action songs, dance, high-energy performance |
@@ -60,7 +60,7 @@ Today, children's music is dominated by YouTube and streaming. Cocomelon (founde
 | Dan Zanes | *Rocket Ship Beach* (2000), *Family Dance* (2001) | 2000-present | Family folk-rock, multicultural, community music |
 | Cocomelon | Streaming singles | 2006-present | Animated nursery rhymes, YouTube-native, toddler-focused |
 | Super Simple Songs | Streaming singles | 2006-present | Simplified traditional songs, ESL teaching roots |
-| Deine Freunde | *Keine Märchen* (2014), *Helikopter* (2017) | 2012-present | German kids hip-hop, family-friendly rap |
+| Deine Freunde | *Ausm Häuschen* (2012), *Keine Märchen* (2017) | 2012-present | German kids hip-hop, family-friendly rap |
 | Pinkfong | *Baby Shark* and related releases | 2010s-present | Korean kids pop, viral animated songs |
 | Jack Hartmann | Streaming singles and videos | 2000s-present | Educational movement songs, classroom music |
 
@@ -90,4 +90,4 @@ family friendly, educational, preschool, toddler, bedtime, campfire
 - **Elizabeth Mitchell - "You Are My Little Bird" (2006)** — Hushed acoustic folk with fingerpicked guitar and Mitchell's intimate vocal delivery. Part lullaby, part nature song. Represents the indie-folk family music movement that appeals equally to parent and child.
 - **Cocomelon - "Bath Song" (2018)** — 3D animated nursery rhyme with polished pop production, auto-tuned children's vocals, and a repetitive hook optimized for toddler engagement. Billions of YouTube views. Represents the algorithmic content model that now dominates children's music consumption — music designed for replay, not live performance.
 - **Pinkfong - "Baby Shark" (2016)** — Korean children's song that became the most-viewed video on YouTube (over 14 billion views). Cumulative structure (baby, mommy, daddy, grandma shark), hand motions, and an earworm melody stripped to its barest elements. The song that proved children's music could achieve unprecedented global viral scale.
-- **Deine Freunde - "Schokolade" (2014)** — German kids hip-hop trio rapping about chocolate with genuine flow and production quality. Beat-driven, funny, and musically credible. Represents the modern German-language children's music that moves beyond traditional Kinderlieder into contemporary genres.
+- **Deine Freunde - "Schokolade" (2012)** — German kids hip-hop trio rapping about chocolate with genuine flow and production quality. Debut single from *Ausm Häuschen* that launched the band from a kindergarten recording idea into a major children's music act. Represents the modern German-language children's music that moves beyond traditional Kinderlieder into contemporary genres.

@@ -295,6 +295,12 @@ These genres commonly blend well together or have natural crossover potential:
 - [Chanson](chanson/README.md) + [Pop](pop/README.md) = French pop, chanson-pop
 - [Chanson](chanson/README.md) + [Singer-Songwriter](singer-songwriter/README.md) = Chanson à texte, literary songwriting
 
+### Children's / Family Fusions
+- [Children's Music](childrens-music/README.md) + [Hip-Hop](hip-hop/README.md) = Kids hip-hop (Deine Freunde)
+- [Children's Music](childrens-music/README.md) + [Folk](folk/README.md) = Family folk (Elizabeth Mitchell, Dan Zanes)
+- [Children's Music](childrens-music/README.md) + [Rock](rock/README.md) = Kindie rock (They Might Be Giants, Laurie Berkner)
+- [Children's Music](childrens-music/README.md) + [Classical](classical/README.md) = Orchestral children's music (Peter and the Wolf, Carnival of the Animals)
+
 ### Cinematic Applications
 - [Cinematic](cinematic/README.md) + [Synthwave](synthwave/README.md) = Retro-futurist scores
 - [Ambient](ambient/README.md) + [Classical](classical/README.md) = Neo-classical, film underscore
