@@ -1452,12 +1452,11 @@ async def generate_promo_videos(
 
         if not title:
             # Fall back to cleaning up the filename
-            import re as _re
             title = track_path.stem
             if " - " in title:
                 title = title.split(" - ", 1)[-1]
             else:
-                title = _re.sub(r"^\d{1,2}[\.\-_\s]+", "", title)
+                title = re.sub(r"^\d{1,2}[\.\-_\s]+", "", title)
             title = title.replace("-", " ").replace("_", " ").title()
 
         output_path = output_dir / f"{track_path.stem}_promo.mp4"
