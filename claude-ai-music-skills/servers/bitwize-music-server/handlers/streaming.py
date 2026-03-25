@@ -3,7 +3,6 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
 
 from handlers._shared import _safe_json, _find_album_or_error, _STREAMING_PLATFORMS
 from handlers import _shared

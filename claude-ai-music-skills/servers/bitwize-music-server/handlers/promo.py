@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 
 from handlers._shared import _find_album_or_error, _safe_json
-from handlers import _shared
 from handlers.status import _PROMO_FILES
 
 logger = logging.getLogger(__name__)
