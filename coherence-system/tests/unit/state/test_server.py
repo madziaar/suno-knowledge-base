@@ -90,6 +90,8 @@ server = _import_server()
 from handlers import text_analysis as _text_analysis_mod
 from handlers import processing as _processing_mod
 from handlers import status as _status_mod
+from handlers import health as _health_mod
+from handlers import ideas as _ideas_mod
 from handlers import _shared as _shared_mod
 
 # For lazy-imported functions that need patching at their source module
@@ -194,6 +196,53 @@ def _run(coro):
 def _fresh_state():
     """Return a deep copy of sample state so tests don't interfere."""
     return copy.deepcopy(SAMPLE_STATE)
+
+
+# ---------------------------------------------------------------------------
+# Re-export completeness — ensure server.py re-exports all registered tools
+# ---------------------------------------------------------------------------
+
+
+class TestReExportCompleteness:
+    """Verify that every tool function registered by handler modules is
+    re-exported from server.py, so tests using ``server.X()`` don't silently
+    break when new tools are added."""
+
+    def test_all_registered_tools_are_reexported(self):
+        """Every function registered via handler register() should be
+        accessible as an attribute on the server module."""
+        from handlers import (
+            core, content, text_analysis, lyrics_analysis, album_ops,
+            gates, streaming, skills, status, promo, health, ideas, rename,
+            processing, database, maintenance,
+        )
+
+        # Collect all tool functions by calling register() with a recording mcp
+        registered_names = set()
+
+        class _Recorder:
+            def tool(self_inner):
+                def decorator(fn):
+                    registered_names.add(fn.__name__)
+                    return fn
+                return decorator
+
+        recorder = _Recorder()
+        for mod in [
+            core, content, text_analysis, lyrics_analysis, album_ops,
+            gates, streaming, skills, status, promo, health, ideas, rename,
+            processing, database, maintenance,
+        ]:
+            mod.register(recorder)
+
+        missing = [
+            name for name in registered_names
+            if not hasattr(server, name)
+        ]
+        assert not missing, (
+            f"Handler tool(s) not re-exported from server.py: {sorted(missing)}. "
+            f"Add them to the re-exports block in server.py."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -6603,62 +6652,62 @@ class TestParseRequirements:
         """Parses standard == pinned versions."""
         req = tmp_path / "requirements.txt"
         req.write_text("requests==2.31.0\nflask==3.0.0\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"requests": "2.31.0", "flask": "3.0.0"}
 
     def test_skips_comments_and_blanks(self, tmp_path):
         """Skips comment lines and blank lines."""
         req = tmp_path / "requirements.txt"
         req.write_text("# This is a comment\n\nrequests==2.31.0\n\n# Another\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"requests": "2.31.0"}
 
     def test_strips_extras(self, tmp_path):
         """Strips extras markers like [cli]."""
         req = tmp_path / "requirements.txt"
         req.write_text("mcp[cli]==1.23.0\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"mcp": "1.23.0"}
 
     def test_lowercases_names(self, tmp_path):
         """Package names are lowercased."""
         req = tmp_path / "requirements.txt"
         req.write_text("PyYAML==6.0.2\nNumPy==1.26.4\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert "pyyaml" in result
         assert "numpy" in result
 
     def test_missing_file_returns_empty(self, tmp_path):
         """Missing file returns empty dict."""
-        result = _status_mod._parse_requirements(tmp_path / "nonexistent.txt")
+        result = _health_mod._parse_requirements(tmp_path / "nonexistent.txt")
         assert result == {}
 
     def test_empty_file_returns_empty(self, tmp_path):
         """Empty file returns empty dict."""
         req = tmp_path / "requirements.txt"
         req.write_text("")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {}
 
     def test_ignores_non_pinned_lines(self, tmp_path):
         """Ignores lines without == (bare names, >=, etc.)."""
         req = tmp_path / "requirements.txt"
         req.write_text("requests>=2.0\nflask\nnumpy==1.26.4\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"numpy": "1.26.4"}
 
     def test_handles_inline_comments(self, tmp_path):
         """Strips inline comments after version."""
         req = tmp_path / "requirements.txt"
         req.write_text("requests==2.31.0  # HTTP library\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"requests": "2.31.0"}
 
     def test_handles_hyphenated_names(self, tmp_path):
         """Handles hyphenated package names."""
         req = tmp_path / "requirements.txt"
         req.write_text("psycopg2-binary==2.9.10\n")
-        result = _status_mod._parse_requirements(req)
+        result = _health_mod._parse_requirements(req)
         assert result == {"psycopg2-binary": "2.9.10"}
 
 
@@ -7701,7 +7750,7 @@ class TestResolveIdeasPath:
         """Returns Path to IDEAS.md when content_root is set."""
         mock_cache = MockStateCache(_fresh_state())
         with patch.object(_shared_mod, "cache", mock_cache):
-            result = _status_mod._resolve_ideas_path()
+            result = _ideas_mod._resolve_ideas_path()
         assert result is not None
         assert isinstance(result, Path)
         assert str(result).endswith("IDEAS.md")
@@ -7713,21 +7762,21 @@ class TestResolveIdeasPath:
         state["config"]["content_root"] = ""
         mock_cache = MockStateCache(state)
         with patch.object(_shared_mod, "cache", mock_cache):
-            result = _status_mod._resolve_ideas_path()
+            result = _ideas_mod._resolve_ideas_path()
         assert result is None
 
     def test_returns_none_when_no_config(self):
         """Returns None when config is entirely missing."""
         mock_cache = MockStateCache({})
         with patch.object(_shared_mod, "cache", mock_cache):
-            result = _status_mod._resolve_ideas_path()
+            result = _ideas_mod._resolve_ideas_path()
         assert result is None
 
     def test_returns_none_when_config_has_no_content_root(self):
         """Returns None when config exists but has no content_root key."""
         mock_cache = MockStateCache({"config": {}})
         with patch.object(_shared_mod, "cache", mock_cache):
-            result = _status_mod._resolve_ideas_path()
+            result = _ideas_mod._resolve_ideas_path()
         assert result is None
 
     def test_path_combines_content_root_and_filename(self):
@@ -7736,7 +7785,7 @@ class TestResolveIdeasPath:
         state["config"]["content_root"] = "/custom/content"
         mock_cache = MockStateCache(state)
         with patch.object(_shared_mod, "cache", mock_cache):
-            result = _status_mod._resolve_ideas_path()
+            result = _ideas_mod._resolve_ideas_path()
         assert result == Path("/custom/content/IDEAS.md")
 
 
@@ -8017,7 +8066,7 @@ class TestCreateIdeaFormatting:
         mock_cache = MockStateCache(state)
 
         with patch.object(_shared_mod, "cache", mock_cache), \
-             patch.object(_status_mod, "_resolve_ideas_path", return_value=ideas_file):
+             patch.object(_ideas_mod, "_resolve_ideas_path", return_value=ideas_file):
             result = json.loads(_run(server.create_idea(
                 title="Test Idea",
                 genre="rock",
@@ -8045,7 +8094,7 @@ class TestCreateIdeaFormatting:
         mock_cache = MockStateCache(state)
 
         with patch.object(_shared_mod, "cache", mock_cache), \
-             patch.object(_status_mod, "_resolve_ideas_path", return_value=ideas_file):
+             patch.object(_ideas_mod, "_resolve_ideas_path", return_value=ideas_file):
             result = json.loads(_run(server.create_idea(
                 title="Field Test",
                 genre="electronic",
@@ -8069,7 +8118,7 @@ class TestCreateIdeaFormatting:
         mock_cache = MockStateCache(state)
 
         with patch.object(_shared_mod, "cache", mock_cache), \
-             patch.object(_status_mod, "_resolve_ideas_path", return_value=ideas_file):
+             patch.object(_ideas_mod, "_resolve_ideas_path", return_value=ideas_file):
             result = json.loads(_run(server.create_idea(title="Minimal Idea")))
 
         assert result["created"] is True

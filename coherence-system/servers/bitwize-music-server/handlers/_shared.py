@@ -356,7 +356,6 @@ def _derive_title_from_slug(slug: str) -> str:
         "01-my-track-name" -> "My Track Name"
         "my-album"         -> "My Album"
     """
-    import re as _re
     # Strip leading track number prefix like "01-", "02-"
-    stripped = _re.sub(r'^\d+-', '', slug)
+    stripped = re.sub(r'^\d+-', '', slug)
     return stripped.replace('-', ' ').title()

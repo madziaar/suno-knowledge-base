@@ -18,8 +18,13 @@ Tool handlers are organized into modules under ``handlers/``:
     lyrics_analysis - Syllable counting, readability, rhyme analysis, plagiarism
     album_ops       - Album structure validation and creation
     gates           - Pre-generation gates and release readiness checks
-    streaming       - Streaming URLs, skills listing
-    status          - Album status, track creation, promo, version, ideas, rename
+    streaming       - Streaming URL management
+    skills          - Skills listing and detail queries
+    status          - Album status transitions and track creation
+    promo           - Promo directory status and content retrieval
+    health          - Plugin version and venv health checks
+    ideas           - Idea management (create, update)
+    rename          - Album and track renaming
     processing      - Audio mastering, sheet music, promo videos, mix polishing
     database        - Tweet/promo management via PostgreSQL
     maintenance     - Reset mastering, legacy cleanup, audio layout migration
@@ -304,7 +309,12 @@ from handlers import (
     album_ops,
     gates,
     streaming,
+    skills,
     status,
+    promo,
+    health,
+    ideas,
+    rename,
     processing,
     database,
     maintenance,
@@ -317,7 +327,12 @@ lyrics_analysis.register(mcp)
 album_ops.register(mcp)
 gates.register(mcp)
 streaming.register(mcp)
+skills.register(mcp)
 status.register(mcp)
+promo.register(mcp)
+health.register(mcp)
+ideas.register(mcp)
+rename.register(mcp)
 processing.register(mcp)
 database.register(mcp)
 maintenance.register(mcp)
@@ -385,21 +400,41 @@ from handlers.gates import (  # noqa: E402, F401
 # Streaming tools
 from handlers.streaming import (  # noqa: E402, F401
     get_streaming_urls, update_streaming_url, verify_streaming_urls,
+)
+
+# Skills tools
+from handlers.skills import (  # noqa: E402, F401
     list_skills, get_skill,
 )
 
 # Status tools
 from handlers.status import (  # noqa: E402, F401
     update_album_status, create_track,
-    get_promo_status, get_promo_content,
-    get_plugin_version, check_venv_health,
-    create_idea, update_idea,
-    rename_album, rename_track,
     _VALID_TRACK_STATUSES, _VALID_TRACK_TRANSITIONS, _VALID_ALBUM_TRANSITIONS,
     _CANONICAL_TRACK_STATUS, _CANONICAL_ALBUM_STATUS,
     _TRACK_STATUS_LEVEL, _ALBUM_STATUS_LEVEL,
     _validate_track_transition, _validate_album_transition,
     _check_album_track_consistency,
+)
+
+# Promo tools
+from handlers.promo import (  # noqa: E402, F401
+    get_promo_status, get_promo_content,
+)
+
+# Health tools
+from handlers.health import (  # noqa: E402, F401
+    get_plugin_version, check_venv_health,
+)
+
+# Ideas tools
+from handlers.ideas import (  # noqa: E402, F401
+    create_idea, update_idea,
+)
+
+# Rename tools
+from handlers.rename import (  # noqa: E402, F401
+    rename_album, rename_track,
 )
 
 # Processing tools
