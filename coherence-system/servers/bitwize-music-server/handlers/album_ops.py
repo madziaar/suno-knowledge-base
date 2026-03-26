@@ -380,6 +380,9 @@ async def create_album_structure(
 
     created_files.append("tracks/")
 
+    # Rebuild state so subsequent tools (e.g., create_track) can find the new album
+    _shared.cache.rebuild()
+
     return _safe_json({
         "created": True,
         "path": str(album_path),
