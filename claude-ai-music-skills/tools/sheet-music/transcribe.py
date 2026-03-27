@@ -37,7 +37,7 @@ import subprocess
 import sys
 
 try:
-    import yaml
+    import yaml  # noqa: F401
 except ImportError:
     print("ERROR: pyyaml required. Install: pip install pyyaml")
     sys.exit(1)

@@ -19,6 +19,7 @@ Usage (either form works):
 """
 
 import argparse
+import contextlib
 import copy
 import errno
 import fcntl
@@ -355,10 +356,8 @@ def scan_skills(plugin_root: Path) -> dict[str, Any]:
     if not skills_dir.exists():
         return result
 
-    try:
+    with contextlib.suppress(OSError):
         result['skills_root_mtime'] = skills_dir.stat().st_mtime
-    except OSError:
-        pass
 
     model_counts: dict[str, int] = {}
     items: dict[str, dict[str, Any]] = {}
@@ -672,11 +671,11 @@ def write_state(state: dict[str, Any]):
     tmp_fd = None
     tmp_path = None
     try:
-        lock_fd = open(LOCK_FILE, 'w')
+        lock_fd = open(LOCK_FILE, 'w')  # noqa: SIM115
         _acquire_lock_with_timeout(lock_fd)
 
         # Use tempfile for unpredictable filename in the same directory
-        tmp_fd = tempfile.NamedTemporaryFile(
+        tmp_fd = tempfile.NamedTemporaryFile(  # noqa: SIM115
             mode='w', dir=CACHE_DIR, suffix='.tmp',
             prefix='.state_', delete=False
         )
@@ -696,10 +695,8 @@ def write_state(state: dict[str, Any]):
         if tmp_fd is not None:
             tmp_fd.close()
         if tmp_path is not None:
-            try:
+            with contextlib.suppress(OSError):
                 tmp_path.unlink(missing_ok=True)
-            except OSError:
-                pass
         raise
     finally:
         if lock_fd is not None:
@@ -776,7 +773,7 @@ def _version_compare(a: str, b: str) -> int:
     max_len = max(len(pa), len(pb))
     pa.extend([0] * (max_len - len(pa)))
     pb.extend([0] * (max_len - len(pb)))
-    for x, y in zip(pa, pb):
+    for x, y in zip(pa, pb, strict=True):
         if x < y:
             return -1
         if x > y:

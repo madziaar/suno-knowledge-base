@@ -5,6 +5,7 @@ import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import ClassVar
 
 from tools.shared.colors import Colors
 
@@ -15,7 +16,7 @@ _file_logging_configured = False
 class ColorFormatter(logging.Formatter):
     """Formatter that uses Colors class for TTY-aware colored output."""
 
-    LEVEL_COLORS = {
+    LEVEL_COLORS: ClassVar[dict[int, tuple[str, str]]] = {
         logging.DEBUG: ('CYAN', '[DEBUG]'),
         logging.INFO: ('GREEN', '[INFO]'),
         logging.WARNING: ('YELLOW', '[WARN]'),

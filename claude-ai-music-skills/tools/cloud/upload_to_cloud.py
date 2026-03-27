@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import yaml
+    import yaml  # noqa: F401
 except ImportError:
     print("Error: pyyaml not installed.")
     print("Set up venv:")

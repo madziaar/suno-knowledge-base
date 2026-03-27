@@ -130,7 +130,7 @@ def apply_eq(data, rate, freq, gain_db, q=1.0):
     """
     nyquist = rate / 2
     if not (20 <= freq < nyquist):
-        logger.warning("EQ freq %.1f Hz out of valid range (20–%.0f Hz), skipping", freq, nyquist)
+        logger.warning("EQ freq %.1f Hz out of valid range (20\u2013%.0f Hz), skipping", freq, nyquist)
         return data
     if q <= 0:
         logger.warning("EQ Q factor must be positive (got %.4f), skipping", q)
@@ -172,7 +172,7 @@ def apply_high_shelf(data, rate, freq, gain_db):
     """Apply high shelf EQ."""
     nyquist = rate / 2
     if not (20 <= freq < nyquist):
-        logger.warning("High shelf freq %.1f Hz out of valid range (20–%.0f Hz), skipping", freq, nyquist)
+        logger.warning("High shelf freq %.1f Hz out of valid range (20\u2013%.0f Hz), skipping", freq, nyquist)
         return data
 
     A = 10 ** (gain_db / 40)
