@@ -6,3 +6,24 @@ markers = [
     "slow: tests that take longer than 5 seconds",
     "integration: cross-skill integration tests",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "servers/bitwize-music-server"
+files = ["servers/bitwize-music-server/handlers"]
+namespace_packages = true
+explicit_package_bases = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+strict_equality = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+follow_imports = "silent"
+
+[[tool.mypy.overrides]]
+module = "tools.*"
+ignore_errors = true

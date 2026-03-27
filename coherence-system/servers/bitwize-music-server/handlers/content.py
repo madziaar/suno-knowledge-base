@@ -1,7 +1,10 @@
 """Content and override tools — loading reference files, overrides, and clipboard formatting."""
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
+from typing import Any
 
 from handlers._shared import (
     _safe_json, _extract_markdown_section, _extract_code_block,
@@ -88,6 +91,7 @@ async def get_reference(name: str, section: str = "") -> str:
     if not ref_name.endswith(".md"):
         ref_name += ".md"
 
+    assert _shared.PLUGIN_ROOT is not None
     ref_path = (_shared.PLUGIN_ROOT / "reference" / ref_name).resolve()
     safe_root = (_shared.PLUGIN_ROOT / "reference").resolve()
     try:
@@ -163,11 +167,13 @@ async def format_for_clipboard(
     normalized_album, album, error = _find_album_or_error(album_slug)
     if error:
         return error
+    assert album is not None
 
     tracks = album.get("tracks", {})
     matched_slug, track_data, error = _find_track_or_error(tracks, track_slug, album_slug)
     if error:
         return error
+    assert track_data is not None
 
     track_path = track_data.get("path", "")
     if not track_path:
@@ -178,7 +184,7 @@ async def format_for_clipboard(
     except (OSError, UnicodeDecodeError) as e:
         return _safe_json({"error": f"Cannot read track file: {e}"})
 
-    def _get_section_content(heading_name):
+    def _get_section_content(heading_name: str) -> str | None:
         """Extract code block content from a section."""
         section_text = _extract_markdown_section(text, heading_name)
         if section_text is None:
@@ -186,6 +192,7 @@ async def format_for_clipboard(
         code = _extract_code_block(section_text)
         return code if code is not None else section_text
 
+    content: str | None = None
     if content_type == "style":
         style = _get_section_content("Style Box")
         exclude = _get_section_content("Exclude Styles")
@@ -247,7 +254,7 @@ async def format_for_clipboard(
     })
 
 
-def register(mcp):
+def register(mcp: Any) -> None:
     """Register content tools with the MCP server."""
     mcp.tool()(load_override)
     mcp.tool()(get_reference)
