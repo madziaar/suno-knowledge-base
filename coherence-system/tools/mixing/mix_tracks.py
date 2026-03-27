@@ -265,7 +265,7 @@ def apply_highpass(data, rate, cutoff=30):
     nyquist = rate / 2
     if cutoff <= 0 or cutoff >= nyquist:
         if cutoff > 0:
-            logger.warning("Highpass cutoff %d Hz out of range (0–%.0f Hz), skipping", cutoff, nyquist)
+            logger.warning("Highpass cutoff %d Hz out of range (0\u2013%.0f Hz), skipping", cutoff, nyquist)
         return data
 
     normalized_cutoff = cutoff / nyquist
@@ -301,7 +301,7 @@ def apply_eq(data, rate, freq, gain_db, q=1.0):
     """
     nyquist = rate / 2
     if not (20 <= freq < nyquist):
-        logger.warning("EQ freq %.1f Hz out of valid range (20–%.0f Hz), skipping", freq, nyquist)
+        logger.warning("EQ freq %.1f Hz out of valid range (20\u2013%.0f Hz), skipping", freq, nyquist)
         return data
     if q <= 0:
         logger.warning("EQ Q factor must be positive (got %.4f), skipping", q)
@@ -1255,11 +1255,11 @@ def mix_track_stems(stem_paths, output_path, genre=None, dry_run=False):
                 # Pad shorter to match longer
                 max_len = max(data.shape[0], chunk.shape[0])
                 if data.shape[0] < max_len:
-                    padded = np.zeros((max_len,) + data.shape[1:], dtype=np.float64)
+                    padded = np.zeros((max_len, *data.shape[1:]), dtype=np.float64)
                     padded[:data.shape[0]] = data
                     data = padded
                 if chunk.shape[0] < max_len:
-                    padded = np.zeros((max_len,) + chunk.shape[1:], dtype=np.float64)
+                    padded = np.zeros((max_len, *chunk.shape[1:]), dtype=np.float64)
                     padded[:chunk.shape[0]] = chunk
                     chunk = padded
                 data = data + chunk.astype(np.float64)

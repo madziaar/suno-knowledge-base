@@ -341,7 +341,7 @@ def parse_track_file(path: Path) -> dict[str, Any]:
 
     # Suno Link
     suno_link_raw = _extract_table_value(text, 'Suno Link')
-    if suno_link_raw and suno_link_raw.strip() not in ('—', '–', '-', ''):
+    if suno_link_raw and suno_link_raw.strip() not in ('—', '\u2013', '-', ''):
         result['has_suno_link'] = True
     else:
         result['has_suno_link'] = False
@@ -353,7 +353,7 @@ def parse_track_file(path: Path) -> dict[str, Any]:
 
     # Fade Out (duration in seconds, or None)
     fade_out_raw = _extract_table_value(text, 'Fade Out')
-    if fade_out_raw and fade_out_raw.strip() not in ('—', '–', '-', ''):
+    if fade_out_raw and fade_out_raw.strip() not in ('—', '\u2013', '-', ''):
         # Extract numeric value: "5s" → 5.0, "5" → 5.0, "10.5s" → 10.5
         fade_match = re.search(r'(\d+(?:\.\d+)?)', fade_out_raw)
         if fade_match:

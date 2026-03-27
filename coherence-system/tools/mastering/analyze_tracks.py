@@ -74,7 +74,7 @@ def analyze_track(filepath):
     tinniness_ratio = band_energy['high_mid'] / band_energy['mid'] if band_energy['mid'] > 0 else 0
 
     # Crest factor (peak to RMS as linear ratio)
-    crest_factor = peak_linear / rms if rms > 0 else 0.0
+    _crest_factor = peak_linear / rms if rms > 0 else 0.0
 
     return {
         'filename': os.path.basename(filepath),

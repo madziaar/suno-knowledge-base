@@ -28,6 +28,7 @@ Usage:
 
 import argparse
 import atexit
+import contextlib
 import os
 import subprocess
 import sys
@@ -65,10 +66,8 @@ _temp_files_to_cleanup: list = []
 
 def _cleanup_temp_files():
     for path in _temp_files_to_cleanup:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(path)
-        except OSError:
-            pass
     _temp_files_to_cleanup.clear()
 
 
@@ -153,8 +152,8 @@ def generate_waveform_video(
         dominant = extract_dominant_color(artwork_path)
         color1 = rgb_to_hex(dominant)
         analogous1, analogous2 = get_analogous_colors(dominant)
-        color_ana1 = rgb_to_hex(analogous1)
-        color_ana2 = rgb_to_hex(analogous2)
+        _color_ana1 = rgb_to_hex(analogous1)
+        _color_ana2 = rgb_to_hex(analogous2)
     else:
         # Extract colors from album art
         logger.info("Extracting colors from artwork...")
@@ -163,8 +162,8 @@ def generate_waveform_video(
         analogous1, analogous2 = get_analogous_colors(dominant)
         color1 = rgb_to_hex(dominant)
         color2 = rgb_to_hex(complementary)
-        color_ana1 = rgb_to_hex(analogous1)
-        color_ana2 = rgb_to_hex(analogous2)
+        _color_ana1 = rgb_to_hex(analogous1)
+        _color_ana2 = rgb_to_hex(analogous2)
 
     logger.debug("Wave color: %s, Text color: %s, Glow: %.1f", color2, effective_text_color, glow)
 
@@ -174,14 +173,14 @@ def generate_waveform_video(
     # Write title and artist to temp files so ffmpeg reads them via textfile=
     # This avoids all escaping issues with drawtext's text= parameter,
     # preventing injection of ffmpeg filter directives through track titles.
-    title_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
+    title_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)  # noqa: SIM115
     os.chmod(title_file.name, 0o600)
     title_file.write(title)
     title_file.close()
     title_file_path = title_file.name
     _temp_files_to_cleanup.append(title_file_path)
 
-    artist_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
+    artist_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)  # noqa: SIM115
     os.chmod(artist_file.name, 0o600)
     artist_file.write(artist_name)
     artist_file.close()
@@ -193,7 +192,7 @@ def generate_waveform_video(
 
     # Scale glow sigma values (base values multiplied by glow factor)
     glow_s = max(0.5, glow * 8)     # small glow: 0.5-8
-    glow_m = max(1.0, glow * 13)    # medium glow: 1-13
+    _glow_m = max(1.0, glow * 13)    # medium glow: 1-13
     glow_l = max(1.0, glow * 25)    # large glow: 1-25
 
     if style == "mirror":
@@ -354,14 +353,10 @@ def generate_waveform_video(
     finally:
         # Clean up temp text files (also remove from atexit list)
         for tmp in (title_file_path, artist_file_path):
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp)
-            except OSError:
-                pass
-            try:
+            with contextlib.suppress(ValueError):
                 _temp_files_to_cleanup.remove(tmp)
-            except ValueError:
-                pass
 
 
 def get_title_from_markdown(track_md_path: Path) -> str | None:

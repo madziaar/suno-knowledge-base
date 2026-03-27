@@ -43,24 +43,24 @@ def extract_dominant_color(image_path: Path) -> tuple[int, int, int]:
 def get_complementary_color(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
     """Get complementary color with boosted visibility."""
     r, g, b = [x / 255.0 for x in rgb]
-    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    h, lightness, s = colorsys.rgb_to_hls(r, g, b)
     h = (h + 0.5) % 1.0  # Rotate 180°
-    l = max(l, 0.6)  # Ensure visible
+    lightness = max(lightness, 0.6)  # Ensure visible
     s = max(s, 0.8)  # Vibrant
-    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    r, g, b = colorsys.hls_to_rgb(h, lightness, s)
     return (int(r * 255), int(g * 255), int(b * 255))
 
 
 def get_analogous_colors(rgb: tuple[int, int, int]) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     """Get two analogous colors (30 degrees on each side)."""
     r, g, b = [x / 255.0 for x in rgb]
-    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    h, lightness, s = colorsys.rgb_to_hls(r, g, b)
 
     h1 = (h + 0.083) % 1.0  # +30 degrees
     h2 = (h - 0.083) % 1.0  # -30 degrees
 
-    r1, g1, b1 = colorsys.hls_to_rgb(h1, l, s)
-    r2, g2, b2 = colorsys.hls_to_rgb(h2, l, s)
+    r1, g1, b1 = colorsys.hls_to_rgb(h1, lightness, s)
+    r2, g2, b2 = colorsys.hls_to_rgb(h2, lightness, s)
 
     return (
         (int(r1 * 255), int(g1 * 255), int(b1 * 255)),

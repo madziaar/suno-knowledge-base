@@ -23,7 +23,7 @@ import re
 import sys
 
 try:
-    import yaml
+    import yaml  # noqa: F401
 except ImportError:
     print("ERROR: pyyaml required. Install: pip install pyyaml")
     sys.exit(1)
@@ -46,7 +46,7 @@ try:
     import io
 
     from pypdf import PdfReader, PdfWriter
-    from reportlab.lib.pagesizes import A4, letter
+    from reportlab.lib.pagesizes import A4, letter  # noqa: F401
     from reportlab.lib.units import inch
     from reportlab.pdfgen import canvas
 except ImportError:
@@ -367,7 +367,7 @@ def create_footer_overlay(page_size, footer_url):
     Used to stamp a footer onto existing PDF pages.
     """
     buffer = io.BytesIO()
-    width, height = page_size
+    width, _height = page_size
     c = canvas.Canvas(buffer, pagesize=page_size)
 
     c.setFont("Helvetica", 8)

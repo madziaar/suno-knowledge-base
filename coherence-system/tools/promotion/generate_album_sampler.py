@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import atexit
+import contextlib
 import os
 import re
 import shutil
@@ -53,10 +54,8 @@ _temp_files_to_cleanup: list = []
 
 def _cleanup_temp_files():
     for path in _temp_files_to_cleanup:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(path)
-        except OSError:
-            pass
     _temp_files_to_cleanup.clear()
 
 
