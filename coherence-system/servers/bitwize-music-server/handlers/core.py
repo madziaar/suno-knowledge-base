@@ -435,7 +435,7 @@ async def search(query: str, scope: str = "all") -> str:
     """
     state = _shared.cache.get_state()
     query_lower = query.lower()
-    results: dict = {"query": query, "scope": scope}
+    results: dict[str, Any] = {"query": query, "scope": scope}
 
     if scope in ("all", "albums"):
         album_matches = []

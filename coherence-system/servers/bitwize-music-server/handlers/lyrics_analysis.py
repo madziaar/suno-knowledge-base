@@ -150,7 +150,7 @@ def _extract_distinctive_ngrams(
     Returns sorted by priority descending, then word count descending.
     """
     # phrase -> best entry (highest priority)
-    seen: dict = {}
+    seen: dict[str, dict[str, Any]] = {}
 
     for line_data in lines_with_sections:
         words = line_data["words"]
