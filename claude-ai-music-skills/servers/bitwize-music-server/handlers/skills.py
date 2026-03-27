@@ -1,5 +1,9 @@
 """Skills listing tools — query and filter plugin skills."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from handlers._shared import _normalize_slug, _safe_json
 from handlers import _shared
 
@@ -109,7 +113,7 @@ async def get_skill(name: str) -> str:
 # Registration
 # ---------------------------------------------------------------------------
 
-def register(mcp):
+def register(mcp: Any) -> None:
     """Register skills listing tools with the MCP server."""
     mcp.tool()(list_skills)
     mcp.tool()(get_skill)

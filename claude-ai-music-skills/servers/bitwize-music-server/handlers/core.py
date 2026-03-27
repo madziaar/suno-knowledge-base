@@ -1,5 +1,7 @@
 """Core query tools — albums, tracks, sessions, config, search, paths."""
 
+from __future__ import annotations
+
 import logging
 import re
 from pathlib import Path
@@ -45,7 +47,7 @@ _UPDATABLE_FIELDS = {
 # Helper functions
 # =============================================================================
 
-def _detect_phase(album: dict) -> str:
+def _detect_phase(album: dict[str, Any]) -> str:
     """Detect the current workflow phase for an album.
 
     Matches the decision tree from the resume skill.
@@ -783,6 +785,7 @@ async def extract_section(album_slug: str, track_slug: str, section: str) -> str
     matched_slug, track_data, error = _find_track_or_error(tracks, track_slug, album_slug)
     if error:
         return error
+    assert track_data is not None
 
     track_path = track_data.get("path", "")
     if not track_path:
@@ -888,6 +891,7 @@ async def update_track_field(
     matched_slug, track_data, error = _find_track_or_error(tracks, track_slug, album_slug)
     if error:
         return error
+    assert track_data is not None
 
     # Validate status transition before any file I/O
     if field_key == "status":
@@ -1050,7 +1054,7 @@ async def get_album_progress(album_slug: str) -> str:
     track_count = len(tracks)
 
     # Count by status
-    status_counts = {}
+    status_counts: dict[str, int] = {}
     for track in tracks.values():
         s = track.get("status", STATUS_UNKNOWN)
         status_counts[s] = status_counts.get(s, 0) + 1
@@ -1086,7 +1090,7 @@ async def get_album_progress(album_slug: str) -> str:
 # Registration
 # =============================================================================
 
-def register(mcp):
+def register(mcp: Any) -> None:
     """Register core query tools with the MCP server."""
     mcp.tool()(find_album)
     mcp.tool()(list_albums)

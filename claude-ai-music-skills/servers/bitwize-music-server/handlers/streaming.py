@@ -1,8 +1,11 @@
 """Streaming URL management tools."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from pathlib import Path
+from typing import Any
 
 from handlers._shared import _safe_json, _find_album_or_error, _STREAMING_PLATFORMS
 from handlers import _shared
@@ -49,6 +52,7 @@ async def get_streaming_urls(album_slug: str) -> str:
     normalized, album, error = _find_album_or_error(album_slug)
     if error:
         return error
+    assert album is not None
 
     # Get streaming URLs from state cache
     streaming = album.get("streaming_urls", {})
@@ -90,7 +94,7 @@ async def update_streaming_url(album_slug: str, platform: str, url: str) -> str:
     Returns:
         JSON with update result or error
     """
-    import yaml
+    import yaml  # type: ignore[import-untyped,unused-ignore]
 
     # Validate platform
     canonical_platform = _STREAMING_PLATFORMS.get(platform.lower().replace(" ", "_"))
@@ -109,6 +113,7 @@ async def update_streaming_url(album_slug: str, platform: str, url: str) -> str:
     normalized, album, error = _find_album_or_error(album_slug)
     if error:
         return error
+    assert album is not None
 
     album_path = album.get("path", "")
     if not album_path:
@@ -244,12 +249,13 @@ async def verify_streaming_urls(album_slug: str) -> str:
     normalized, album, error = _find_album_or_error(album_slug)
     if error:
         return error
+    assert album is not None
 
     streaming = album.get("streaming_urls", {})
 
-    def _check_url(url: str) -> dict:
+    def _check_url(url: str) -> dict[str, Any]:
         """Check a single URL (blocking). Run in executor to avoid blocking the event loop."""
-        result_entry = {"url": url}
+        result_entry: dict[str, Any] = {"url": url}
         # Validate URL scheme to prevent SSRF (file://, gopher://, etc.)
         parsed = urllib.parse.urlparse(url)
         if parsed.scheme not in ("http", "https"):
@@ -342,7 +348,7 @@ async def verify_streaming_urls(album_slug: str) -> str:
 # Registration
 # ---------------------------------------------------------------------------
 
-def register(mcp):
+def register(mcp: Any) -> None:
     """Register streaming URL tools with the MCP server."""
     mcp.tool()(get_streaming_urls)
     mcp.tool()(update_streaming_url)
