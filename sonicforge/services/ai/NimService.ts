@@ -1,6 +1,6 @@
 
 import OpenAI from "openai";
-import { SAFETY_SETTINGS, EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
+import { EXPERT_SYSTEM_PROMPT, getSystemInstruction } from "./config";
 import { parseError, retryWithBackoff, globalCircuitBreaker } from "./utils";
 import { validateAndFixTags, sanitizeLyrics } from "./validators";
 import { GeneratedPrompt, ExpertInputs, SongConcept, AgentType } from "../../types";
@@ -423,28 +423,52 @@ export class NimService implements IGeneratorService {
       } catch (tier2Error: unknown) {
         console.warn("Tier 2 (70B) Failed. Cascading to Tier 3...", tier2Error);
 
-        // TIER 3: NVIDIA Llama 3.1 8B Instruct (Fast fallback)
+        // TIER 3: Google Gemma 4 31B IT (Alternative high-quality model)
         try {
-          result = await globalCircuitBreaker.execute(async () => {
+          await retryWithBackoff(async () => {
             const response = await this.client.chat.completions.create({
-              model: 'meta/llama-3.1-8b-instruct',
+              model: 'google/gemma-4-31b-it',
               messages: [
                 { role: 'system', content: systemInstruction },
                 { role: 'user', content: promptContent }
               ],
-              temperature: 0.7,
+              temperature: 1.0,
+              top_p: 0.95,
               max_tokens: effectiveMaxTokens,
               response_format: { type: 'json_object' }
             });
-            const r = await parseJsonAsync(response.choices[0]?.message?.content || "{}") as GeneratedPrompt;
-            r.modelUsed = "NVIDIA Llama 3.1 8B Instruct";
-            return r;
-          });
+            result = await parseJsonAsync(response.choices[0]?.message?.content || "{}") as GeneratedPrompt;
+            result.modelUsed = "Google Gemma 4 31B IT";
+          }, 2, 500);
           
-          if (result!.analysis) result!.analysis += "\n\n[SYSTEM NOTE: Emergency Fallback Protocol (8B).]";
+          if (result!.analysis) result!.analysis += "\n\n[SYSTEM NOTE: Generated via Google Gemma 4 31B IT fallback.]";
+          
+        } catch (gemmaError: unknown) {
+          console.warn("Gemma 4 31B Failed. Cascading to Tier 4 (8B)...", gemmaError);
 
-        } catch (tier3Error: unknown) {
-          throw new Error(`ALL TIERS FAILED. Last error: ${parseError(tier3Error)}`);
+          // TIER 4: NVIDIA Llama 3.1 8B Instruct (Fast fallback)
+          try {
+            result = await globalCircuitBreaker.execute(async () => {
+              const response = await this.client.chat.completions.create({
+                model: 'meta/llama-3.1-8b-instruct',
+                messages: [
+                  { role: 'system', content: systemInstruction },
+                  { role: 'user', content: promptContent }
+                ],
+                temperature: 0.7,
+                max_tokens: effectiveMaxTokens,
+                response_format: { type: 'json_object' }
+              });
+              const r = await parseJsonAsync(response.choices[0]?.message?.content || "{}") as GeneratedPrompt;
+              r.modelUsed = "NVIDIA Llama 3.1 8B Instruct";
+              return r;
+            });
+            
+            if (result!.analysis) result!.analysis += "\n\n[SYSTEM NOTE: Emergency Fallback Protocol (8B).]";
+
+          } catch (tier3Error: unknown) {
+            throw new Error(`ALL TIERS FAILED. Last error: ${parseError(tier3Error)}`);
+          }
         }
       }
     }
