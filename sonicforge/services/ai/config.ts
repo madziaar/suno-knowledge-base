@@ -1,15 +1,9 @@
 
-import { HarmCategory, HarmBlockThreshold, SafetySetting } from "@google/genai";
 import { getSystemInstruction, EXPERT_RULES_BLOCK, SYNTAX_BLOCK, IDENTITY_BLOCKS, CONSTRAINTS_BLOCK, NEGATIVE_CONSTRAINTS_BLOCK, REASONING_BLOCK } from "./prompts/system";
 import { getHighImpactTagsString } from "../../features/generator/data/sunoMetaTags";
 
-// Define Safety Settings
-export const SAFETY_SETTINGS: SafetySetting[] = [
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-];
+// Safety settings are no longer needed for NVIDIA NIM API
+// The API handles content filtering server-side
 
 export const TAG_DATABASE = getHighImpactTagsString();
 

@@ -1,6 +1,5 @@
 
-import { getClient } from "./client";
-import { Type, Schema } from "@google/genai";
+import OpenAI from "openai";
 import { SAFETY_SETTINGS } from "./config";
 
 export interface IntentProfile {
@@ -10,19 +9,19 @@ export interface IntentProfile {
   detectedGenre?: string;
 }
 
-const CLASSIFIER_SCHEMA: Schema = {
-  type: Type.OBJECT,
+const CLASSIFIER_SCHEMA = {
+  type: 'object',
   properties: {
-    tone: { type: Type.STRING, enum: ['aggressive', 'melancholic', 'uplifting', 'technical', 'chaotic', 'neutral'] },
-    complexity: { type: Type.STRING, enum: ['simple', 'moderate', 'complex'] },
-    needsResearch: { type: Type.BOOLEAN },
-    detectedGenre: { type: Type.STRING }
+    tone: { type: 'string', enum: ['aggressive', 'melancholic', 'uplifting', 'technical', 'chaotic', 'neutral'] },
+    complexity: { type: 'string', enum: ['simple', 'moderate', 'complex'] },
+    needsResearch: { type: 'boolean' },
+    detectedGenre: { type: 'string' }
   },
   required: ["tone", "complexity", "needsResearch"]
 };
 
 /**
- * Rapidly classifies user intent using Gemini 2.5 Flash-Lite.
+ * Rapidly classifies user intent using NVIDIA Llama 3.1 8B Instruct.
  * This runs in parallel with research to configure the system prompt dynamically.
  * Determines thinking budget (via complexity) and tone modulation.
  * 
@@ -37,19 +36,18 @@ export const classifyIntent = async (userInput: string): Promise<IntentProfile> 
   const client = getClient();
   
   try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-lite', // Fastest model for metadata
-      contents: `Classify this music generation prompt. Input: "${userInput}"`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: CLASSIFIER_SCHEMA,
-        temperature: 0.1,
-        maxOutputTokens: 100,
-        safetySettings: SAFETY_SETTINGS
-      }
+    const response = await client.chat.completions.create({
+      model: 'meta/llama-3.1-8b-instruct', // Fast model for metadata
+      messages: [
+        { role: 'system', content: 'You are a music prompt classifier. Classify prompts by tone, complexity, and research needs.' },
+        { role: 'user', content: `Classify this music generation prompt. Input: "${userInput}"` }
+      ],
+      temperature: 0.1,
+      max_tokens: 100,
+      response_format: { type: 'json_object' }
     });
 
-    return JSON.parse(response.text || "{}") as IntentProfile;
+    return JSON.parse(response.choices[0]?.message?.content || "{}") as IntentProfile;
   } catch (e: unknown) {
     console.warn("Intent classification failed, using defaults.", e);
     return { tone: 'neutral', complexity: 'moderate', needsResearch: false };
