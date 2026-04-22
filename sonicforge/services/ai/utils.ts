@@ -13,27 +13,27 @@ export const parseError = (e: unknown): string => {
   const errorObj = isErrorLike(e) ? e : null;
 
   // 1. Rate Limiting / Quota
-  if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted')) {
+  if (msg.includes('429') || msg.includes('quota') || msg.includes('exhausted') || msg.includes('rate limit')) {
     return "CORE OVERLOAD (429): API Rate Limit Exceeded. The forge is running too hot. Cool down for 60 seconds and try again.";
   }
 
   // 2. Server Issues
-  if (msg.includes('503') || msg.includes('500') || msg.includes('overloaded') || msg.includes('internal')) {
-    return "SYSTEM FAILURE (503): Gemini Servers Unresponsive. The neural link is severed. Please retry in a moment.";
+  if (msg.includes('503') || msg.includes('500') || msg.includes('overloaded') || msg.includes('internal') || msg.includes('service unavailable')) {
+    return "SYSTEM FAILURE (503): AI Servers Unresponsive. The neural link is severed. Please retry in a moment.";
   }
 
   // 3. Safety Filters
-  if (msg.includes('safety') || msg.includes('blocked') || (errorObj?.response?.promptFeedback?.blockReason)) {
-    return "SAFETY LOCKOUT: Content flagged by corporate protocols. Your prompt might be too spicy or controversial. Try softening the language.";
+  if (msg.includes('safety') || msg.includes('blocked') || msg.includes('content policy') || msg.includes('moderation')) {
+    return "SAFETY LOCKOUT: Content flagged by content policies. Your prompt might be too spicy or controversial. Try softening the language.";
   }
 
   // 4. Auth / Permissions
-  if (msg.includes('key') || msg.includes('permission') || msg.includes('403')) {
+  if (msg.includes('key') || msg.includes('permission') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('api key')) {
     return "ACCESS DENIED (403): Invalid API Key or Permissions. Please check your credentials.";
   }
 
   // 5. Network / Offline
-  if (msg.includes('fetch') || msg.includes('network') || msg.includes('offline')) {
+  if (msg.includes('fetch') || msg.includes('network') || msg.includes('offline') || msg.includes('connection')) {
     return "CONNECTION LOST: Unable to reach the AI Core. Check your internet connection.";
   }
   

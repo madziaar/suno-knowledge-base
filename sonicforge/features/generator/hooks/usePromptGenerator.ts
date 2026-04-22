@@ -1,7 +1,7 @@
 
 import { useReducer, useCallback, useRef, useEffect } from 'react';
 import { GeneratorState, GeneratedPrompt, GroundingChunk, ExpertInputs, SongConcept, AgentType, Platform } from '../../../types';
-import { GeminiService } from '../../../services/ai/GeminiService';
+import { NimService } from '../../../services/ai/NimService';
 import { StyleComponents } from '../utils/styleBuilder';
 import { useSettings } from '../../../contexts/SettingsContext';
 
@@ -60,7 +60,7 @@ export const usePromptGenerator = ({ onStateChange }: UsePromptGeneratorProps) =
   const { lang, isPyriteMode } = useSettings(); 
   
   // Instance of the service
-  const service = useRef(new GeminiService());
+  const service = useRef(new NimService());
 
   useEffect(() => {
     isMounted.current = true;

@@ -2,8 +2,6 @@
 import { getClient } from "./client";
 import { GeneratedPrompt, GroundingChunk } from "../../types";
 import { CRITIC_PROMPT, REFINER_PROMPT } from "./prompts/tasks";
-import { Type, Schema } from "@google/genai";
-import { SAFETY_SETTINGS } from "./config";
 
 interface CriticResult {
   pass: boolean;
@@ -15,13 +13,13 @@ interface ResearchResult {
   sources: GroundingChunk[];
 }
 
-const CRITIC_SCHEMA: Schema = {
-  type: Type.OBJECT,
+const CRITIC_SCHEMA = {
+  type: 'object',
   properties: {
-    pass: { type: Type.BOOLEAN },
+    pass: { type: 'boolean' },
     issues: { 
-      type: Type.ARRAY, 
-      items: { type: Type.STRING } 
+      type: 'array', 
+      items: { type: 'string' } 
     }
   },
   required: ["pass", "issues"]
@@ -29,7 +27,7 @@ const CRITIC_SCHEMA: Schema = {
 
 /**
  * 1. THE INQUISITOR (Critic)
- * Uses a fast, low-cost model (Flash) to verify strict Suno V4.5 constraints.
+ * Uses a fast, low-cost model (Llama 3.1 8B) to verify strict Suno V4.5 constraints.
  * Checks for character limits, tag syntax, and formatting violations.
  * 
  * @param draft - The generated prompt to evaluate.
@@ -40,18 +38,17 @@ export const runCriticAgent = async (draft: GeneratedPrompt): Promise<CriticResu
   const draftJson = JSON.stringify(draft, null, 2);
   
   try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash', // Fast inference
-      contents: CRITIC_PROMPT(draftJson),
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: CRITIC_SCHEMA,
-        temperature: 0.1, // Strict logic
-        safetySettings: SAFETY_SETTINGS
-      }
+    const response = await client.chat.completions.create({
+      model: 'meta/llama-3.1-8b-instruct', // Fast inference
+      messages: [
+        { role: 'system', content: 'You are a strict validator for Suno V4.5 music prompts. Check for syntax errors, character limits, and formatting violations.' },
+        { role: 'user', content: CRITIC_PROMPT(draftJson) }
+      ],
+      temperature: 0.1, // Strict logic
+      response_format: { type: 'json_object' }
     });
 
-    const result = JSON.parse(response.text || "{}");
+    const result = JSON.parse(response.choices[0]?.message?.content || "{}");
     return {
       pass: result.pass ?? true, // Default to pass if parsing fails to avoid blocking
       issues: result.issues ?? []
@@ -64,7 +61,7 @@ export const runCriticAgent = async (draft: GeneratedPrompt): Promise<CriticResu
 
 /**
  * 2. THE REFINER
- * Uses a smarter model (Flash) to surgically fix specific issues identified by the Critic.
+ * Uses a smarter model (Llama 3.1 70B) to surgically fix specific issues identified by the Critic.
  * Only modifies the fields flagged as problematic.
  * 
  * @param draft - The original failed draft.
@@ -75,31 +72,30 @@ export const runRefinerAgent = async (draft: GeneratedPrompt, issues: string[]):
   const client = getClient();
   const draftJson = JSON.stringify(draft, null, 2);
 
-  const REFINER_SCHEMA: Schema = {
-    type: Type.OBJECT,
+  const REFINER_SCHEMA = {
+    type: 'object',
     properties: {
-      analysis: { type: Type.STRING },
-      title: { type: Type.STRING },
-      tags: { type: Type.STRING },
-      style: { type: Type.STRING },
-      lyrics: { type: Type.STRING }
+      analysis: { type: 'string' },
+      title: { type: 'string' },
+      tags: { type: 'string' },
+      style: { type: 'string' },
+      lyrics: { type: 'string' }
     },
     required: ["title", "tags", "style", "lyrics"]
   };
 
   try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash', // Flash is sufficient for structured fixes
-      contents: REFINER_PROMPT(draftJson, issues),
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: REFINER_SCHEMA,
-        temperature: 0.2,
-        safetySettings: SAFETY_SETTINGS
-      }
+    const response = await client.chat.completions.create({
+      model: 'meta/llama-3.1-70b-instruct', // Flash is sufficient for structured fixes
+      messages: [
+        { role: 'system', content: 'You are a prompt refiner. Fix only the issues identified, preserve everything else.' },
+        { role: 'user', content: REFINER_PROMPT(draftJson, issues) }
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' }
     });
 
-    const fixed = JSON.parse(response.text || "{}");
+    const fixed = JSON.parse(response.choices[0]?.message?.content || "{}");
     
     // Merge fixed fields with original (preserve analysis if lost)
     return {
@@ -132,17 +128,17 @@ export const runResearchAgent = async (intent: string, artistRef: string, forceS
 
   let decisionPromptPart = `
     DECISION PROTOCOL:
-    1. If an Artist Reference is provided, you MUST use the 'googleSearch' tool.
-       - Focus search on: Specific production techniques (mixing, effects), Key Instruments (synths, guitars), and Vocal Styles.
-       - If the reference includes a style description (e.g. "Dark Era", "Unplugged"), include that in your search query.
-    2. If the User Intent contains specific, obscure, or technical genres that might require external data, use 'googleSearch'.
-    3. If the request is generic (e.g. "Sad piano song") and no Artist Reference is present, DO NOT use the tool. Just generate the report from internal knowledge.
+    1. If an Artist Reference is provided, you MUST use your knowledge to research production techniques.
+       - Focus on: Specific production techniques (mixing, effects), Key Instruments (synths, guitars), and Vocal Styles.
+       - If the reference includes a style description (e.g. "Dark Era", "Unplugged"), include that in your analysis.
+    2. If the User Intent contains specific, obscure, or technical genres that might require external data, use your training knowledge.
+    3. If the request is generic (e.g. "Sad piano song") and no Artist Reference is present, generate from internal knowledge.
   `;
 
   if (forceSearchOnIntent) {
     decisionPromptPart = `
       DECISION PROTOCOL:
-      You MUST use the 'googleSearch' tool to research the User Intent. If an Artist Reference is also provided, research that as well (focusing on production/instruments/vocals). Your primary research target is the USER INTENT.
+      You MUST research the User Intent using your internal knowledge. If an Artist Reference is also provided, research that as well (focusing on production/instruments/vocals). Your primary research target is the USER INTENT.
     `;
   }
 
@@ -167,27 +163,20 @@ export const runResearchAgent = async (intent: string, artistRef: string, forceS
   `;
 
   try {
-    // We use a non-streaming call to allow tool use
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }], // Tool is available
-        systemInstruction: "You are a helpful research agent. Use tools only if necessary to add VALUE.",
-        safetySettings: SAFETY_SETTINGS
-      }
+    const response = await client.chat.completions.create({
+      model: 'meta/llama-3.1-70b-instruct',
+      messages: [
+        { role: 'system', content: 'You are a helpful research agent specializing in music production and audio engineering.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.5,
+      max_tokens: 1024
     });
 
-    const text = response.text || "No research data generated.";
+    const text = response.choices[0]?.message?.content || "No research data generated.";
     
-    // Extract sources if tool was used
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources: GroundingChunk[] = chunks.map(chunk => ({
-      web: chunk.web ? {
-        uri: chunk.web.uri || '',
-        title: chunk.web.title || ''
-      } : undefined
-    })).filter(s => s.web?.uri);
+    // NVIDIA NIM doesn't provide grounding metadata like Gemini
+    const sources: GroundingChunk[] = [];
 
     return { text, sources };
 
