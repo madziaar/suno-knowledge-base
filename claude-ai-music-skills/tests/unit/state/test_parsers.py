@@ -130,6 +130,62 @@ class TestParseAlbumReadme:
         for platform in ('soundcloud', 'spotify', 'apple_music', 'youtube_music', 'amazon_music'):
             assert platform in streaming, f"streaming block missing: {platform}"
 
+    def test_parses_anchor_track_when_set(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            '---\n'
+            'title: "Test"\n'
+            'anchor_track: 3\n'
+            '---\n'
+            '# Test\n'
+            '## Album Details\n'
+            '| **Status** | Concept |\n'
+        )
+        result = parse_album_readme(readme)
+        assert result.get("anchor_track") == 3
+
+    def test_anchor_track_absent_returns_none(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            '---\n'
+            'title: "Test"\n'
+            '---\n'
+            '# Test\n'
+            '## Album Details\n'
+            '| **Status** | Concept |\n'
+        )
+        result = parse_album_readme(readme)
+        assert result.get("anchor_track") is None
+
+    def test_anchor_track_null_returns_none(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            '---\n'
+            'title: "Test"\n'
+            'anchor_track: null\n'
+            '---\n'
+            '# Test\n'
+            '## Album Details\n'
+            '| **Status** | Concept |\n'
+        )
+        result = parse_album_readme(readme)
+        assert result.get("anchor_track") is None
+
+    def test_anchor_track_non_int_coerced_to_none(self, tmp_path):
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            '---\n'
+            'title: "Test"\n'
+            'anchor_track: "not a number"\n'
+            '---\n'
+            '# Test\n'
+            '## Album Details\n'
+            '| **Status** | Concept |\n'
+        )
+        result = parse_album_readme(readme)
+        # Malformed value must not crash and must not poison downstream code.
+        assert result.get("anchor_track") is None
+
 
 class TestParseTrackFile:
     """Tests for parse_track_file()."""
@@ -2033,3 +2089,71 @@ class TestTracklistNumberPadding:
         tracks = _parse_tracklist_table(text)
         assert tracks[0]['number'] == '10'
         assert tracks[1]['number'] == '12'
+
+
+class TestParseAlbumReadmeMastering:
+    """Tests for mastering frontmatter block surface."""
+
+    def test_parse_album_readme_surfaces_mastering_block(self, tmp_path: Path) -> None:
+        """Frontmatter `mastering:` block must surface as a dict on the
+        parsed result so downstream consumers (config.build_delivery_targets)
+        can apply the per-album ADM opt-in rule."""
+        from tools.state.parsers import parse_album_readme
+
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "---\n"
+            "Title: Test Album\n"
+            "Genre: electronic\n"
+            "mastering:\n"
+            "  adm_validation_enabled: true\n"
+            "  ceiling_db: -1.5\n"
+            "---\n"
+            "\n"
+            "# Test Album\n",
+        )
+
+        result = parse_album_readme(readme)
+        assert "_error" not in result
+        assert result["mastering"] == {
+            "adm_validation_enabled": True,
+            "ceiling_db": -1.5,
+        }
+
+    def test_parse_album_readme_mastering_absent_is_empty_dict(self, tmp_path: Path) -> None:
+        """No mastering block → result['mastering'] is {} (empty dict, not
+        None). Downstream code can rely on .get() always finding a dict."""
+        from tools.state.parsers import parse_album_readme
+
+        readme = tmp_path / "README.md"
+        readme.write_text(
+            "---\n"
+            "Title: Plain Album\n"
+            "---\n"
+            "\n"
+            "# Plain Album\n",
+        )
+
+        result = parse_album_readme(readme)
+        assert result["mastering"] == {}
+
+    def test_parse_album_readme_mastering_malformed_is_empty_dict(self, tmp_path: Path) -> None:
+        """Malformed mastering block (scalar, list, null) is treated as
+        empty — no override applied. Defensive against hand-edited READMEs."""
+        from tools.state.parsers import parse_album_readme
+
+        for malformed in ["null", "false", "some string", "- list\n  - items"]:
+            readme = tmp_path / "README.md"
+            readme.write_text(
+                "---\n"
+                "Title: Malformed\n"
+                f"mastering: {malformed}\n"
+                "---\n"
+                "\n"
+                "# Malformed\n",
+            )
+            result = parse_album_readme(readme)
+            assert result["mastering"] == {}, (
+                f"Malformed mastering value {malformed!r} should collapse to {{}}, "
+                f"got {result['mastering']!r}"
+            )

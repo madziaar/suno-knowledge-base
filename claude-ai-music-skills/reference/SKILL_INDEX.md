@@ -13,12 +13,14 @@ Quick-reference guide for finding the right skill for any task.
 | ...set up the plugin for the first time | `/configure` |
 | ...learn how to use this plugin | `/tutorial` |
 | ...see what skills are available | `/help` |
+| ...check plugin health (venv, skill registration) | `/health-check` |
 | ...learn about the plugin creator | `/about` |
 
 ### Album Lifecycle
 | I need to... | Use this skill |
 |--------------|----------------|
 | ...start a new album | `/new-album <name> <genre>` |
+| ...turn an existing idea into an album | `/promote-idea "<idea title>"` |
 | ...plan album concept and tracklist | `/album-conceptualizer` |
 | ...continue working on an existing album | `/resume <album-name>` |
 | ...see album progress at a glance | `/album-dashboard <album-name>` |
@@ -119,6 +121,7 @@ Quick-reference guide for finding the right skill for any task.
 | [`document-hunter`](/skills/document-hunter/SKILL.md) | Automated browser-based document search from free archives | Finding court docs for true-story albums |
 | [`explicit-checker`](/skills/explicit-checker/SKILL.md) | Scan lyrics for explicit content, verify flags | Ensuring explicit flags match actual content |
 | [`genre-creator`](/skills/genre-creator/SKILL.md) | Create new genre documentation with consistent structure | Adding a new genre to the genre library |
+| [`health-check`](/skills/health-check/SKILL.md) | Run plugin health checks (venv packages and skill registration) | Troubleshooting missing skills or stale packages |
 | [`help`](/skills/help/SKILL.md) | Show available skills and common workflows | Quick reference for what skills exist |
 | [`import-art`](/skills/import-art/SKILL.md) | Place album art in audio and content locations | Copying artwork to correct paths after creation |
 | [`import-audio`](/skills/import-audio/SKILL.md) | Move audio files to correct album location | Importing WAV files from Suno downloads |
@@ -134,6 +137,7 @@ Quick-reference guide for finding the right skill for any task.
 | [`pre-generation-check`](/skills/pre-generation-check/SKILL.md) | Final pre-generation checkpoint (6 gates) | Validating all requirements before Suno generation |
 | [`promo-director`](/skills/promo-director/SKILL.md) | Generate promo videos for social media | Creating 15s vertical videos for Instagram/Twitter |
 | [`promo-reviewer`](/skills/promo-reviewer/SKILL.md) | Review and polish social media copy in promo/ files | Interactive post-by-post review before release |
+| [`promote-idea`](/skills/promote-idea/SKILL.md) | Convert a Pending idea from IDEAS.md into a full album (one-shot) | Moving an idea from backlog to active production |
 | [`promo-writer`](/skills/promo-writer/SKILL.md) | Generate platform-specific social media copy from album context | Populating promo/ templates with copy for each platform |
 | [`pronunciation-specialist`](/skills/pronunciation-specialist/SKILL.md) | Scan lyrics for pronunciation risks | Catching homographs and tricky words before Suno |
 | [`rename`](/skills/rename/SKILL.md) | Rename albums or tracks with path updates | Changing album/track names after creation |
@@ -151,6 +155,7 @@ Quick-reference guide for finding the right skill for any task.
 | [`researchers-verifier`](/skills/researchers-verifier/SKILL.md) | Quality control, citation validation, fact-checking | Verifying research before human review |
 | [`resume`](/skills/resume/SKILL.md) | Find album and resume work where you left off | Continuing work on an existing album |
 | [`session-start`](/skills/session-start/SKILL.md) | Session startup procedure — verify setup, load state, report status | Beginning a fresh working session |
+| [`setup`](/skills/setup/SKILL.md) | Verify environment and dependencies | First-time installation check |
 | [`sheet-music-publisher`](/skills/sheet-music-publisher/SKILL.md) | Convert audio to sheet music, create songbooks | Creating printable sheet music from tracks |
 | [`skill-model-updater`](/skills/skill-model-updater/SKILL.md) | Update model references when new Claude models release | Keeping skills on current Claude models |
 | [`suno-engineer`](/skills/suno-engineer/SKILL.md) | Technical Suno V5 prompting, genre selection | Crafting optimal Suno style prompts |
@@ -379,10 +384,11 @@ Skills are assigned to models based on task complexity. See [model-strategy.md](
 - `/verify-sources` - Human verification gate
 - `/voice-checker` - Advisory review for AI-sounding patterns
 
-### Haiku 4.5 (Pattern Matching — 15 skills)
+### Haiku 4.5 (Pattern Matching — 17 skills)
 - `/about` - Static information
 - `/album-dashboard` - Progress dashboard
 - `/clipboard` - Copy to clipboard
+- `/health-check` - Plugin health checks
 - `/help` - Display information
 - `/import-art` - File operations
 - `/import-audio` - File operations
@@ -390,6 +396,7 @@ Skills are assigned to models based on task complexity. See [model-strategy.md](
 - `/new-album` - Directory creation
 - `/next-step` - Workflow routing
 - `/pre-generation-check` - Gate validation
+- `/promote-idea` - Idea → album orchestration
 - `/rename` - File/directory renaming
 - `/setup` - Environment detection
 - `/skill-model-updater` - Pattern replacement

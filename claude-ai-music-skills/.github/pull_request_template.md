@@ -16,7 +16,7 @@
 
 - [ ] I have read the [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
 - [ ] My commit message follows [Conventional Commits](https://conventionalcommits.org/)
-- [ ] I included the co-author line: `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
+- [ ] I included the co-author line: `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`
 - [ ] I have run `/bitwize-music:test` and all relevant tests pass
 - [ ] I have updated CHANGELOG.md under "Unreleased" section
 
@@ -31,6 +31,10 @@
 - [ ] I have updated CLAUDE.md if workflow changed
 - [ ] I have updated README.md if user-facing changes
 - [ ] I have added/updated skill documentation if applicable
+
+### Maintainer Checklist (for reviewer)
+
+- [ ] If PR author is an external contributor, add them to the Contributors section of README.md
 
 ### Testing
 

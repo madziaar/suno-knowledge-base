@@ -19,12 +19,18 @@ from typing import Any
 
 # Audio mastering tools
 from handlers.processing.audio import (  # noqa: F401
+    album_coherence_check,
+    album_coherence_correct,
     analyze_audio,
     fix_dynamic_track,
     master_album,
     master_audio,
     master_with_reference,
+    measure_album_signature,
+    mono_fold_check,
+    prune_archival,
     qc_audio,
+    render_codec_preview,
 )
 
 # Sheet music tools
@@ -45,6 +51,7 @@ from handlers.processing.video import (  # noqa: F401
 from handlers.processing.mixing import (  # noqa: F401
     analyze_mix_issues,
     polish_album,
+    polish_and_master_album,
     polish_audio,
 )
 

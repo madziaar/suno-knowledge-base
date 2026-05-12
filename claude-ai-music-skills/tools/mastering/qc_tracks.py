@@ -25,7 +25,7 @@ from tools.shared.progress import ProgressBar
 logger = logging.getLogger(__name__)
 
 # All available checks
-ALL_CHECKS = ["format", "mono", "phase", "clipping", "clicks", "silence", "spectral"]
+ALL_CHECKS = ["format", "mono", "phase", "clipping", "truepeak", "clicks", "silence", "spectral"]
 
 
 def _check_format(info: Any) -> dict[str, str]:
@@ -43,9 +43,12 @@ def _check_format(info: Any) -> dict[str, str]:
         issues.append(f"Format is {fmt}, expected WAV")
         status = "FAIL"
 
-    # Sample rate
-    if rate not in (44100, 48000):
-        issues.append(f"Sample rate {rate} Hz, expected 44100 or 48000")
+    # Sample rate — 44.1/48 kHz legacy, 88.2/96/176.4/192 kHz for hi-res
+    # streaming delivery (Apple Hi-Res Lossless, Tidal Max, DistroKid hi-res).
+    if rate not in (44100, 48000, 88200, 96000, 176400, 192000):
+        issues.append(
+            f"Sample rate {rate} Hz, expected 44.1/48/88.2/96/176.4/192 kHz"
+        )
         status = "FAIL"
 
     # Bit depth
@@ -180,8 +183,50 @@ def _check_clipping(data: Any) -> dict[str, str]:
     }
 
 
-def _check_clicks(data: Any, rate: int) -> dict[str, str]:
-    """Detect clicks/pops using sliding RMS window comparison."""
+def _check_truepeak(data: Any, rate: int, ceiling_db: float = -1.0) -> dict[str, str]:
+    """Measure true peak (inter-sample) level via 4x oversampling.
+
+    Uses the same ITU-R BS.1770-4 algorithm as the mastering limiter.
+    """
+    from tools.mastering.master_tracks import measure_true_peak
+
+    tp_linear = measure_true_peak(data, rate)
+    if tp_linear > 0:
+        tp_db = 20 * np.log10(tp_linear)
+    else:
+        tp_db = float('-inf')
+
+    ceiling_linear = 10 ** (ceiling_db / 20)
+    if tp_linear > ceiling_linear * 1.01:  # 1% tolerance for float rounding
+        status = "FAIL"
+    elif tp_linear > ceiling_linear * 0.95:
+        status = "WARN"
+    else:
+        status = "PASS"
+
+    return {
+        "status": status,
+        "value": f"{tp_db:.1f} dBTP",
+        "detail": f"True peak {tp_db:.1f} dBTP (ceiling {ceiling_db:.1f})"
+            + (" — EXCEEDS CEILING" if status == "FAIL" else ""),
+    }
+
+
+def _check_clicks(
+    data: Any,
+    rate: int,
+    peak_ratio: float = 6.0,
+    fail_count: int = 3,
+) -> dict[str, str]:
+    """Detect clicks/pops using sliding RMS window comparison.
+
+    Args:
+        data: Audio samples (mono or stereo).
+        rate: Sample rate in Hz.
+        peak_ratio: Window peak-to-RMS ratio above which a window counts as a click.
+            Raise for genres with intentional sharp transients (electronic, metal, IDM).
+        fail_count: Click count above which the status is FAIL (inclusive WARN below).
+    """
     # Work with mono sum for detection
     if data.ndim > 1:
         mono = np.mean(data, axis=1)
@@ -200,12 +245,12 @@ def _check_clicks(data: Any, rate: int) -> dict[str, str]:
             continue
 
         peak = np.max(np.abs(window))
-        if peak > 6.0 * rms:
+        if peak > peak_ratio * rms:
             click_count += 1
 
     if click_count == 0:
         status = "PASS"
-    elif click_count <= 3:
+    elif click_count <= fail_count:
         status = "WARN"
     else:
         status = "FAIL"
@@ -217,67 +262,100 @@ def _check_clicks(data: Any, rate: int) -> dict[str, str]:
     }
 
 
-def _check_silence(data: Any, rate: int) -> dict[str, str]:
-    """Check for excessive leading, trailing, or internal silence."""
+def _check_silence(
+    data: Any,
+    rate: int,
+    leading_max_s: float = 0.5,
+    trailing_max_s: float = 3.0,
+) -> dict[str, str]:
+    """Check for excessive leading, trailing, or internal silence.
+
+    A silent region (samples below -60 dBFS) is classified as leading if
+    it starts within the boundary tolerance AND has essentially no
+    non-silent content before it; trailing by the symmetric rule at the
+    file end. Everything else is internal. The content-side check is what
+    distinguishes a fade-out tail (sub-threshold noise blip above -60 dBFS
+    sitting between the silence and the file end) from a mid-song gap
+    whose region happens to touch the tolerance window (e.g. a sine-wave
+    zero crossing) — without it, legitimate internal gaps get silently
+    demoted to "trailing". Regression for #321.
+
+    Args:
+        leading_max_s: Leading silence > this duration FAILs. Raise for
+            genres with intentional intro builds/filter sweeps (e.g.
+            electronic ~1.5 s).
+        trailing_max_s: Trailing silence > this duration WARNs.
+    """
     if data.ndim > 1:
         mono = np.mean(data, axis=1)
     else:
         mono = data
 
-    # Threshold: -60 dBFS
     threshold = 10 ** (-60 / 20)
     is_silent = np.abs(mono) < threshold
-
     total_samples = len(mono)
+    if total_samples == 0:
+        return {"status": "PASS", "value": "L:0.0s T:0.0s", "detail": "Empty file"}
+
+    padded = np.concatenate([[False], is_silent, [False]])
+    diffs = np.diff(padded.astype(np.int8))
+    region_starts = np.where(diffs == 1)[0]
+    region_ends = np.where(diffs == -1)[0]  # exclusive
+
+    boundary_tolerance_sec = 1.0
+    tol_samples = int(rate * boundary_tolerance_sec)
+    gap_threshold_samples = int(rate * 0.5)
+    # Permissible non-silent content between a silent region and the
+    # file edge for that region to still count as leading/trailing.
+    min_boundary_content_samples = int(rate * 0.3)
+
+    non_silent_cumsum = np.cumsum((~is_silent).astype(np.int64))
+    total_non_silent = int(non_silent_cumsum[-1])
+
+    def non_silent_before(idx: int) -> int:
+        return int(non_silent_cumsum[idx - 1]) if idx > 0 else 0
+
+    leading_sec = 0.0
+    trailing_sec = 0.0
+    internal_gap_count = 0
+
+    for rs, re in zip(region_starts, region_ends):
+        length_samples = int(re - rs)
+        length_sec = length_samples / rate
+        is_leading = False
+        is_trailing = False
+
+        if rs < tol_samples:
+            if non_silent_before(rs) < min_boundary_content_samples:
+                is_leading = True
+
+        if not is_leading and re > total_samples - tol_samples:
+            ns_after = total_non_silent - non_silent_before(re)
+            if ns_after < min_boundary_content_samples:
+                is_trailing = True
+
+        if is_leading:
+            leading_sec = max(leading_sec, length_sec)
+        elif is_trailing:
+            trailing_sec = max(trailing_sec, length_sec)
+        elif length_samples >= gap_threshold_samples:
+            internal_gap_count += 1
+
     issues = []
     status = "PASS"
 
-    # Leading silence
-    leading = 0
-    for s in is_silent:
-        if s:
-            leading += 1
-        else:
-            break
-    leading_sec = leading / rate
-    if leading_sec > 0.5:
+    if leading_sec > leading_max_s:
         status = "FAIL"
         issues.append(f"Leading silence: {leading_sec:.1f}s")
 
-    # Trailing silence
-    trailing = 0
-    for s in reversed(is_silent):
-        if s:
-            trailing += 1
-        else:
-            break
-    trailing_sec = trailing / rate
-    if trailing_sec > 5.0 or trailing_sec > 3.0:
+    if trailing_sec > trailing_max_s:
         if status != "FAIL":
             status = "WARN"
         issues.append(f"Trailing silence: {trailing_sec:.1f}s")
 
-    # Internal silence gaps (> 0.5s)
-    gap_threshold = int(rate * 0.5)
-    # Skip leading/trailing for internal gap detection
-    content_start = leading
-    content_end = total_samples - trailing
-    if content_end > content_start:
-        interior = is_silent[content_start:content_end]
-        gap_length = 0
-        gap_count = 0
-        for s in interior:
-            if s:
-                gap_length += 1
-            else:
-                if gap_length >= gap_threshold:
-                    gap_count += 1
-                gap_length = 0
-        if gap_length >= gap_threshold:
-            gap_count += 1
-        if gap_count > 0:
-            status = "FAIL"
-            issues.append(f"{gap_count} internal gap(s) > 0.5s")
+    if internal_gap_count > 0:
+        status = "FAIL"
+        issues.append(f"{internal_gap_count} internal gap(s) > 0.5s")
 
     detail = "; ".join(issues) if issues else "No silence issues"
     value = f"L:{leading_sec:.1f}s T:{trailing_sec:.1f}s"
@@ -320,12 +398,15 @@ def _check_spectral(data: Any, rate: int) -> dict[str, str]:
         issues.append(f"Sub-bass very low ({band_pct['sub_bass']:.1f}%)")
         status = "WARN"
 
-    # Check tinniness (high_mid to mid ratio)
+    # Check tinniness (high_mid to mid ratio). Always WARN, never FAIL —
+    # the mastering stage's cut_highmid EQ exists to tame high-mid buildup,
+    # so a pre-master FAIL here would block work the limiter/EQ can fix.
     if band_pct["mid"] > 0:
         tinniness = band_pct["high_mid"] / band_pct["mid"]
         if tinniness > 0.8:
             issues.append(f"High-mid spike (tinniness ratio {tinniness:.2f})")
-            status = "FAIL" if tinniness > 1.2 else "WARN"
+            if status != "FAIL":
+                status = "WARN"
 
     # Check highs presence
     highs_total = band_pct["high"] + band_pct["air"]
@@ -345,13 +426,68 @@ def _check_spectral(data: Any, rate: int) -> dict[str, str]:
     }
 
 
-def qc_track(filepath: Path | str, checks: list[str] | None = None) -> dict[str, Any]:
+def _resolve_click_thresholds(genre: str | None) -> tuple[float, int]:
+    """Look up click_peak_ratio and click_fail_count for a genre preset.
+
+    Falls back to the hardcoded defaults (6.0, 3) if no genre is given.
+    Raises ValueError for an unknown genre name.
+    """
+    if genre is None:
+        return 6.0, 3
+
+    from tools.mastering.master_tracks import GENRE_PRESETS
+
+    key = genre.lower()
+    if key not in GENRE_PRESETS:
+        raise ValueError(
+            f"Unknown genre: {genre}. "
+            f"Available: {', '.join(sorted(GENRE_PRESETS.keys()))}"
+        )
+    preset = GENRE_PRESETS[key]
+    return float(preset.get('click_peak_ratio', 6.0)), int(preset.get('click_fail_count', 3))
+
+
+def _resolve_silence_thresholds(genre: str | None) -> tuple[float, float]:
+    """Look up silence_leading_max_s and silence_trailing_max_s for a genre preset.
+
+    Falls back to (0.5, 3.0) if no genre is given. Raises ValueError
+    for an unknown genre name. Electronic/EDM and similar builds-with-
+    intros genres override `silence_leading_max_s` upward so natural
+    filter sweeps / builds don't FAIL QC.
+    """
+    if genre is None:
+        return 0.5, 3.0
+
+    from tools.mastering.master_tracks import GENRE_PRESETS
+
+    key = genre.lower()
+    if key not in GENRE_PRESETS:
+        raise ValueError(
+            f"Unknown genre: {genre}. "
+            f"Available: {', '.join(sorted(GENRE_PRESETS.keys()))}"
+        )
+    preset = GENRE_PRESETS[key]
+    return (
+        float(preset.get('silence_leading_max_s', 0.5)),
+        float(preset.get('silence_trailing_max_s', 3.0)),
+    )
+
+
+def qc_track(
+    filepath: Path | str,
+    checks: list[str] | None = None,
+    genre: str | None = None,
+) -> dict[str, Any]:
     """Run QC checks on a single audio track.
 
     Args:
         filepath: Path to WAV file.
         checks: List of check names to run (default: all).
             Options: format, mono, phase, clipping, clicks, silence, spectral
+        genre: Optional genre preset name (e.g., "idm", "metal"). When set,
+            the click detector reads `click_peak_ratio` and `click_fail_count`
+            from the matching genre preset so intentional sharp transients
+            don't FAIL QC. Unknown names raise ValueError.
 
     Returns:
         Dict with filename, per-check results, and overall verdict.
@@ -359,6 +495,9 @@ def qc_track(filepath: Path | str, checks: list[str] | None = None) -> dict[str,
     filepath = str(filepath)
     basename = os.path.basename(filepath)
     active_checks = checks or ALL_CHECKS
+
+    click_peak_ratio, click_fail_count = _resolve_click_thresholds(genre)
+    silence_leading_max_s, silence_trailing_max_s = _resolve_silence_thresholds(genre)
 
     info = sf.info(filepath)
     data, rate = sf.read(filepath)
@@ -381,11 +520,22 @@ def qc_track(filepath: Path | str, checks: list[str] | None = None) -> dict[str,
     if "clipping" in active_checks:
         results["clipping"] = _check_clipping(data)
 
+    if "truepeak" in active_checks:
+        results["truepeak"] = _check_truepeak(data, rate)
+
     if "clicks" in active_checks:
-        results["clicks"] = _check_clicks(data, rate)
+        results["clicks"] = _check_clicks(
+            data, rate,
+            peak_ratio=click_peak_ratio,
+            fail_count=click_fail_count,
+        )
 
     if "silence" in active_checks:
-        results["silence"] = _check_silence(data, rate)
+        results["silence"] = _check_silence(
+            data, rate,
+            leading_max_s=silence_leading_max_s,
+            trailing_max_s=silence_trailing_max_s,
+        )
 
     if "spectral" in active_checks:
         results["spectral"] = _check_spectral(data, rate)
@@ -425,6 +575,13 @@ def main() -> None:
         default="",
         help=f"Comma-separated checks to run (default: all). Options: {', '.join(ALL_CHECKS)}",
     )
+    parser.add_argument(
+        "--genre",
+        type=str,
+        default="",
+        help="Genre preset name — loads click detector thresholds so intentional "
+             "sharp transients in electronic/metal/IDM don't FAIL QC.",
+    )
     args = parser.parse_args()
 
     setup_logging(__name__, verbose=args.verbose, quiet=args.quiet)
@@ -449,6 +606,14 @@ def main() -> None:
             logger.error("Unknown checks: %s. Valid: %s", ", ".join(invalid), ", ".join(ALL_CHECKS))
             sys.exit(1)
 
+    genre = args.genre.strip() or None
+    if genre is not None:
+        try:
+            _resolve_click_thresholds(genre)
+        except ValueError as e:
+            logger.error("%s", e)
+            sys.exit(1)
+
     print("=" * 90)
     print("AUDIO QC CHECKS")
     print("=" * 90)
@@ -461,14 +626,14 @@ def main() -> None:
         results = []
         for wav_file in filterable:
             progress.update(wav_file.name)
-            result = qc_track(str(wav_file), checks=active_checks)
+            result = qc_track(str(wav_file), checks=active_checks, genre=genre)
             results.append(result)
     else:
         logger.info("Using %d parallel workers", workers)
         ordered = {}
         with ProcessPoolExecutor(max_workers=workers) as executor:
             futures = {
-                executor.submit(qc_track, str(wf), active_checks): i
+                executor.submit(qc_track, str(wf), active_checks, genre): i
                 for i, wf in enumerate(filterable)
             }
             for future in as_completed(futures):

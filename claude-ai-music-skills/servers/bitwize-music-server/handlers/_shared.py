@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from handlers._atomic import atomic_write_text
+
 # ---------------------------------------------------------------------------
 # Shared state — set by server.py at startup
 # ---------------------------------------------------------------------------
@@ -89,9 +91,36 @@ _GENRE_ALIASES = {
 # Shared helper functions
 # ---------------------------------------------------------------------------
 
+def _is_path_confined(base: Path, user_component: str) -> bool:
+    """Return True if *base / user_component* stays within *base* after resolution.
+
+    Use this to reject path-traversal attempts (e.g. ``../../etc/passwd``)
+    before performing any file I/O with user-supplied path fragments.
+    """
+    try:
+        resolved = (base / user_component).resolve()
+        return resolved.is_relative_to(base.resolve())
+    except (ValueError, OSError):
+        return False
+
+
 def _normalize_slug(name: str) -> str:
-    """Normalize input to slug format."""
-    return name.lower().replace(" ", "-").replace("_", "-")
+    """Normalize input to slug format.
+
+    Raises:
+        ValueError: If *name* contains path separators (``/``, ``\\``),
+            null bytes, or traversal sequences (``..``).
+    """
+    if "/" in name or "\\" in name or "\0" in name:
+        raise ValueError(
+            f"Invalid name: contains path separator or null byte: {name!r}"
+        )
+    slug = name.lower().replace(" ", "-").replace("_", "-")
+    if ".." in slug:
+        raise ValueError(
+            f"Invalid name: contains path traversal sequence: {name!r}"
+        )
+    return slug
 
 
 def _safe_json(data: Any) -> str:
@@ -159,7 +188,7 @@ def _update_frontmatter_block(
     new_text = "---\n" + new_fm_text + "\n---\n" + rest_of_file
 
     try:
-        file_path.write_text(new_text, encoding="utf-8")
+        atomic_write_text(file_path, new_text)
     except OSError as exc:
         return False, f"Cannot write {file_path}: {exc}"
 
@@ -223,6 +252,22 @@ def _extract_code_block(section_text: str) -> str | None:
 # ---------------------------------------------------------------------------
 # Shared regex patterns — used by lyrics analysis, cross-track repetition, etc.
 # ---------------------------------------------------------------------------
+
+# Maximum text input length for text analysis tools (50,000 chars ≈ 10x a long song)
+MAX_TEXT_INPUT_LENGTH = 50_000
+
+
+def _check_text_length(text: str, tool_name: str) -> str | None:
+    """Return a JSON error string if *text* exceeds MAX_TEXT_INPUT_LENGTH, else None."""
+    if len(text) > MAX_TEXT_INPUT_LENGTH:
+        return _safe_json({
+            "error": (
+                f"Input too long ({len(text):,} chars). "
+                f"{tool_name} accepts at most {MAX_TEXT_INPUT_LENGTH:,} characters."
+            ),
+        })
+    return None
+
 
 # Section tag pattern — matches [Verse 1], [Chorus], etc.
 _SECTION_TAG_RE = re.compile(r'^\[.*\]$')
@@ -335,6 +380,11 @@ def _resolve_audio_dir(album_slug: str, subfolder: str = "") -> tuple[str | None
         }), None
     audio_path = Path(audio_root) / "artists" / artist / "albums" / genre / normalized
     if subfolder:
+        if not _is_path_confined(audio_path, subfolder):
+            return _safe_json({
+                "error": "Invalid subfolder: path must not escape the album directory",
+                "subfolder": subfolder,
+            }), None
         audio_path = audio_path / subfolder
     if not audio_path.is_dir():
         return _safe_json({
@@ -400,6 +450,59 @@ _STREAMING_PLACEHOLDER_MARKERS = [
 
 # Sections whose markdown content should be extracted as a code block
 _CODE_BLOCK_SECTIONS = frozenset({"Style Box", "Exclude Styles", "Lyrics Box", "Streaming Lyrics", "Original Quote"})
+
+
+def get_plugin_version() -> str:
+    """Return the plugin version string from .claude-plugin/plugin.json.
+
+    Reads ``PLUGIN_ROOT / ".claude-plugin" / "plugin.json"`` and returns the
+    ``version`` field as a string.  Returns ``"unknown"`` on any failure
+    (PLUGIN_ROOT is None, file missing, JSON malformed, field absent).
+
+    This is intentionally a simple helper — use it wherever a plain version
+    string is needed.  For the full stored-vs-current comparison tool, see
+    ``handlers.health.get_plugin_version`` (the async MCP tool).
+    """
+    if PLUGIN_ROOT is None:
+        return "unknown"
+    manifest = PLUGIN_ROOT / ".claude-plugin" / "plugin.json"
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        return str(data.get("version", "unknown"))
+    except (OSError, json.JSONDecodeError):
+        return "unknown"
+
+
+def is_album_released(album_slug: str) -> bool:
+    """Return True when the album's cached status is ``Released``.
+
+    Consumed by ``master_album``'s freeze-decision stage — frozen mode
+    is the default for Released albums so re-mastering never drifts
+    from what shipped.
+
+    Safe to call before the cache is fully initialized (returns ``False``
+    for any lookup that can't resolve — missing cache, invalid slug,
+    corrupt state, missing album, or any non-"Released" status).
+    """
+    if cache is None:
+        return False
+    try:
+        normalized = _normalize_slug(album_slug)
+    except ValueError:
+        # Invalid slug (path separators, null bytes, traversal) can't
+        # match any album. Safe default.
+        return False
+    try:
+        state = cache.get_state()
+    except (OSError, json.JSONDecodeError, ValueError):
+        return False
+    if not state:
+        return False
+    albums = state.get("albums", {})
+    entry = albums.get(normalized)
+    if not isinstance(entry, dict):
+        return False
+    return entry.get("status") == ALBUM_RELEASED
 
 
 def _find_wav_source_dir(audio_dir: Path) -> Path:

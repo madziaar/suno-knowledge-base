@@ -27,8 +27,8 @@ Claude: Drafts lyrics, checks prosody and rhyme schemes
         Scans for pronunciation risks, suggests phonetic fixes
         Builds Suno V5 style prompt with genre tags and vocal direction
 
-You:    "Track sounds great, here's the WAV"
-Claude: Imports audio, splits stems, polishes per-stem
+You:    "Track sounds great, here are the stems"
+Claude: Imports stems from Suno, polishes per-stem
         Masters to -14 LUFS for streaming
         Generates promo video and social media copy
 ```
@@ -54,7 +54,7 @@ Then run `/bitwize-music:setup` to detect your environment and install dependenc
 
 This is where the engineering lives. The plugin is a case study in how far you can push Claude Code's plugin system.
 
-### Skill System (52 Skills)
+### Skill System (54 Skills)
 
 Each skill is a self-contained markdown file with a YAML frontmatter that declares its model, description, and when it should activate. Skills range from simple clipboard operations to multi-step creative workflows. Claude routes to skills automatically based on context, or you invoke them directly with `/bitwize-music:<name>`.
 
@@ -68,9 +68,9 @@ Skills declare which Claude model they need. Creative work that directly impacts
 
 | Tier | Model | Skills | Rationale |
 |------|-------|--------|-----------|
-| Creative | Opus 4.6 | 6 | Lyrics, Suno prompts, album concepts, legal/verification research — output quality defines the music |
+| Creative | Opus 4.7 | 6 | Lyrics, Suno prompts, album concepts, legal/verification research — output quality defines the music |
 | Reasoning | Sonnet 4.6 | 29 | Research coordination, pronunciation analysis, most workflows |
-| Mechanical | Haiku 4.5 | 17 | Imports, validation, clipboard, help — speed over creativity |
+| Mechanical | Haiku 4.5 | 18 | Imports, validation, clipboard, help — speed over creativity |
 
 This project pushes Claude Code hard — multi-agent research, real-time audio analysis, sub-agent orchestration across model tiers. It works best on the Max plan. The standard Pro plan will hit rate limits during multi-track sessions.
 
@@ -145,8 +145,10 @@ config/              Example config and setup docs
 
 <a href="https://github.com/bitwize-music"><img src="https://images.weserv.nl/?url=github.com/bitwize-music.png&h=60&w=60&fit=cover&mask=circle" width="60" height="60" alt="@bitwize-music"></a>
 <a href="https://github.com/markus-michalski"><img src="https://images.weserv.nl/?url=github.com/markus-michalski.png&h=60&w=60&fit=cover&mask=circle" width="60" height="60" alt="@markus-michalski"></a>
+<a href="https://github.com/zeel2104"><img src="https://images.weserv.nl/?url=github.com/zeel2104.png&h=60&w=60&fit=cover&mask=circle" width="60" height="60" alt="@zeel2104"></a>
+<a href="https://github.com/alijahak"><img src="https://images.weserv.nl/?url=github.com/alijahak.png&h=60&w=60&fit=cover&mask=circle" width="60" height="60" alt="@alijahak"></a>
 
-If you make something with this, I'd genuinely love to hear it — [@bitwizemusic](https://x.com/bitwizemusic) on X or [open a discussion](https://github.com/bitwize-music-studio/claude-ai-music-skills/discussions).
+If you make something with this, I'd genuinely love to hear it — [@bitwizemusic](https://x.com/bitwizemusic) on X, [join the Discord](https://discord.gg/dMURByGF), or [open a discussion](https://github.com/bitwize-music-studio/claude-ai-music-skills/discussions).
 
 ---
 
