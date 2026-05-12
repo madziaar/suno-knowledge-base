@@ -1,18 +1,22 @@
 # Mix Polish Presets — Per-Stem Processing Settings
 #
+# Click removal runs first on every chain (#323 comment). Defaults align
+# with the analyzer's detector (click_peak_ratio: 15.0) so polish and
+# analyze_mix_issues report the same events.
+#
 # Each stem type defines its own processing chain:
-#   vocals:          noise_reduction → presence boost → high tame → compress → saturation → lowpass
-#   backing_vocals:  noise_reduction → presence boost (light) → high tame → stereo width → compress → saturation → lowpass
-#   drums:           click removal → compress (fast attack) → saturation
-#   bass:            highpass → mud cut → compress → saturation
-#   guitar:          highpass → mud cut → presence → high tame → stereo width → compress → saturation → lowpass
-#   keyboard:        highpass → mud cut → presence → high tame → stereo width → compress → saturation → lowpass
-#   strings:         highpass → mud cut → presence → high tame → stereo width → compress → lowpass
-#   brass:           highpass → mud cut → presence → high tame → compress → saturation → lowpass
-#   woodwinds:       highpass → mud cut → presence → high tame → compress → saturation → lowpass
-#   percussion:      highpass → click removal → presence → high tame → stereo width → compress → saturation
-#   synth:           highpass → mid boost → high tame → stereo width → compress → saturation → lowpass
-#   other:           noise reduction → mud cut → high tame → lowpass
+#   vocals:          declick → noise_reduction → presence boost → high tame → compress → saturation → lowpass
+#   backing_vocals:  declick → noise_reduction → presence boost (light) → high tame → stereo width → compress → saturation → lowpass
+#   drums:           declick → compress (fast attack) → saturation
+#   bass:            declick → highpass → mud cut → compress → saturation
+#   guitar:          declick → highpass → mud cut → presence → high tame → stereo width → compress → saturation → lowpass
+#   keyboard:        declick → highpass → mud cut → presence → high tame → stereo width → compress → saturation → lowpass
+#   strings:         declick → highpass → mud cut → presence → high tame → stereo width → compress → lowpass
+#   brass:           declick → highpass → mud cut → presence → high tame → compress → saturation → lowpass
+#   woodwinds:       declick → highpass → mud cut → presence → high tame → compress → saturation → lowpass
+#   percussion:      declick → highpass → presence → high tame → stereo width → compress → saturation
+#   synth:           declick → highpass → mid boost → high tame → stereo width → compress → saturation → lowpass
+#   other:           declick → noise reduction → mud cut → high tame → lowpass
 #
 # gain_db on each stem controls remix balance (0 = unity, positive = louder)
 #
@@ -23,11 +27,47 @@
 #   lowpass_cutoff: Hz (20000 = off, lower = darker/vintage)
 #   stereo_width: multiplier (1.0 = off, <1 = narrower, >1 = wider)
 #
+# Per-stem effects (default off):
+#   sub_bass_exciter: 0.0-1.0 (bass only, generates harmonics for small speakers)
+#   sub_bass_freq: Hz (crossover frequency, default 80)
+#   transient_attack_db: dB (drums/percussion, positive = more punch, negative = softer)
+#   transient_sustain_db: dB (drums/percussion, positive = more body, negative = tighter)
+#
 # Override per-user: copy to {overrides}/mix-presets.yaml and edit.
 # User overrides deep-merge on top of these defaults.
 
 defaults:
+  analyzer:
+    # Thresholds consumed by analyze_mix_issues — see
+    # servers/bitwize-music-server/handlers/processing/mixing.py
+    # _analyze_one. Dark tracks (high_mid_ratio < dark_high_mid_ratio) get
+    # recommendation high_tame_db: 0.0, overriding genre-default high-shelf
+    # cuts that would further darken them. Harsh tracks
+    # (high_mid_ratio > harsh_high_mid_ratio) get high_tame_db: -2.0.
+    dark_high_mid_ratio: 0.10
+    harsh_high_mid_ratio: 0.25
+    # When true, stems classified `already_dark` (high_mid_ratio <
+    # dark_high_mid_ratio) get a harmonic excitation recommendation
+    # from _analyze_one. Per-stem intensity comes from each stem's
+    # `excitation_db_when_dark` field. Off by default — enabling
+    # changes the sound of dark-material polish (adds synthetic
+    # upper harmonics via tanh saturation); see the plan doc
+    # 2026-04-22-harmonic-excitation-polish.md for rationale and
+    # caveats. Pair with mastering's adm_validation_enabled when
+    # your target is Apple Digital Masters submission.
+    adm_aware_excitation: false
+  # Click removal is on for every stem (#323 comment). The threshold
+  # defaults to `click_peak_ratio: 15.0` (same as the analyzer in
+  # `analyze_mix_issues`) so polish and analysis report the same
+  # events. Genre mastering presets (`genre-presets.yaml`) may lower
+  # the ratio for dense-transient genres (e.g. electronic: 10) — that
+  # overlay is applied by `_get_stem_settings`, so a genre-specific
+  # value wins over the helper's 15.0 default when `genre` is passed.
+  # Vocals / harmonic stems use linear repair (safer on spectrally
+  # dense content); drums / percussion override to cubic in their
+  # processor (better spectral reconstruction on isolated transients).
   vocals:
+    click_removal: true
     noise_reduction: 0.5
     presence_boost_db: 2.0
     presence_freq: 3000
@@ -39,7 +79,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 2.5
   backing_vocals:
+    click_removal: true
     noise_reduction: 0.5
     presence_boost_db: 1.0
     presence_freq: 3000
@@ -52,15 +95,21 @@ defaults:
     gain_db: -1.5
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 2.0
   drums:
     click_removal: true
-    click_threshold: 6.0
     compress_threshold_db: -12.0
     compress_ratio: 2.0
     compress_attack_ms: 5.0
     gain_db: 0.0
     saturation_drive: 0
+    transient_attack_db: 0
+    transient_sustain_db: 0
+    excitation_db: 0.0
+    excitation_db_when_dark: 0.0
   bass:
+    click_removal: true
     highpass_cutoff: 30
     mud_cut_db: -3.0
     mud_freq: 200
@@ -69,7 +118,12 @@ defaults:
     compress_attack_ms: 10.0
     gain_db: 0.0
     saturation_drive: 0
+    sub_bass_exciter: 0
+    sub_bass_freq: 80
+    excitation_db: 0.0
+    excitation_db_when_dark: 0.0
   synth:
+    click_removal: true
     highpass_cutoff: 80
     mid_boost_db: 1.0
     mid_freq: 2000
@@ -82,7 +136,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 1.5
   guitar:
+    click_removal: true
     highpass_cutoff: 80
     mud_cut_db: -2.5
     mud_freq: 250
@@ -97,7 +154,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 1.5
   keyboard:
+    click_removal: true
     highpass_cutoff: 40
     mud_cut_db: -2.0
     mud_freq: 300
@@ -112,7 +172,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 1.5
   strings:
+    click_removal: true
     highpass_cutoff: 35
     mud_cut_db: -1.5
     mud_freq: 250
@@ -127,7 +190,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 2.0
   brass:
+    click_removal: true
     highpass_cutoff: 60
     mud_cut_db: -2.0
     mud_freq: 300
@@ -141,7 +207,10 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 1.5
   woodwinds:
+    click_removal: true
     highpass_cutoff: 50
     mud_cut_db: -1.5
     mud_freq: 250
@@ -155,10 +224,11 @@ defaults:
     gain_db: 0.0
     saturation_drive: 0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 2.0
   percussion:
-    highpass_cutoff: 60
     click_removal: true
-    click_threshold: 6.0
+    highpass_cutoff: 60
     presence_boost_db: 1.0
     presence_freq: 4000
     high_tame_db: -1.0
@@ -168,8 +238,13 @@ defaults:
     compress_ratio: 2.0
     compress_attack_ms: 8.0
     gain_db: 0.0
+    transient_attack_db: 0
+    transient_sustain_db: 0
     saturation_drive: 0
+    excitation_db: 0.0
+    excitation_db_when_dark: 2.0
   other:
+    click_removal: true
     noise_reduction: 0.3
     mud_cut_db: -2.0
     mud_freq: 300
@@ -177,6 +252,8 @@ defaults:
     high_tame_freq: 8000
     gain_db: 0.0
     lowpass_cutoff: 20000
+    excitation_db: 0.0
+    excitation_db_when_dark: 1.0
   bus:
     compress_threshold_db: -14.0
     compress_ratio: 2.5

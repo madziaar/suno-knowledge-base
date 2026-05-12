@@ -61,7 +61,7 @@ logging.basicConfig(
     format="%(levelname)s %(name)s: %(message)s",
     stream=sys.stderr,
 )
-logger = logging.getLogger("bitwize-music-state")
+logger = logging.getLogger(__name__)
 
 # Try to import MCP SDK
 try:
@@ -454,11 +454,13 @@ from handlers.health import (  # noqa: F401
     check_venv_health,
     diagnose,
     get_plugin_version,
+    health_check,
 )
 
 # Ideas tools
 from handlers.ideas import (  # noqa: F401
     create_idea,
+    promote_idea,
     update_idea,
 )
 
@@ -480,6 +482,8 @@ from handlers.maintenance import (  # noqa: F401
 
 # Processing tools
 from handlers.processing import (  # noqa: F401
+    album_coherence_check,
+    album_coherence_correct,
     analyze_audio,
     analyze_mix_issues,
     create_songbook,
@@ -489,11 +493,16 @@ from handlers.processing import (  # noqa: F401
     master_album,
     master_audio,
     master_with_reference,
+    measure_album_signature,
+    mono_fold_check,
     polish_album,
+    polish_and_master_album,
     polish_audio,
     prepare_singles,
+    prune_archival,
     publish_sheet_music,
     qc_audio,
+    render_codec_preview,
     transcribe_audio,
 )
 

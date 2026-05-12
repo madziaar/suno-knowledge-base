@@ -4,7 +4,214 @@ All notable changes to claude-ai-music-skills.
 
 This project uses [Conventional Commits](https://conventionalcommits.org/) and [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.91.0] - 2026-05-08
+
+### Changed (BREAKING)
+- **ADM validation is now per-album opt-in via README frontmatter**
+  (issue #353). Prior behavior: `mastering.adm_validation_enabled:
+  true` in `~/.bitwize-music/config.yaml` would run ADM on every
+  album. New behavior: the album's own README must include
+  `mastering: { adm_validation_enabled: true }` in its frontmatter.
+  Global `config.yaml` value is ignored for this key.
+
+  Context: a significant chunk of mid-April 2026 went into building
+  out the ADM pipeline — dark-casualty classification, per-track
+  ceiling tightening, harmonic excitation in polish, warn-fallback
+  sidecars, observability instrumentation (#347, #348, #349, #350,
+  #351, #352) — only to discover at the end that ADM (Apple Digital
+  Masters inter-sample peak validation) is an Apple-submission-tier
+  niche that almost never matters for Suno-generated tracks. Suno
+  output typically lacks the high-mid spectral content ADM requires,
+  so most tracks ship dark-casualty-flagged regardless of how much
+  the pipeline works at them.
+
+  Rather than rip out the ADM infrastructure — the work has real
+  value for the minority of albums that ARE submission-viable, and
+  much of the underlying machinery (warn-fallback contract,
+  per-track ceiling architecture, spectral regression guard) pays
+  off on normal mastering too — it stays enabled per-album via
+  frontmatter opt-in and defaults OFF for everyone else. No more
+  silent 3-5 min/track overhead on runs that can't pass anyway.
+
+  Operators who want ADM per album add `mastering: {
+  adm_validation_enabled: true }` to the album's README
+  frontmatter. Global `config.yaml` value is ignored for this
+  key — it's the kind of decision that should live with the
+  album, not with the operator's memory.
+
+### Added
+- Per-album `mastering:` frontmatter block. Currently accepts
+  `adm_validation_enabled`; future keys (ceiling_db, target_lufs,
+  archival_enabled) will use the same block with standard
+  frontmatter > config > default cascade.
+- Harmonic excitation in polish — `apply_harmonic_excitation`
+  DSP primitive + per-stem `excitation_db` preset setting.
+  When `defaults.analyzer.adm_aware_excitation: true` in the
+  mix preset, dark-classified stems (high_mid band_energy < 10 %)
+  get synthetic upper-harmonic content added during polish via
+  tanh saturation → high-pass → attenuate → mix. Gives
+  mastering's limiter room to work on dark Suno material that
+  would otherwise ship with ADM inter-sample peak flags. Off by
+  default — enable per preset when targeting ADM compliance.
+- Post-QC spectral regression guard — WARN when mastering pushed a
+  track's `tinniness_ratio` (high_mid/mid) above 0.6 AND the ratio
+  grew by more than +0.10 from pre-master. Preset-tunable via
+  `post_qc_tinniness_warn_floor` and `post_qc_tinniness_warn_delta`.
+  Flags the regressed track(s) in `ctx.stages["post_qc"]
+  ["tinniness_regressions"]` and in `ctx.warnings`.
+- `fix_dynamic` iterates up to 3 times to reach target LUFS,
+  returning `converged` and `iterations_run` in metrics.
+- `_stage_verification` emits `VERIFICATION_WARNINGS.md` sidecar and
+  downgrades to `status: "warn"` when auto-recovery exhausts
+  iterations. Pipeline continues instead of halting.
+- **`/bitwize-music:promote-idea` skill + `promote_idea` MCP tool (#328)**: One-shot conversion of a `Pending` idea from `IDEAS.md` into a full album project. Auto-derives the album slug from the idea title (lowercase, ASCII-only, diacritics stripped, apostrophes elided, non-alphanumeric → hyphen) or accepts an explicit override. Calls `create_album_structure` with the idea's genre, injects the idea's `**Concept**` text into the new album `README.md` under a `## Concept` section, advances idea status `Pending → In Progress`, and adds a `**Promoted To**: <slug>` back-link in `IDEAS.md`. Distinct errors for missing idea, already-promoted idea, missing/invalid genre, and duplicate album slug. `documentary=True` flag mirrors `new-album` behavior (creates `RESEARCH.md` + `SOURCES.md`). The state indexer now also extracts `concept` and `promoted_to` fields from `IDEAS.md` so downstream tools can read the concept without re-parsing the markdown.
+- **Genre-aware silence QC thresholds**: new `silence_leading_max_s` / `silence_trailing_max_s` preset fields (`tools/mastering/genre-presets.yaml`). Defaults 0.5 / 3.0 s. `electronic` and `edm` override `silence_leading_max_s: 1.5` so filter-sweep / build intros don't FAIL the silence gate. (#323 comment)
+- **Click removal on every stem polish chain**: `vocals`, `backing_vocals`, `bass`, `synth`, `guitar`, `keyboard`, `strings`, `brass`, `woodwinds`, `other` now run click removal as the first step (was drums / percussion only). Shared `_apply_click_removal` helper standardizes the detector across all chains — `click_peak_ratio: 15.0` default matches the analyzer in `analyze_mix_issues` so polish and analysis report the same events. Genre presets (e.g. `electronic: 10.0`) overlay the default per-genre. Drum / percussion chains kept `cubic` repair (better spectral reconstruction on isolated transients); harmonic stems use `linear` repair (safer on dense mix content and vocal consonants). `mix_track_stems` dispatch unified — every processor now accepts `report` and surfaces `clicks_removed`. (#323 comment)
+- `ctx.track_ceilings`, `ctx.dark_tracks`, `ctx.remaster_filenames`
+  on `MasterAlbumCtx` — per-track ADM tightening state.
+- `is_dark` field on `analyze_track` output (`band_energy['high_mid']
+  < 10 %`).
+- `ADM_VALIDATION.md` sidecar now includes `dark_casualties`,
+  `tightened_tracks`, and per-track final `track_ceilings` in the
+  adm_validation stage output.
+
+### Changed
+- **Opus skills migrated from 4.6 to 4.7** (#319). Bumped `model:`
+  frontmatter on the seven Opus-tier skills: `album-conceptualizer`,
+  `lyric-refiner`, `lyric-reviewer`, `lyric-writer`, `researchers-legal`,
+  `researchers-verifier`, `suno-engineer`. Co-author line in `CLAUDE.md`,
+  `CONTRIBUTING.md`, `.github/SECURITY.md`, and `.github/pull_request_template.md`
+  updated to `Claude Opus 4.7`. Docstring example in `tools/state/parsers.py`
+  and schema example in `reference/state-schema.md` updated to use the
+  current model ID. Sonnet/Haiku skills were already on current versions
+  and required no changes. CI skill-frontmatter regex already admits 4.7
+  IDs. No fixed thinking budgets exist in the repo, so 4.7's
+  adaptive-thinking-only constraint is a no-op here.
+- `master_album` docstring enumerates halt vs warn-fallback
+  conditions explicitly.
+- **Logger names standardized to `__name__` (#268)**: All 12 MCP server modules that used `logging.getLogger("bitwize-music-state")` now use `logging.getLogger(__name__)`, giving hierarchical logger names (e.g., `handlers.processing.audio`) so operators can filter logs by module/subpackage. Affected: `server.py`, `handlers/{core,database,gates,maintenance,text_analysis}.py`, `handlers/processing/{audio,video,mixing,sheet_music,_album_stages,_helpers}.py`. Six `caplog` assertions in the test suite updated to reference the new module-hierarchical logger names.
+- **Dense-transient genre click QC thresholds bumped** to match `idm`'s calibration (`click_peak_ratio: 10.0`, `click_fail_count: 30`, was 8.0/15). Applies to `electronic`, `edm`, `techno`, `drum-and-bass`, `jungle`, `dubstep`, `hardstyle`, `breakbeat`, `metal`, `industrial`, `trap`, `drill`, `phonk`, `grime`, `shoegaze`, `dream-pop`. Prior values were flagging post-polish electronic drum transients as clicks (20+ clicks on a 3-min track → FAIL) even though the hits are musical, not digital pops. (#323 comment)
+- **`polish_album` verify stage** now runs a pre-master check subset (`format, mono, phase, clipping, silence, spectral`) and defers `truepeak` / `clicks` to post-mastering QC. Polished audio is un-limited and dense-transient (the limiter is what enforces the ceiling), so failing those checks on pre-master files is a false gate. The stage surfaces `checks_run` and `checks_deferred_to_post_master` for transparency. (#323 comment)
+- **`master_album` pre-QC stage** now forwards `genre` to `qc_track` (so genre-preset silence / click thresholds apply) and surfaces `checks_run` / `checks_deferred_to_post_master` in its status output. (#323 comment)
+- ADM ceiling tightening is now per-track. A single clipping track
+  no longer drags the album-wide ceiling down; clean tracks keep
+  their original ceiling regardless of neighbor ADM failures.
+- `_stage_mastering` honors `ctx.remaster_filenames` — on ADM retry
+  cycles, only clipping non-dark tracks are re-mastered.
+- Dark tracks (high_mid band_energy < 10 %) are excluded from ADM
+  tightening; their ADM clips route to warn-fallback instead of
+  forcing further ceiling reductions.
+
+### Fixed
+- **Analyzer recommendations never reached polish** (root cause of
+  "9/10 dark_casualty" on Suno albums despite enabling
+  `adm_aware_excitation`). `analyze_mix_issues` keyed per-stem
+  analyses by raw WAV filename stem (`01-Vocals`, `lead_vocals`, …)
+  while `mix_track_stems` looked them up by canonical `STEM_NAMES`
+  category (`vocals`, `drums`, …) from `discover_stems`. Keys
+  never matched → `stem_recs = {}` → `overrides_applied: []` →
+  excitation (and every other analyzer rec) was silently dropped.
+  Bonus bug: `_analyze_one`'s
+  `MIX_PRESETS["defaults"][stem_name]["excitation_db_when_dark"]`
+  lookup also failed for the same reason, falling back to a
+  hardcoded 2.0 for every stem regardless of type. Fix: analyzer
+  now uses `discover_stems` to canonicalize before storing
+  results, matching what polish looks up.
+- ADM warn-fallback reporting was inaccurate when the loop
+  short-circuited on the all-dark first check:
+  - Warning text hardcoded `_ADM_MAX_CYCLES` (the configured max)
+    instead of the actual executed count. Now reports
+    `adm_cycles_executed` + `adm_tightening_cycles` separately and
+    uses different wording when no tightening ran.
+  - `ADM_VALIDATION.md` advice contradicted the pipeline verdict —
+    recommended "Tighten true-peak ceiling by 0.5 dB and re-master"
+    even when every failure was a dark-content casualty. The
+    renderer now takes a `dark_casualty_filenames` kwarg and tailors
+    the advice: all-dark failures get harmonic-excitation guidance,
+    partial failures split advice by track class.
+  - `per_track_decisions` dict on `adm_validation` stage output —
+    records classification (`dark_casualty` / `tightenable`),
+    outcome (`not_tightened` / `diverged` / `floor_reached` /
+    `tightened`), reason, cycle, and final ceiling per clipping
+    track. Survives the all-dark short-circuit path where
+    `adm_history` and `track_ceilings` are both empty.
+- Auto-recovery path now writes at `output_sample_rate` (was using
+  source rate, so 48 kHz polished sources produced mastered files
+  at 48 kHz while the rest of the album was 96 kHz).
+- `master_album` halting at `verification` when track-level auto-recovery
+  couldn't converge. The docstring promised warn-fallback; the
+  implementation now delivers it.
+- **`master_album` status_update stage no longer brittle on re-masters (#335)**: The stage previously only promoted tracks from `Generated → Final` and appended a "Skipped: expected Generated" error for any other starting status. Combined with a hardcoded `status: "pass"` report this silently no-op'd the entire stage on any re-master of an album whose tracks weren't pinned at exactly `Generated` (Not Started, Sources Pending, Sources Verified, In Progress, Released — all hit this). The stage now promotes any non-terminal status (`Not Started`, `Sources Pending`, `Sources Verified`, `In Progress`, `Generated`) to `Final` because the mastered WAV is real and status should follow. `Final` and `Released` are left alone as terminal states; `Released` specifically is never demoted back to `Final` on a re-master. Tracks with an empty `path` (cache-staleness, no disk file) are now silently skipped instead of appending an error. Stage outcome is now classified honestly: `pass` when clean or idempotent, `partial` when some updates succeeded and some errors exist, `skipped` when nothing updated AND errors exist (was always `pass` before, masking real failures).
+- **`/bitwize-music:lyric-refiner` no longer blocks on instrumental-mixed albums (#311)**: The refiner's former guard clause — "Track status `Not Started` or `Sources Pending` → error" — fired on any non-ready vocal track and stopped the whole run, even when other tracks were refineable. Replaced with a three-bucket triage (instrumental / not-ready / refineable): non-refineable tracks are silently skipped with a one-line note (`Skipping {track} — instrumental` or `Skipping {track} — no lyrics yet ({status})`), and the refiner processes whatever is left. Zero-refineable is now a clean informational exit, not a guard-clause failure. Added explicit `### Instrumental Guard` section to match the convention shared with `lyric-writer` / `lyric-reviewer` / `pronunciation-specialist`, and extended the `TestInstrumentalGuard.test_instrumental_guard_section` parametrize to cover `lyric-refiner`. Report header now shows both skip counters: `X of Y (Z instrumental skipped, W Not Started skipped)`.
+- **qc_audio silence check (#321)**: Trailing silence followed by a sub-threshold noise-floor blip no longer gets misclassified as an internal gap. The silence detector now classifies each silent region by position AND by the amount of non-silent content between the region and the file edge — a region ending within 1s of the file end (with <300ms of non-silent content after it) counts as trailing, not internal. Unblocks the `master_album` / `polish_album` pre-QC gate on tracks with natural fade-outs.
+- **analyze_mix_issues click detection (#323)**: Replaced the sample-wise `|diff| > 6·σ(diff)` detector with a windowed peak-to-RMS check (matches `qc_tracks._check_clicks`) at `peak_ratio=15` over 10 ms windows. The old detector flagged tens of thousands of "clicks" on every clean vocal, bass, and synth stem (vocal consonants and synth attacks have high instantaneous derivatives but spread their energy across a window), emitting `click_removal: true` recommendations that the polish pipeline silently ignored. The analyzer now only recommends click removal when genuine single-sample discontinuities exist.
+
+## [0.90.0] - 2026-04-15
+
+### Added
+- **opus_safe TP override (#290)**: `opus_safe: true` preset field applies -1.5 dBTP ceiling for dense-transient genres (EDM, trap, metal, dubstep, drum-and-bass, hardstyle, industrial, punk).
+- **ADM validation stage (#290 step 9)**: `master_album` now runs `_stage_adm_validation` after ceiling guard — encodes each mastered WAV to AAC (ffmpeg native `aac` default; afconvert on macOS; `libfdk_aac` via config override), decodes back, checks for inter-sample peaks. Emits `ADM_VALIDATION.md` sidecar. Halts if clips found.
+- **ID3v2.4 metadata embedding (#290)**: `master_album` embeds artist, album, title, copyright, and label into mastered WAV delivery files via `tools/mastering/metadata.py`. ISRC and UPC fields are supported by the tool but not yet sourced in the pipeline (follow-up).
+- **polish_audio per-stem WAVs (#290)**: Stems mode now writes `polished/<track>/vocals.wav` (and other processed stems) alongside the full mix, activating stem-first vocal-RMS measurement in the mastering analysis.
+- **Album-ceiling guard (#290 phase 5, step 8)**: `master_album` now gates
+  mastered tracks against `album_median + 2 LU`. Small overshoots (≤0.5 LU)
+  get a silent scalar pull-down; larger overshoots halt + escalate.
+- **LAYOUT.md emitter (#290 phase 5, step 7)**: `master_album` writes
+  `LAYOUT.md` next to `ALBUM_SIGNATURE.yaml` with one transition per
+  adjacent track pair. Album-level override via
+  `layout.default_transition: gapless` in README frontmatter.
+- **Album coherence check + correct (issue #290 phase 3b)** — Two new MCP tools. `album_coherence_check` measures the mastered album, selects an anchor, and classifies every other track against per-genre tolerance bands: LUFS (±0.5 LU), STL-95 (`coherence_stl_95_lu`, default ±0.5 LU), LRA floor (`coherence_lra_floor_lu`, default 1.0 LU minimum), low-RMS (`coherence_low_rms_db`, default ±2.0 dB), vocal-RMS (`coherence_vocal_rms_db`, default ±2.0 dB). Read-only — returns per-track violation lists + a summary with outlier counts broken down by metric. `album_coherence_correct` takes the same check output and re-masters LUFS-outlier tracks from `polished/` into `mastered/` (atomic staging pattern, mirrors `master_album`) with the per-track `target_lufs` overridden to the anchor's **measured** LUFS — chasing real output rather than an idealized preset target guarantees convergence. Supports `dry_run=True` for CI preview. MVP scope: LUFS correction only; STL-95 / LRA / RMS outliers are reported but not auto-corrected (compression-ratio correction comes in a later phase). Four new tolerance fields added to the `defaults:` block in `genre-presets.yaml` (and `_PRESET_DEFAULTS` in `master_tracks.py`).
+- **Album signature measurement (issue #290 phase 3a)** — New `measure_album_signature` MCP tool. Runs `analyze_track` on every WAV in an album's subfolder (default `mastered/`), then aggregates into per-track signature metrics (LUFS, peak, STL-95, short-term range, low-RMS, vocal-RMS, 7-band spectral energy) plus album-level aggregates (median, p95, min, max, range, eligible-count). When `genre` or `anchor_track` is supplied, also runs the phase-2 anchor selector and surfaces per-track deltas from the anchor. Read-only — no files written. Intended for tuning genre tolerance presets from reference albums and for feeding the phase-3b coherence check/correct tools. New pure-Python module `tools/mastering/album_signature.py` holds the aggregation + delta math (no I/O, no MCP coupling).
+- **Mastering foundation — streaming-grade 24/96 delivery (issue #290 phase 1a, #304)** — New `mastering:` block in `config.example.yaml` documenting streaming-grade defaults (24-bit WAV at 96 kHz, -14 LUFS, -1 dBTP). `master_audio` and `master_album` now consume these defaults via a new `tools/mastering/config.py` loader (`load_mastering_config`, `resolve_mastering_targets`) with precedence: explicit handler arg > genre preset > user config > hardcoded default. Mastering report emits a runtime honesty notice when the resolved `delivery_sample_rate` exceeds the probed source rate ("upsampled from 44.1 kHz source — no additional audio information vs. source"). New opt-in archival output path writes 32-bit float pre-downconvert copies to `{audio_dir}/archival/` when `mastering.archival_enabled: true`; new `prune_archival` MCP tool keeps the N most-recent archival files per album. Optional new config keys `artist.copyright_holder`, `artist.label`, `mastering.adm_aac_encoder` (default `aac`) for downstream metadata embedding and ADM validation phases. `qc_tracks.py` format check expanded to accept 44.1/48/88.2/96/176.4/192 kHz (was 44.1/48 only). Companion issue #303 tracks the full-fidelity metadata embedding story.
+- **Realistic audio test fixtures + integration tests** — Added `make_clicks_and_pops`, `make_silent_gaps`, and `make_phase_partial` generators to `tests/fixtures/audio/` for QC paths a sine wave can't exercise (injected DC pops, internal silent gaps, partial phase cancellation). Audio fixtures moved from an unscanned `tests/fixtures/audio/conftest.py` into `tests/conftest.py` so all tests auto-discover them. New `tests/unit/mastering/test_integration_realistic_audio.py` exercises sibilance/tinniness, partial-phase mono fold FAIL, click detection, internal-gap silence FAIL, and LUFS spread across dynamic content. Documented generator catalog and authoring conventions in `tests/fixtures/README.md` (#300)
+- **Mastering samples — codec preview + mono fold-down QC artifacts** — `master_album` now writes operator-listening artifacts to a sibling `mastering_samples/` directory after verification, so `mastered/` stays byte-identical to the streaming upload. Each track gets a 128 kbps `.aac.m4a` AAC encode (Bluetooth-path audition), a `.mono.wav` mono fold sample (phone-speaker / Echo audition), and a `.MONO_FOLD.md` per-band delta report. A >6 dB band drop in the mono fold hard-fails the pipeline with the offending frequency surfaced (phase cancellation guard). New standalone tools `render_codec_preview` and `mono_fold_check` run the same checks independently. Thresholds and on/off flags configurable in `genre-presets.yaml` defaults; `reset_mastering` accepts `mastering_samples` (#296)
+- **Mastering pipeline overhaul** — 30+ new configurable parameters across the full mastering chain:
+  - DC offset removal (subsonic HPF)
+  - Low shelf EQ with configurable Q factor
+  - Linear-phase FIR EQ option (zero phase distortion)
+  - Mid/side EQ for frequency-selective stereo management
+  - De-essing with frequency, bandwidth, threshold, and ratio controls
+  - Stereo width adjustment with bass mono fold
+  - Parallel compression (wet/dry blend) with makeup gain
+  - 3-band multiband compression with Linkwitz-Riley crossovers
+  - Iterative LRA (Loudness Range) targeting per EBU R128
+  - Look-ahead limiting with configurable release
+  - Oversampled processing for nonlinear stages (2x/4x)
+  - Sample rate conversion
+  - 24-bit output support
+  - Inter-track gap insertion
+  - Album-level loudness consistency (two-pass mastering)
+  - Extended loudness metering (short-term, momentary LUFS)
+- **Mix pipeline enhancements** — saturation, sub-bass exciter, transient shaping wired into per-stem processing
+- **Configurable mastering presets** — refactored from tuples to dicts; all parameters exposed via CLI and genre presets
+- **Album signature persistence (#290 phase 4):** `master_album` now writes `ALBUM_SIGNATURE.yaml` alongside `mastered/` after every successful run, capturing the anchor, album medians, delivery targets (LUFS, TP ceiling, LRA), and coherence tolerances. Released albums automatically enter "frozen mode" on re-master — the shipped anchor + targets are reused so subsequent masters don't drift from what's on DSPs.
+- **`freeze_signature` / `new_anchor` params on `master_album`** — force frozen or fresh routing regardless of album status. Mutually exclusive; enforced in pre-flight.
+- **`is_album_released` helper** in `handlers/_shared.py` for cache-backed status checks.
+- **`get_plugin_version` helper** in `handlers/_shared.py` — single source of truth for plugin version reads (DRYed from health.py and master_album's new stage).
+- **`reference/streaming-mastering-specs.md`** — new authoritative reference for delivery targets, the signature contract, and re-mastering behavior.
+
+### Changed
+- **Stage extraction refactor (#290 D5)**: `master_album` is now a ~60-line orchestrator delegating to 14 standalone stage functions in `handlers/processing/_album_stages.py`. Zero behavior change; enables ADM validation (step 9) to land cleanly.
+- **Default mastered output format** — `master_album` / `master_audio` / `polish_and_master_album` now produce **24-bit WAV at 96 kHz** by default (was 16-bit at source rate, typically 44.1 kHz). Existing user configs without a `mastering:` block pick up the new defaults on the next run. To preserve the legacy 16/44.1 output, set `mastering.delivery_bit_depth: 16` and `mastering.delivery_sample_rate: 44100` in `~/.bitwize-music/config.yaml`. Users with custom `{overrides}/mastering-presets.yaml` per-genre values continue to honor those overrides. Disk usage increases ~3x per track at the new defaults (~33 MB vs. ~10 MB for a 3-minute stereo track).
+
+### Fixed
+- **Notices on early-exit paths (A4 #290)**: Failure JSON from `master_album` now always includes the `notices` key, even when the pipeline halts before successful completion.
+- LRA targeting now iteratively adjusts compression ratio (was measurement-only)
+- Added missing `--deess-bandwidth` CLI arg
+- Added missing CLI args for multiband ratios/thresholds and mid/side frequencies
+- Wired `eq_low_q` through to `apply_low_shelf()` (was defined but unused)
+- Look-ahead limiter now hits its target ceiling exactly (was overshooting by ~1 dB on transients). Gain at peak samples was being sampled from the release-relaxed envelope; replaced with a rolling minimum over the lookahead window (#283)
+- QC click detector is now genre-aware: `click_peak_ratio` and `click_fail_count` are per-genre preset fields, tuned looser for genres with intentional sharp transients (electronic, IDM, breakcore, trap, metal, glitch, footwork, etc.) so musical transients no longer FAIL QC. `qc_tracks.py` accepts `--genre`, the `qc_audio` MCP tool accepts `genre`, and user `mastering-presets.yaml` overrides still apply (#285)
+- Mastering chain now adds a final true-peak guard at the output rate after downsample and SRC. `scipy.signal.resample_poly`'s polyphase FIR has passband ripple that previously reintroduced 0.1–0.9 dB inter-sample peaks above the limiter ceiling; one reactive `limit_peaks()` pass closes that gap so `ceiling_db` is hit within ~0.05 dB without the prior headroom workaround (#286)
+- Polish-stage declicker now reads `click_peak_ratio` / `click_fail_count` from
+  the mastering genre preset so polish and QC click detection stay aligned.
+  Stem passes (drums, percussion) use cubic-spline repair across ±1.5 ms of
+  clean neighbors instead of two-sample linear interpolation; full-mix fallback
+  keeps linear repair because dense mix content amplifies surgical artifacts.
+  Polish results now surface `clicks_removed` per stem and on the full-mix
+  result so operators can see whether polish acted (#289).
+- `analyze_mix_issues` in stems mode now analyzes every stem per track and reports per-stem diagnostics under `tracks[].stems[stem_name]`, rather than sampling only the alphabetically first stem. Issues in specific stems (muddy bass, harsh vocals, etc.) are no longer missed, and per-track issue rollups are the union across stems (#272)
+- **Archival stage now mirrors `mastered/` (#290 phase 4, PR #304 review A5):** orphans whose basename is no longer in `mastered/` are pruned before new files are written, so re-masters with fewer or renamed tracks don't retain stale archival entries. Records pruned names under `stages.archival.pruned`.
 
 ## [0.89.0] - 2026-04-10
 

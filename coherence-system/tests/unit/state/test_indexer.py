@@ -682,7 +682,7 @@ class TestReadWriteState:
         state_file.write_text("{invalid json content, not valid")
 
         result = read_state()
-        assert result is None
+        assert result == {}
 
     def test_read_truncated_json(self, tmp_path, monkeypatch):
         _override_indexer_paths(monkeypatch, tmp_path)
@@ -691,7 +691,7 @@ class TestReadWriteState:
         state_file.write_text('{"version": "1.0.0", "albums": {')
 
         result = read_state()
-        assert result is None
+        assert result == {}
 
     def test_read_empty_file(self, tmp_path, monkeypatch):
         _override_indexer_paths(monkeypatch, tmp_path)
@@ -700,7 +700,7 @@ class TestReadWriteState:
         state_file.write_text("")
 
         result = read_state()
-        assert result is None
+        assert result == {}
 
     def test_write_creates_cache_dir(self, tmp_path, monkeypatch):
         new_cache = tmp_path / "new_cache_dir"
@@ -800,8 +800,8 @@ class TestFileLocking:
                     with pytest.raises(TimeoutError, match="Could not acquire state lock"):
                         _acquire_lock_with_timeout(fd, timeout=0)
 
-    def test_stale_lock_recovery(self, tmp_path, monkeypatch):
-        """When lock is stale (old mtime), recovery is attempted."""
+    def test_stale_lock_not_bypassed(self, tmp_path, monkeypatch):
+        """Old mtime-based stale lock detection was removed; old locks still timeout."""
         import fcntl
 
         lock_file = tmp_path / "test.lock"
@@ -809,26 +809,19 @@ class TestFileLocking:
         import tools.state.indexer as indexer
         monkeypatch.setattr(indexer, 'LOCK_FILE', lock_file)
 
-        # Make lock file appear old
-        old_mtime = time.time() - (indexer.STALE_LOCK_SECONDS + 10)
+        # Make lock file appear old (300s)
+        old_mtime = time.time() - 300
         os.utime(lock_file, (old_mtime, old_mtime))
 
-        attempt = [0]
-
-        def mock_flock(fd, operation):
-            attempt[0] += 1
-            if attempt[0] <= 1:
-                # First attempt fails
-                err = OSError()
-                err.errno = errno.EAGAIN
-                raise err
-            # Second attempt (after stale recovery) succeeds
-            return
-
-        with open(lock_file, 'w') as fd:
-            with patch('tools.state.indexer.fcntl.flock', side_effect=mock_flock):
-                # Should succeed via stale lock recovery
-                _acquire_lock_with_timeout(fd, timeout=5)
+        holder = open(lock_file)
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            with open(lock_file) as contender:
+                with pytest.raises(TimeoutError, match="Could not acquire state lock"):
+                    _acquire_lock_with_timeout(contender, timeout=0.3)
+        finally:
+            fcntl.flock(holder, fcntl.LOCK_UN)
+            holder.close()
 
     def test_unexpected_oserror_reraises(self, tmp_path, monkeypatch):
         """Unexpected OSError (not EAGAIN/EACCES) is re-raised."""
@@ -933,6 +926,87 @@ class TestScanAlbums:
         assert album['track_count'] == 8
         assert '01-boot-sequence' in album['tracks']
         assert '04-kernel-panic' in album['tracks']
+
+    def test_anchor_track_propagated_from_frontmatter(self, tmp_path):
+        """#290 phase 2: scan_albums must copy anchor_track from parser
+        output into state.albums[slug]. Without this, the README
+        frontmatter override chain never fires in production."""
+        content_root = tmp_path / "content"
+        readme_text = """---
+title: "Anchor Album"
+genres: ["rock"]
+explicit: false
+anchor_track: 2
+---
+
+# Anchor Album
+
+## Album Details
+
+| Attribute | Detail |
+|-----------|--------|
+| **Status** | Concept |
+| **Tracks** | 0 |
+"""
+        _make_album_tree(content_root, "testartist", "rock", "anchor-album",
+                         readme_text=readme_text)
+
+        result = scan_albums(content_root, "testartist")
+        assert "anchor-album" in result
+        assert result["anchor-album"]["anchor_track"] == 2
+
+    def test_anchor_track_absent_when_not_in_frontmatter(self, tmp_path):
+        """#290 phase 2: anchor_track defaults to None when frontmatter
+        omits it — the mastering pipeline then falls through to
+        composite scoring."""
+        content_root = tmp_path / "content"
+        _make_album_tree(content_root, "testartist", "rock", "no-anchor-album")
+
+        result = scan_albums(content_root, "testartist")
+        assert "no-anchor-album" in result
+        assert result["no-anchor-album"]["anchor_track"] is None
+
+    def test_mastering_block_propagated_from_frontmatter(self, tmp_path):
+        """State cache must carry mastering overrides from album README
+        frontmatter so master_album's config resolution can find them."""
+        content_root = tmp_path / "content"
+        readme_text = """---
+title: "Mastering Album"
+genres: ["electronic"]
+explicit: false
+mastering:
+  adm_validation_enabled: true
+  target_lufs: -13.0
+---
+
+# Mastering Album
+
+## Album Details
+
+| Attribute | Detail |
+|-----------|--------|
+| **Status** | Concept |
+| **Tracks** | 0 |
+"""
+        _make_album_tree(content_root, "testartist", "electronic", "mastering-album",
+                         readme_text=readme_text)
+
+        result = scan_albums(content_root, "testartist")
+        assert "mastering-album" in result
+        assert result["mastering-album"]["mastering"] == {
+            "adm_validation_enabled": True,
+            "target_lufs": -13.0,
+        }
+
+    def test_mastering_block_defaults_to_empty_dict_when_absent(self, tmp_path):
+        """mastering defaults to {} when frontmatter omits it — the
+        mastering pipeline then falls through to defaults."""
+        content_root = tmp_path / "content"
+        _make_album_tree(content_root, "testartist", "rock", "no-mastering-album")
+
+        result = scan_albums(content_root, "testartist")
+        assert "no-mastering-album" in result
+        assert result["no-mastering-album"]["mastering"] == {}
 
 
 @pytest.mark.unit
@@ -1379,6 +1453,66 @@ class TestIncrementalUpdate:
         updated = incremental_update(existing, config)
         assert updated['session']['last_album'] == 'my-album'
         assert updated['session']['pending_actions'] == ['do something']
+
+    def test_anchor_track_propagated_on_readme_rewrite(self, tmp_path, monkeypatch):
+        """#290 phase 2: incremental re-parse path must also carry
+        anchor_track into state.albums[slug]. A README rewrite forces
+        this branch (readme_mtime differs)."""
+        content_root = tmp_path / "content"
+        readme_initial = """---
+title: "My Album"
+genres: ["rock"]
+explicit: false
+---
+
+# My Album
+
+## Album Details
+
+| Attribute | Detail |
+|-----------|--------|
+| **Status** | Concept |
+| **Tracks** | 0 |
+"""
+        _make_album_tree(content_root, "testartist", "rock", "my-album",
+                         readme_text=readme_initial)
+
+        config = {
+            'artist': {'name': 'testartist'},
+            'paths': {'content_root': str(content_root)},
+        }
+        import tools.state.indexer as indexer
+        monkeypatch.setattr(indexer, 'get_config_mtime', lambda: 100.0)
+
+        existing = build_state(config)
+        existing['config']['config_mtime'] = 100.0
+        assert existing['albums']['my-album']['anchor_track'] is None
+
+        # Rewrite README with anchor_track set — changes readme_mtime,
+        # forcing the incremental path to re-parse and rebuild the entry.
+        readme_updated = """---
+title: "My Album"
+genres: ["rock"]
+explicit: false
+anchor_track: 3
+---
+
+# My Album
+
+## Album Details
+
+| Attribute | Detail |
+|-----------|--------|
+| **Status** | Concept |
+| **Tracks** | 0 |
+"""
+        readme_path = (content_root / "artists" / "testartist" / "albums" /
+                       "rock" / "my-album" / "README.md")
+        time.sleep(0.05)  # Ensure mtime changes
+        readme_path.write_text(readme_updated)
+
+        updated = incremental_update(existing, config)
+        assert updated['albums']['my-album']['anchor_track'] == 3
 
 
 @pytest.mark.unit

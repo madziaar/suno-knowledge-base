@@ -37,8 +37,6 @@ from typing import Any, cast
 
 # Lock timeout in seconds (prevents indefinite blocking)
 LOCK_TIMEOUT_SECONDS = 10
-# Stale lock threshold in seconds (locks older than this are considered abandoned)
-STALE_LOCK_SECONDS = 60
 
 # Ensure project root is on sys.path so this file works both as:
 #   python3 tools/state/indexer.py rebuild
@@ -241,6 +239,9 @@ def scan_albums(content_root: Path, artist_name: str) -> dict[str, dict[str, Any
             'title': album_data.get('title', album_slug),
             'status': album_data.get('status', 'Unknown'),
             'explicit': album_data.get('explicit', False),
+            'anchor_track': album_data.get('anchor_track'),
+            'layout': album_data.get('layout'),
+            'mastering': album_data.get('mastering') or {},
             'release_date': album_data.get('release_date'),
             'track_count': album_data.get('track_count', len(tracks)),
             'tracks_completed': album_data.get('tracks_completed', 0),
@@ -515,6 +516,9 @@ def incremental_update(existing_state: dict[str, Any], config: dict[str, Any]) -
                         'title': album_data.get('title', slug),
                         'status': album_data.get('status', 'Unknown'),
                         'explicit': album_data.get('explicit', False),
+                        'anchor_track': album_data.get('anchor_track'),
+                        'layout': album_data.get('layout'),
+                        'mastering': album_data.get('mastering') or {},
                         'release_date': album_data.get('release_date'),
                         'track_count': album_data.get('track_count', len(tracks)),
                         'tracks_completed': album_data.get('tracks_completed', 0),
@@ -613,8 +617,12 @@ def _update_tracks_incremental(album: dict[str, Any], album_dir: Path) -> None:
     )
 
 
-def _acquire_lock_with_timeout(lock_fd: Any, timeout: int = LOCK_TIMEOUT_SECONDS) -> None:
-    """Acquire an exclusive file lock with timeout and stale lock recovery.
+def _acquire_lock_with_timeout(lock_fd: Any, timeout: int | float = LOCK_TIMEOUT_SECONDS) -> None:
+    """Acquire an exclusive file lock with exponential backoff.
+
+    Uses only ``fcntl.flock`` for locking — no mtime-based stale detection,
+    which had a TOCTOU race.  ``flock`` locks auto-release when the holding
+    process dies, so stale locks self-heal.
 
     Args:
         lock_fd: Open file descriptor for the lock file.
@@ -624,6 +632,7 @@ def _acquire_lock_with_timeout(lock_fd: Any, timeout: int = LOCK_TIMEOUT_SECONDS
         TimeoutError: If lock cannot be acquired within timeout.
     """
     deadline = time.monotonic() + timeout
+    wait = 0.05  # Initial backoff
 
     while True:
         try:
@@ -633,30 +642,14 @@ def _acquire_lock_with_timeout(lock_fd: Any, timeout: int = LOCK_TIMEOUT_SECONDS
             if e.errno not in (errno.EACCES, errno.EAGAIN):
                 raise  # Unexpected error
 
-        # Check for stale lock
-        try:
-            lock_age = time.time() - LOCK_FILE.stat().st_mtime
-            if lock_age > STALE_LOCK_SECONDS:
-                logger.warning(
-                    "Stale lock detected (%.0fs old), recovering", lock_age
-                )
-                # Touch the lock file to reset mtime, then retry
-                LOCK_FILE.touch()
-                try:
-                    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    return
-                except OSError:
-                    pass  # Still held, continue waiting
-        except OSError:
-            pass  # Lock file may have been removed
-
         if time.monotonic() >= deadline:
             raise TimeoutError(
                 f"Could not acquire state lock within {timeout}s. "
                 f"Lock file: {LOCK_FILE}"
             )
 
-        time.sleep(0.1)
+        time.sleep(min(wait, deadline - time.monotonic()))
+        wait = min(wait * 2, 1.0)  # Cap at 1 second
 
 
 def write_state(state: dict[str, Any]) -> None:
@@ -710,7 +703,7 @@ def read_state() -> dict[str, Any] | None:
     """Read state from cache file.
 
     Returns:
-        Parsed state dict, or None if missing/corrupted.
+        Parsed state dict, empty dict if corrupted (after backup), or None if missing.
     """
     if not STATE_FILE.exists():
         return None
@@ -718,8 +711,20 @@ def read_state() -> dict[str, Any] | None:
         with open(STATE_FILE) as f:
             return cast(dict[str, Any], json.load(f))
     except (json.JSONDecodeError, OSError) as e:
-        logger.warning("Corrupted state file: %s", e)
-        return None
+        # Corrupted — backup the file and return empty state
+        logger.error(
+            "Corrupted state file: %s — backing up and returning empty state", e
+        )
+        try:
+            import shutil
+
+            timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+            backup_path = CACHE_DIR / f"state.{timestamp}.corrupt"
+            shutil.copy2(STATE_FILE, backup_path)
+            logger.error("Corrupted state backed up to %s", backup_path)
+        except OSError as backup_err:
+            logger.error("Could not backup corrupted state: %s", backup_err)
+        return {}
 
 
 def migrate_state(state: dict[str, Any]) -> dict[str, Any] | None:

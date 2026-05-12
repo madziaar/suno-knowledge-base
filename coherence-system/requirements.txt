@@ -21,6 +21,7 @@ pyloudnorm==0.2.0
 scipy==1.17.1
 numpy==2.4.4
 soundfile==0.13.1
+mutagen==1.47.0
 
 # =============================================================================
 # AUDIO MIXING / POLISH (required for /bitwize-music:mix-engineer)
@@ -37,21 +38,21 @@ librosa==0.11.0
 # =============================================================================
 # SHEET MUSIC (required for /bitwize-music:sheet-music-publisher)
 # =============================================================================
-pypdf==6.9.2
-reportlab==4.4.10
+pypdf==6.10.2
+reportlab==4.5.0
 
 # =============================================================================
 # CLOUD UPLOADS (required for /bitwize-music:cloud-uploader)
 # =============================================================================
-boto3==1.42.85
+boto3==1.42.97
 
 # =============================================================================
 # DATABASE (required for db_* MCP tools - tweet/promo management)
 # =============================================================================
-psycopg2-binary==2.9.11
+psycopg2-binary==2.9.12
 
 # =============================================================================
 # DOCUMENT HUNTING (required for /bitwize-music:document-hunter)
 # After pip install, also run: playwright install chromium
 # =============================================================================
-playwright==1.58.0
+playwright==1.59.0

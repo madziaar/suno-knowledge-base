@@ -144,7 +144,7 @@ def parse_album_readme(path: Path) -> dict[str, Any]:
 
     Returns:
         Dict with keys: title, status, genre, explicit, release_date,
-        track_count, tracks_completed, tracklist.
+        track_count, tracks_completed, tracklist, anchor_track, layout.
         On error, includes '_error' key.
     """
     try:
@@ -163,6 +163,45 @@ def parse_album_readme(path: Path) -> dict[str, Any]:
     result['title'] = fm.get('title', '').strip('"').strip("'") or _extract_heading(text)
     result['release_date'] = fm.get('release_date') or None
     result['explicit'] = fm.get('explicit', False)
+
+    # Optional anchor-track override for album mastering (issue #290 phase 2).
+    # Frontmatter uses 1-based track numbers. Non-int / null / missing → None,
+    # and the mastering pipeline falls through to composite anchor scoring.
+    anchor_raw = fm.get('anchor_track')
+    if isinstance(anchor_raw, bool):  # bool is an int subclass; exclude it
+        result['anchor_track'] = None
+    elif isinstance(anchor_raw, int):
+        result['anchor_track'] = anchor_raw
+    else:
+        result['anchor_track'] = None
+
+    # Optional layout override for album-mastering LAYOUT.md emitter (#290
+    # phase 5, step 7). Accepted shape:
+    #
+    #     layout:
+    #       default_transition: gap | gapless
+    #
+    # Anything else (missing, non-dict, unknown value, non-string) collapses
+    # to None so downstream consumers can default to "gap".
+    layout_raw = fm.get('layout')
+    parsed_layout: dict[str, str] | None = None
+    if isinstance(layout_raw, dict):
+        dt_raw = layout_raw.get('default_transition')
+        if isinstance(dt_raw, str):
+            dt_norm = dt_raw.strip().lower()
+            if dt_norm in ('gap', 'gapless'):
+                parsed_layout = {'default_transition': dt_norm}
+    result['layout'] = parsed_layout
+
+    # Per-album mastering overrides (issue #353). The frontmatter
+    # `mastering:` block carries keys that override config.yaml::mastering
+    # for this album only. Malformed input collapses to {} so downstream
+    # consumers can rely on .get() always finding a dict.
+    mastering_raw = fm.get('mastering')
+    if isinstance(mastering_raw, dict):
+        result['mastering'] = mastering_raw
+    else:
+        result['mastering'] = {}
 
     # Streaming URLs from frontmatter
     streaming_fm = fm.get('streaming', {})
@@ -437,6 +476,8 @@ def parse_ideas_file(path: Path) -> dict[str, Any]:
         genre = _extract_bold_field(block_text, 'Genre')
         idea_type = _extract_bold_field(block_text, 'Type')
         status = _extract_bold_field(block_text, 'Status')
+        concept = _extract_bold_field(block_text, 'Concept')
+        promoted_to = _extract_bold_field(block_text, 'Promoted To')
 
         # Normalize status - take first value if it's a choice list
         if status and '|' in status:
@@ -450,6 +491,8 @@ def parse_ideas_file(path: Path) -> dict[str, Any]:
             'genre': genre or '',
             'type': idea_type or '',
             'status': status,
+            'concept': concept or '',
+            'promoted_to': promoted_to or '',
         })
 
         counts[status] = counts.get(status, 0) + 1
@@ -487,7 +530,7 @@ def _derive_model_tier(model: str) -> str:
     """Derive model tier (opus/sonnet/haiku) from a model ID string.
 
     Args:
-        model: Model identifier (e.g., "claude-opus-4-6", "claude-sonnet-4-5-20250929")
+        model: Model identifier (e.g., "claude-opus-4-7", "claude-sonnet-4-5-20250929")
 
     Returns:
         Lowercase tier string ("opus", "sonnet", "haiku") or "unknown".

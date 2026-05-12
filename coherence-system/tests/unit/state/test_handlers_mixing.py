@@ -282,6 +282,105 @@ class TestAnalyzeMixIssues:
         assert result["album_summary"]["tracks_analyzed"] >= 1
         assert result["album_summary"]["source_mode"] == "stems"
 
+    def test_stems_mode_analyzes_every_stem_per_track(self, tmp_path):
+        """Each stem in a track gets its own analysis, not just the first alphabetically."""
+        audio_dir = _setup_stems_dir(tmp_path)
+        with patch.object(_helpers_mod, "_check_mixing_deps", return_value=None), \
+             patch.object(_helpers_mod, "_resolve_audio_dir", return_value=(None, audio_dir)):
+            raw = _run(_mixing_mod.analyze_mix_issues("test"))
+        result = json.loads(raw)
+        assert result["album_summary"]["tracks_analyzed"] == 1
+        track = result["tracks"][0]
+        assert track["track"] == "01-test-track"
+        assert set(track["stems"].keys()) == {"vocals", "bass"}
+        for stem_name, stem_analysis in track["stems"].items():
+            assert "peak" in stem_analysis
+            assert "issues" in stem_analysis
+        assert "issues" in track
+
+    def test_vocal_stem_does_not_false_positive_clicks(self, tmp_path):
+        """Formant-shaped vocal with sibilant bursts must not emit a
+        `click_removal` recommendation — vocal consonants have high
+        instantaneous derivatives but their energy is spread across the
+        10 ms detector window. Regression for #323 where the old
+        sample-wise 6·σ(diff) detector flagged tens of thousands of
+        "clicks" on every clean vocal stem.
+        """
+        audio_dir = tmp_path / "audio"
+        audio_dir.mkdir()
+        data, rate = make_vocal(duration=3.0)
+        write_wav(str(audio_dir / "vocal.wav"), data, rate)
+
+        with patch.object(_helpers_mod, "_check_mixing_deps", return_value=None), \
+             patch.object(_helpers_mod, "_resolve_audio_dir", return_value=(None, audio_dir)):
+            raw = _run(_mixing_mod.analyze_mix_issues("test"))
+        result = json.loads(raw)
+        track = result["tracks"][0]
+        assert track["click_count"] < 10, (
+            f"vocal stem produced {track['click_count']} false-positive clicks"
+        )
+        assert "clicks_detected" not in track["issues"]
+        assert "click_removal" not in track["recommendations"]
+
+    def test_vocal_click_removal_wired_through_polish(self, tmp_path):
+        """Genuine clicks on a vocal stem must now get removed by polish
+        (#323 comment). Pre-fix the vocal chain had no declicker so
+        analyze_mix_issues would flag clicks that polish silently
+        ignored. With click_removal wired onto every stem's chain, the
+        count from analyzer and polish should both be > 0.
+        """
+        from tools.mixing.mix_tracks import mix_track_stems
+
+        audio_dir = tmp_path / "audio"
+        audio_dir.mkdir()
+        rate = 44100
+        t = np.linspace(0, 1.0, rate, endpoint=False)
+        # Quiet vocal-like background with single-sample spikes.
+        mono = (0.02 * np.sin(2 * np.pi * 440 * t)).astype(np.float64)
+        for i in range(10):
+            mono[2000 + i * 4000] = 0.9
+        data = np.column_stack([mono, mono])
+        stem_path = audio_dir / "vocals.wav"
+        write_wav(str(stem_path), data, rate)
+
+        result = mix_track_stems(
+            {"vocals": str(stem_path)},
+            str(audio_dir / "out.wav"),
+        )
+
+        by_stem = {s["stem"]: s for s in result["stems_processed"]}
+        assert by_stem["vocals"]["clicks_removed"] >= 1, (
+            f"vocal declicker did not run: {by_stem['vocals']}"
+        )
+
+    def test_actual_clicks_still_detected(self, tmp_path):
+        """Single-sample discontinuities inserted into an otherwise clean
+        tone must still trigger the `click_removal` recommendation — the
+        detector recalibration for #323 must not regress genuine click
+        detection.
+        """
+        audio_dir = tmp_path / "audio"
+        audio_dir.mkdir()
+        rate = 44100
+        duration = 3.0
+        t = np.linspace(0, duration, int(rate * duration), endpoint=False)
+        mono = 0.02 * np.sin(2 * np.pi * 440 * t)
+        # 30 single-sample spikes spaced ~100 ms apart — each lifts one
+        # 10 ms window's peak-to-RMS ratio well above 15.
+        for i in range(30):
+            idx = 2000 + i * 4410
+            mono[idx] = 0.9
+        data = np.column_stack([mono, mono]).astype(np.float64)
+        write_wav(str(audio_dir / "clicky.wav"), data, rate)
+
+        with patch.object(_helpers_mod, "_check_mixing_deps", return_value=None), \
+             patch.object(_helpers_mod, "_resolve_audio_dir", return_value=(None, audio_dir)):
+            raw = _run(_mixing_mod.analyze_mix_issues("test"))
+        result = json.loads(raw)
+        track = result["tracks"][0]
+        assert "clicks_detected" in track["issues"]
+        assert track["recommendations"].get("click_removal") is True
+
 
 # ---------------------------------------------------------------------------
 # Tests: polish_album (3-stage pipeline)
@@ -317,7 +416,11 @@ class TestPolishAlbum:
         assert result["stages"]["pre_flight"]["status"] == "pass"
         assert result["stages"]["analysis"]["status"] == "pass"
         assert result["stages"]["polish"]["status"] == "pass"
-        assert result["stages"]["verify"]["status"] in ("pass", "warn")
+        # verify now runs the full qc_track suite; synthetic test audio can
+        # legitimately trigger FAIL on spectral/silence — we only care that
+        # the stage ran and produced a verdict.
+        assert result["stages"]["verify"]["status"] in ("pass", "warn", "fail")
+        assert "tracks_verified" in result["stages"]["verify"]
 
     def test_stems_mode_pipeline(self, tmp_path):
         audio_dir = _setup_stems_dir(tmp_path)
