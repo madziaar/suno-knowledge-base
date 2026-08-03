@@ -1,1 +1,0 @@
-// DELETED: Moved to features/generator/components/StatusLog/index.tsx
