@@ -1,0 +1,58 @@
+Here is a breakdown of how we can redesign your app.
+
+1. Global Aesthetic & Layout
+Spotify’s design language relies heavily on deep blacks, subtle grays for separation, and a single, strong accent color.
+
+Color Palette: * Background: Deep black (#121212).
+
+Elevated Elements (Sidebar, Player, Cards): Dark gray (#181818 or #242424).
+
+Text: Pure white (#FFFFFF) for primary headers/active items, and light gray (#B3B3B3) for secondary text (like artist names or inactive menu items).
+
+Accent Color: Keep your current purple! It’s distinctive. Use it for the play button, active states, and progress bars.
+
+Typography: Switch to a clean, geometric sans-serif font (like Inter, Roboto, or Circular if you have it). Use font weight (Bold vs. Regular) to establish hierarchy rather than just size.
+
+Window Edges: If your framework allows, round the corners of the main application window and inner containers (around 8px border-radius).
+
+2. The Sidebar & Player Bar
+Your current layout has the right bones, but the execution can be smoothed out.
+
+Left Sidebar: Remove the bulky, boxy background on the active menu item. Instead, make inactive text gray, and active text white with a subtle purple left border indicator.
+
+Bottom Player Bar: * Make it span the entire width of the bottom screen.
+
+Left side: Add a square placeholder for track/album artwork, followed by the Title and Artist name stacked vertically.
+
+Center: Playback controls (Shuffle, Prev, Play/Pause, Next, Repeat) with a slim, horizontal progress bar directly underneath them.
+
+Right side: Volume slider and extra icons (like lyrics or queue).
+
+3. Library Redesign (The Core Upgrade)
+To make the library feel less like an Excel spreadsheet and more like a media player:
+
+Sticky Header: Keep the "Title", "Artist", "Genre", etc., at the top, but remove the visible grid lines.
+
+Row Hover Effects: When a user hovers over a track row, change the background color of that specific row to a slightly lighter gray (#2A2A2A) and swap the track number/artwork on the far left with a "Play" icon.
+
+Visual Flair: Add small (40x40px) thumbnail images next to the song titles.
+
+Consolidate Actions: Move the "Like", "Star", and "Trash" icons. Instead of having them globally at the top, have them appear on the right side of a track row only when the user hovers over it.
+
+4. Downloader & The Filter Menu
+Looking at your last screenshot, you need to support 10 specific toggle filters: Liked, Disliked, Public, Private, Uploads, Full song, Cover, Persona, Hide Disliked, Hide Stems.
+
+Pill/Chip Filters: Instead of a traditional dropdown menu with checkboxes, use Spotify-style "Pill" buttons at the top of the Downloader or Library page.
+
+They sit in a horizontal scrolling row.
+
+When inactive, they are outlined or gray (#333333 background).
+
+When clicked, they fill with your purple accent color or turn white.
+
+This makes it immediately obvious what filters are active without requiring the user to open a dropdown menu.
+
+5. Dashboard & Prompt Vault
+Dashboard: Turn your stats (Total Tracks, Total Playtime, etc.) into unified, slightly rounded cards that sit on the #121212 background. Give them plenty of padding.
+
+Prompt Vault: Make the layout a classic two-pane view. A scrollable list of saved prompts on the left (taking up 30% of the width) and the editing area (Title, Tags, Prompt body) on the right (70%).
