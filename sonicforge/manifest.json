@@ -1,0 +1,16 @@
+{
+  "name": "Pyrite's Sonic Forge V5",
+  "short_name": "Sonic Forge",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#a855f7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn.lucide.dev/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
