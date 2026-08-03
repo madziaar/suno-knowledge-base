@@ -1,0 +1,69 @@
+=== TRACK 1: INTRO - SUNO PROMPT ===
+
+PROJECT: MAG Hardcore Drill Vol. 1
+TRACK: 1 (Intro)
+DATE: 2025-12-31
+
+---
+
+## STYLE TAGS (Paste into Suno "Styles" box)
+
+UK Drill instrumental, Dark ambient, Atmospheric, Building tension, 140 BPM, Heavy bass build, Cinematic, Ominous, London underground, No vocals, Intro track, Rising intensity, Dramatic buildup
+
+---
+
+## TRACK SPECIFICATIONS
+
+| Element | Specification |
+|---------|---------------|
+| BPM | 140 |
+| Duration | 0:45-1:15 |
+| Voice | Instrumental only (or minimal spoken word) |
+| Language | N/A |
+| Mood | Dark, atmospheric, anticipation |
+| Energy | Building from zero to ready |
+
+---
+
+## STRUCTURE GUIDE
+
+[Intro] - Dark ambient pad, ominous
+[Build 1] - 808s start rolling in
+[Build 2] - Hi-hats enter, tension rising
+[Peak] - Full energy ready, sets up Track 2
+[Transition] - Clean cut to Track 2
+
+---
+
+## PRODUCTION NOTES
+
+### MUST INCLUDE:
+- Dark, cinematic atmosphere
+- Building tension throughout
+- 808s building in layers
+- Sets mood for entire album
+- Ends ready to drop into Track 2
+
+### AVOID:
+- Vocals
+- Lyrics
+- Happy vibes
+- Weak intro energy
+
+---
+
+## LYRICS (Minimal/Spoken Word)
+
+[Instrumental intro]
+(Dark pads, building tension)
+
+[Build]
+(808s rolling in)
+(Hi-hats entering)
+
+[Peak]
+(whispered) MAG... Hardcore... Vol. 1
+
+---
+
+STATUS: PROMPT COMPLETE

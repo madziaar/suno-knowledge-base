@@ -1,0 +1,18 @@
+[TRACK TITLE] by [ARTIST]
+
+[1-2 sentences describing the track's vibe, energy, and feel]
+
+[1 sentence about the production style or notable elements]
+
+[1 sentence about the theme or message]
+
+[Genre tags: ___, ___, ___]
+
+---
+CHARACTER COUNT: [Must be ≤1000]
+CHECKLIST:
+- [ ] Under 1000 characters
+- [ ] No hashtags (unless platform requires)
+- [ ] Mentions key genre/style
+- [ ] Hook or memorable phrase included
+- [ ] Artist name spelled correctly

@@ -1,0 +1,67 @@
+=== TRACK 7: OUTRO - SUNO PROMPT ===
+
+PROJECT: MAG Hardcore Drill Vol. 1
+TRACK: 7 (Outro)
+DATE: 2025-12-31
+
+---
+
+## STYLE TAGS (Paste into Suno "Styles" box)
+
+UK Drill instrumental, Outro, Reflective, Dark ambient, Fading energy, 138 BPM slowing, Heavy bass fade, Cinematic, Closing credits, London underground, Minimal vocals, Album closer, Emotional resolution
+
+---
+
+## TRACK SPECIFICATIONS
+
+| Element | Specification |
+|---------|---------------|
+| BPM | 138-140 (slowing) |
+| Duration | 1:00-1:30 |
+| Voice | Instrumental with minimal spoken word |
+| Language | N/A |
+| Mood | Reflective, closure, triumph |
+| Energy | Fading from high to calm |
+
+---
+
+## STRUCTURE GUIDE
+
+[Intro] - Full energy callback
+[Reflection] - Elements from earlier tracks
+[Fade] - Energy slowly decreasing
+[Close] - Final statement, silence
+
+---
+
+## PRODUCTION NOTES
+
+### MUST INCLUDE:
+- Callbacks to earlier tracks
+- Gradual energy fade
+- Sense of closure
+- Leaves impression
+- Album complete feeling
+
+### AVOID:
+- New ideas
+- High energy ending
+- Abrupt cut
+
+---
+
+## LYRICS (Minimal/Spoken Word)
+
+[Instrumental callback]
+(Elements from album)
+
+[Fade]
+(Energy decreasing)
+(whispered) MAG Hardcore... Vol. 1... complete
+
+[Close]
+(Fade to silence)
+
+---
+
+STATUS: PROMPT COMPLETE

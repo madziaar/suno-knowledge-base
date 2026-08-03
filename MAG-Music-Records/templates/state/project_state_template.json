@@ -1,0 +1,262 @@
+{
+  "album": {
+    "name": "[ALBUM_NAME]",
+    "variation": "[VARIATION_ID]",
+    "language": "[LANGUAGE]",
+    "created": "[DATE]",
+    "lastUpdated": "[DATE]",
+    "status": "not_started",
+    "totalTracks": 12,
+    "sunoWorkspace": "[WORKSPACE_NAME]",
+    "creditsUsed": 0
+  },
+  "tracks": [
+    {
+      "number": 1,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "85-90",
+      "mood": "[MOOD]",
+      "type": "intro",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 2,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "88-92",
+      "mood": "[MOOD]",
+      "type": "lead_single",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 3,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "90-95",
+      "mood": "[MOOD]",
+      "type": "banger",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 4,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "82-86",
+      "mood": "[MOOD]",
+      "type": "emotional",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 5,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "90-94",
+      "mood": "[MOOD]",
+      "type": "hard",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 6,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "78-82",
+      "mood": "[MOOD]",
+      "type": "soulful",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 7,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "86-90",
+      "mood": "[MOOD]",
+      "type": "smooth",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 8,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "85-88",
+      "mood": "[MOOD]",
+      "type": "celebratory",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 9,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "92-96",
+      "mood": "[MOOD]",
+      "type": "street",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 10,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "90-94",
+      "mood": "[MOOD]",
+      "type": "loyalty",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 11,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "86-90",
+      "mood": "[MOOD]",
+      "type": "intense",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    },
+    {
+      "number": 12,
+      "title": "[TRACK_TITLE]",
+      "shortName": "[short_name]",
+      "bpm": "74-78",
+      "mood": "[MOOD]",
+      "type": "closer",
+      "stages": {
+        "prompt": { "status": "pending", "file": null, "date": null },
+        "lyrics": { "status": "pending", "file": null, "date": null },
+        "audio": { "status": "pending", "sunoId": null, "date": null },
+        "extended": { "status": "pending", "length": null, "date": null },
+        "artwork": { "status": "pending", "file": null, "date": null },
+        "description": { "status": "pending", "file": null, "date": null },
+        "qc": { "status": "pending", "grade": null, "score": null, "date": null }
+      },
+      "versions": [],
+      "selectedVersion": null,
+      "notes": ""
+    }
+  ],
+  "analytics": {
+    "totalVersionsGenerated": 0,
+    "averageQcScore": null,
+    "bestTrack": null,
+    "mostRevisedTrack": null
+  },
+  "history": []
+}

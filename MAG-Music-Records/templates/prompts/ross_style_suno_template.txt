@@ -1,0 +1,45 @@
+[Style: Luxury Trap, Cinematic Hip-Hop]
+[Sub-genre: Boss Rap, Southern Hip-Hop]
+[BPM: 70-85]
+[Key: ___ minor (prefer D, G, C minor)]
+[Mood: Powerful, Wealthy, Commanding, Reflective]
+[Energy: Medium, steady, building to crescendo]
+[Instruments:
+  - Bass: Deep 808s with long sustain, sub-bass rumble
+  - Drums: Crisp snares, rolling hi-hats (trap patterns), sparse kicks
+  - Synths: Orchestral pads, cinematic strings, piano chords
+  - Other: Brass stabs, choir samples, sweeping FX risers
+]
+[Vocals:
+  - Gender: Male (deep voice)
+  - Style: Slow, commanding delivery, deliberate pacing, authoritative tone
+  - Effects: Light reverb, subtle delay, no heavy autotune
+  - Adlibs: Frequent ("Uh", "Yeah", "Boss", "Huh", grunts between lines)
+]
+[Structure: Intro (8 bars) - Verse - Hook - Verse - Hook - Bridge - Hook - Outro]
+[Explicit: Yes]
+[Special Instructions:
+  - Slow tempo, let each word land with weight
+  - Cinematic feel - like a movie soundtrack
+  - Breathing space between lines
+  - Build intensity toward hooks
+  - Portuguese lyrics only (European Portuguese)
+  - No rushed delivery - every syllable deliberate
+]
+
+---
+ROSS-STYLE PROMPT KEYWORDS (use in Suno):
+luxury trap, cinematic hip-hop, deep voice male rap, orchestral strings,
+808 bass, slow tempo, boss rap, powerful, commanding, epic,
+southern hip-hop, wealthy aesthetic, dramatic, choir, piano chords,
+deliberate delivery, authoritative vocals
+
+---
+VOCAL DIRECTION FOR AI:
+- Deep male voice, baritone range
+- Slow cadence (2-3 seconds per bar)
+- Pronounced pauses for breath
+- Grunts and "uh" between phrases
+- Words pronounced with intention
+- No mumble rap - clear articulation
+- Portuguese accent (Lisbon)

@@ -1,0 +1,408 @@
+# =============================================================================
+# MASTER RELEASE CALENDAR
+# MAG Music Records - Release Tracking Configuration
+# =============================================================================
+# Version: 1.0.0
+# Last Updated: 2024-12-31
+# Purpose: Central configuration for all release scheduling and tracking
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SCHEMA DEFINITION
+# -----------------------------------------------------------------------------
+# All releases MUST conform to this schema for automation compatibility
+
+schema:
+  version: "1.0.0"
+
+  release_entry:
+    required_fields:
+      - id              # Unique identifier (string, format: REL-YYYY-NNN)
+      - type            # Release type (enum: single, ep, album, remix, feature)
+      - project         # Project ID (string, must match SOURCE_OF_TRUTH)
+      - track           # Track reference or "all" for full releases
+      - target_date     # ISO 8601 date (YYYY-MM-DD)
+      - status          # Current status (enum: see status_values)
+      - priority        # Priority level (enum: P0, P1, P2, P3)
+
+    optional_fields:
+      - title           # Release title (string, max 100 chars)
+      - description     # Release description (string, max 500 chars)
+      - dependencies    # List of release IDs this depends on
+      - blockers        # List of current blockers
+      - platforms       # Target platforms list
+      - marketing       # Marketing campaign ID
+      - artwork         # Artwork asset reference
+      - assigned_to     # Team member or agent responsible
+      - notes           # Internal notes
+      - created_at      # ISO 8601 datetime
+      - updated_at      # ISO 8601 datetime
+
+    status_values:
+      - planned         # Scheduled, not started
+      - in_progress     # Actively being worked on
+      - review          # Under review/approval
+      - ready           # Approved, awaiting release date
+      - released        # Successfully released
+      - delayed         # Pushed back from original date
+      - cancelled       # No longer planned
+      - blocked         # Cannot proceed due to blockers
+
+    type_values:
+      - single          # Individual track release
+      - lead_single     # First single from larger project
+      - ep              # Extended play (3-6 tracks)
+      - album           # Full album release
+      - remix           # Remix release
+      - feature         # Featured collaboration
+      - deluxe          # Deluxe/expanded edition
+
+# -----------------------------------------------------------------------------
+# PRIORITY CALCULATION RULES
+# -----------------------------------------------------------------------------
+# Priority is calculated based on days until target_date
+# Lower number = higher priority
+
+priority_rules:
+  calculation_method: "days_until_release"
+
+  levels:
+    P0:
+      name: "Critical"
+      description: "Immediate attention required"
+      days_range: [0, 7]        # 0-7 days out
+      color: "#FF0000"          # Red
+      escalation: true
+      check_frequency: "daily"
+
+    P1:
+      name: "High"
+      description: "Active focus required"
+      days_range: [8, 14]       # 8-14 days out
+      color: "#FFA500"          # Orange
+      escalation: false
+      check_frequency: "every_2_days"
+
+    P2:
+      name: "Medium"
+      description: "On track, regular monitoring"
+      days_range: [15, 30]      # 15-30 days out
+      color: "#FFFF00"          # Yellow
+      escalation: false
+      check_frequency: "weekly"
+
+    P3:
+      name: "Low"
+      description: "Planning phase, no urgency"
+      days_range: [31, null]    # 31+ days out
+      color: "#00FF00"          # Green
+      escalation: false
+      check_frequency: "bi_weekly"
+
+  overrides:
+    # These conditions override calculated priority
+    - condition: "has_unresolved_blockers"
+      set_priority: "P0"
+      reason: "Blockers require immediate resolution"
+
+    - condition: "dependencies_not_met"
+      set_priority: "P1"
+      reason: "Dependencies must be resolved before release"
+
+    - condition: "status == 'delayed'"
+      add_priority: 1           # Increase priority by 1 level
+      reason: "Delayed releases need extra attention"
+
+# -----------------------------------------------------------------------------
+# ACTIVE RELEASES
+# -----------------------------------------------------------------------------
+
+releases:
+
+  # ---------------------------------------------------------------------------
+  # MAG HARDCORE DRILL VOL. 1 - LEAD SINGLE
+  # ---------------------------------------------------------------------------
+  - id: "REL-2025-001"
+    type: "lead_single"
+    project: "MAG_HDRILL_V1"
+    track: "track_02"
+    title: "TBD - Lead Single"
+    description: "Lead single release for MAG Hardcore Drill Vol. 1. First public track to establish project identity and build anticipation."
+    target_date: "2025-02-15"    # PLACEHOLDER - Update when confirmed
+    status: "planned"
+    priority: "P3"               # Auto-calculated based on date
+
+    dependencies: []
+
+    blockers:
+      - id: "BLK-001"
+        description: "Track selection not finalized"
+        severity: "high"
+        assigned_to: null
+
+      - id: "BLK-002"
+        description: "Artwork not started"
+        severity: "medium"
+        assigned_to: null
+
+    platforms:
+      - name: "Spotify"
+        priority: 1
+        status: "pending"
+
+      - name: "Apple Music"
+        priority: 1
+        status: "pending"
+
+      - name: "YouTube Music"
+        priority: 2
+        status: "pending"
+
+      - name: "SoundCloud"
+        priority: 3
+        status: "pending"
+
+    marketing:
+      campaign_id: null
+      pre_save_date: null
+      announcement_date: null
+
+    artwork:
+      single_cover: null
+      promotional: []
+
+    milestones:
+      - name: "Track Selection"
+        target_date: "2025-01-15"
+        status: "pending"
+
+      - name: "Final Mix"
+        target_date: "2025-01-25"
+        status: "pending"
+
+      - name: "Artwork Complete"
+        target_date: "2025-02-01"
+        status: "pending"
+
+      - name: "Distribution Submit"
+        target_date: "2025-02-08"
+        status: "pending"
+
+    notes: |
+      Lead single strategy: Select highest-impact track that represents
+      the overall sound and direction of the album. Consider streaming
+      potential and playlist pitching opportunities.
+
+    created_at: "2024-12-31T00:00:00Z"
+    updated_at: "2024-12-31T00:00:00Z"
+
+  # ---------------------------------------------------------------------------
+  # MAG HARDCORE DRILL VOL. 1 - FULL ALBUM
+  # ---------------------------------------------------------------------------
+  - id: "REL-2025-002"
+    type: "album"
+    project: "MAG_HDRILL_V1"
+    track: "all"
+    title: "MAG Hardcore Drill Vol. 1"
+    description: "Full album release. Debut project establishing MAG Music Records' hardcore drill sound."
+    target_date: "2025-04-01"    # PLACEHOLDER - Update when confirmed
+    status: "planned"
+    priority: "P3"               # Auto-calculated based on date
+
+    dependencies:
+      - "REL-2025-001"           # Lead single must release first
+
+    blockers:
+      - id: "BLK-003"
+        description: "Track list not finalized"
+        severity: "high"
+        assigned_to: null
+
+      - id: "BLK-004"
+        description: "Album artwork not started"
+        severity: "medium"
+        assigned_to: null
+
+      - id: "BLK-005"
+        description: "Mastering not scheduled"
+        severity: "low"
+        assigned_to: null
+
+    platforms:
+      - name: "Spotify"
+        priority: 1
+        status: "pending"
+
+      - name: "Apple Music"
+        priority: 1
+        status: "pending"
+
+      - name: "YouTube Music"
+        priority: 2
+        status: "pending"
+
+      - name: "SoundCloud"
+        priority: 3
+        status: "pending"
+
+      - name: "Bandcamp"
+        priority: 3
+        status: "pending"
+
+    marketing:
+      campaign_id: null
+      pre_save_date: null
+      announcement_date: null
+      press_kit_ready: false
+
+    artwork:
+      album_cover: null
+      back_cover: null
+      booklet: null
+      promotional: []
+
+    milestones:
+      - name: "All Tracks Complete"
+        target_date: "2025-02-15"
+        status: "pending"
+
+      - name: "Track Order Finalized"
+        target_date: "2025-02-20"
+        status: "pending"
+
+      - name: "Final Mastering"
+        target_date: "2025-03-01"
+        status: "pending"
+
+      - name: "Artwork Complete"
+        target_date: "2025-03-10"
+        status: "pending"
+
+      - name: "Distribution Submit"
+        target_date: "2025-03-20"
+        status: "pending"
+
+      - name: "Pre-Save Campaign"
+        target_date: "2025-03-25"
+        status: "pending"
+
+    track_count:
+      target: null               # TBD
+      confirmed: 0
+      in_progress: 0
+
+    notes: |
+      Full album release following lead single momentum.
+      Coordinate with lead single marketing for cohesive campaign.
+      Consider physical release options (CD, vinyl) for collectors.
+
+    created_at: "2024-12-31T00:00:00Z"
+    updated_at: "2024-12-31T00:00:00Z"
+
+# -----------------------------------------------------------------------------
+# RELEASE TEMPLATES
+# -----------------------------------------------------------------------------
+# Use these as starting points for new releases
+
+templates:
+
+  single:
+    type: "single"
+    status: "planned"
+    priority: "P3"
+    dependencies: []
+    blockers: []
+    platforms:
+      - name: "Spotify"
+        priority: 1
+        status: "pending"
+      - name: "Apple Music"
+        priority: 1
+        status: "pending"
+    milestones:
+      - name: "Final Mix"
+        status: "pending"
+      - name: "Artwork Complete"
+        status: "pending"
+      - name: "Distribution Submit"
+        status: "pending"
+
+  album:
+    type: "album"
+    status: "planned"
+    priority: "P3"
+    dependencies: []
+    blockers: []
+    platforms:
+      - name: "Spotify"
+        priority: 1
+        status: "pending"
+      - name: "Apple Music"
+        priority: 1
+        status: "pending"
+      - name: "YouTube Music"
+        priority: 2
+        status: "pending"
+    milestones:
+      - name: "All Tracks Complete"
+        status: "pending"
+      - name: "Final Mastering"
+        status: "pending"
+      - name: "Artwork Complete"
+        status: "pending"
+      - name: "Distribution Submit"
+        status: "pending"
+
+# -----------------------------------------------------------------------------
+# AUTOMATION HOOKS
+# -----------------------------------------------------------------------------
+# Events that trigger automated actions
+
+automation:
+
+  on_priority_change:
+    - action: "notify"
+      condition: "new_priority == 'P0'"
+      message: "Release {id} is now CRITICAL priority"
+
+  on_status_change:
+    - action: "update_calendar"
+      condition: "new_status == 'released'"
+
+    - action: "archive"
+      condition: "new_status in ['released', 'cancelled']"
+      delay_days: 30
+
+  on_blocker_added:
+    - action: "recalculate_priority"
+    - action: "notify"
+      message: "New blocker added to release {id}: {blocker_description}"
+
+  scheduled:
+    - action: "priority_recalculation"
+      frequency: "daily"
+      time: "09:00"
+
+    - action: "status_report"
+      frequency: "weekly"
+      day: "monday"
+      time: "09:00"
+
+# -----------------------------------------------------------------------------
+# METADATA
+# -----------------------------------------------------------------------------
+
+metadata:
+  calendar_name: "MAG Music Records Master Release Calendar"
+  timezone: "UTC"
+  fiscal_year_start: "01-01"
+
+  id_format:
+    pattern: "REL-YYYY-NNN"
+    example: "REL-2025-001"
+    auto_increment: true
+
+  blocker_id_format:
+    pattern: "BLK-NNN"
+    example: "BLK-001"
+    auto_increment: true

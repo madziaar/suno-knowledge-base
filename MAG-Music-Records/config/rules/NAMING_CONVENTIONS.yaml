@@ -1,0 +1,498 @@
+# =============================================================================
+# NAMING CONVENTIONS
+# MAG Music Records - File and Folder Naming Rules
+# =============================================================================
+# Version: 1.0.0
+# Last Updated: 2024-12-31
+# Purpose: Define all naming patterns for files, folders, and assets
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# GLOBAL RULES
+# -----------------------------------------------------------------------------
+
+global:
+  version: "1.0.0"
+
+  character_rules:
+    allowed_characters: "a-z0-9_-"
+    case: "lowercase"
+    separator: "_"
+    max_filename_length: 100
+    max_path_length: 260          # Windows path limit
+
+  encoding:
+    filenames: "ASCII"            # Filenames must be ASCII
+    content: "UTF-8"              # File content is UTF-8
+
+# -----------------------------------------------------------------------------
+# TRACK FILE NAMING
+# -----------------------------------------------------------------------------
+
+track_files:
+
+  # Standard track file pattern
+  pattern:
+    format: "track_{number}_{short_name}_{type}.{extension}"
+    regex: "^track_[0-9]{2}_[a-z0-9_]{1,30}_(prompt|lyrics|desc|meta|notes)\\.(md|yaml|txt)$"
+
+  components:
+
+    number:
+      description: "Two-digit track number"
+      format: "NN"
+      validation:
+        type: "integer"
+        min: 1
+        max: 99
+        zero_padded: true
+        width: 2
+      examples:
+        - "01"
+        - "02"
+        - "13"
+
+    short_name:
+      description: "Descriptive identifier for the track"
+      format: "lowercase_with_underscores"
+      validation:
+        min_length: 1
+        max_length: 30
+        pattern: "^[a-z0-9_]+$"
+        no_leading_underscore: true
+        no_trailing_underscore: true
+        no_double_underscore: true
+      examples:
+        - "nightfall"
+        - "city_lights"
+        - "dark_matter"
+        - "2am_thoughts"
+      prohibited:
+        - "track"               # Reserved word
+        - "test"                # Reserved word
+        - "temp"                # Reserved word
+        - "final"               # Use version suffix
+
+    type:
+      description: "Artifact type identifier"
+      allowed_values:
+        prompt:
+          extension: "md"
+          description: "AI generation prompt"
+        lyrics:
+          extension: "md"
+          description: "Song lyrics"
+        desc:
+          extension: "md"
+          description: "Track description"
+        meta:
+          extension: "yaml"
+          description: "Track metadata"
+        notes:
+          extension: "md"
+          description: "Production notes"
+
+    extension:
+      description: "File extension"
+      validation:
+        lowercase_only: true
+      type_mapping:
+        md: ["prompt", "lyrics", "desc", "notes"]
+        yaml: ["meta"]
+        txt: ["notes"]          # Alternative for notes
+
+  examples:
+    valid:
+      - "track_01_nightfall_prompt.md"
+      - "track_01_nightfall_lyrics.md"
+      - "track_01_nightfall_desc.md"
+      - "track_01_nightfall_meta.yaml"
+      - "track_01_nightfall_notes.md"
+      - "track_02_city_lights_prompt.md"
+      - "track_13_dark_matter_lyrics.md"
+
+    invalid:
+      - "Track_01_nightfall_prompt.md"       # Uppercase
+      - "track_1_nightfall_prompt.md"        # Single digit
+      - "track_01_NightFall_prompt.md"       # Mixed case
+      - "track_01_night fall_prompt.md"      # Space
+      - "track_01_nightfall_prompt.MD"       # Uppercase extension
+      - "track_01__nightfall_prompt.md"      # Double underscore
+      - "track_01_nightfall_.prompt.md"      # Extra dot
+      - "nightfall_track_01_prompt.md"       # Wrong order
+
+# -----------------------------------------------------------------------------
+# VERSION SUFFIXES
+# -----------------------------------------------------------------------------
+
+version_suffixes:
+
+  pattern:
+    format: "{base_name}_{version}.{extension}"
+    regex: "^.+_(v[0-9]+|draft|review|final|alt[0-9]*)\\.[a-z]+$"
+
+  allowed_suffixes:
+
+    v1:
+      pattern: "_v1"
+      description: "First version"
+      usage: "Initial creation"
+
+    v2:
+      pattern: "_v2"
+      regex: "_v[0-9]+"
+      description: "Subsequent versions"
+      usage: "Iterations during development"
+      rules:
+        - "Must be sequential (no skipping)"
+        - "No leading zeros"
+        - "Max version: v99"
+
+    draft:
+      pattern: "_draft"
+      description: "Draft version"
+      usage: "Work in progress, not reviewed"
+
+    review:
+      pattern: "_review"
+      description: "Under review"
+      usage: "Submitted for feedback"
+
+    final:
+      pattern: "_final"
+      description: "Approved final version"
+      usage: "Ready for release"
+      requires: "Explicit approval documentation"
+
+    alt:
+      pattern: "_alt"
+      regex: "_alt[0-9]*"
+      description: "Alternative version"
+      usage: "Variant exploration"
+      examples:
+        - "_alt"
+        - "_alt1"
+        - "_alt2"
+
+  progression:
+    typical: ["_v1", "_v2", "_v3", "_final"]
+    with_review: ["_draft", "_review", "_v1", "_final"]
+
+  rules:
+    - "Version suffix comes before extension"
+    - "Only one version suffix per filename"
+    - "Cannot combine suffixes (no _v1_draft)"
+    - "_final requires human approval"
+
+  examples:
+    valid:
+      - "track_01_nightfall_prompt_v1.md"
+      - "track_01_nightfall_prompt_v2.md"
+      - "track_01_nightfall_prompt_final.md"
+      - "track_01_nightfall_lyrics_draft.md"
+      - "track_01_nightfall_lyrics_review.md"
+      - "track_01_nightfall_prompt_alt.md"
+      - "track_01_nightfall_prompt_alt2.md"
+
+    invalid:
+      - "track_01_nightfall_prompt_V1.md"    # Uppercase
+      - "track_01_nightfall_prompt_v01.md"   # Leading zero
+      - "track_01_nightfall_prompt_v1_draft.md"  # Multiple suffixes
+      - "track_01_nightfall_prompt_v1_.md"   # Trailing underscore
+
+# -----------------------------------------------------------------------------
+# FOLDER STRUCTURE
+# -----------------------------------------------------------------------------
+
+folder_structure:
+
+  root:
+    pattern: "MAG Music Records"
+    type: "project_root"
+
+  level_1:
+
+    config:
+      pattern: "config"
+      description: "Configuration files"
+      mutable: false
+      subdirs:
+        - "releases"
+        - "rules"
+
+    docs:
+      pattern: "docs"
+      description: "Documentation"
+      mutable: true
+
+    projects:
+      pattern: "projects"
+      description: "Project workspaces"
+      mutable: true
+      subdirs: "[PROJECT_ID]"
+
+    scripts:
+      pattern: "scripts"
+      description: "Automation scripts"
+      mutable: true
+
+    templates:
+      pattern: "templates"
+      description: "Template files"
+      mutable: false
+
+  project_level:
+    pattern: "{PROJECT_ID}"
+    validation:
+      regex: "^MAG_[A-Z]+_V[0-9]+$"
+    examples:
+      - "MAG_HDRILL_V1"
+      - "MAG_PHONK_V1"
+
+    required_subdirs:
+      - name: "tracks"
+        description: "Track assets organized by track"
+        structure: "track_{number}_{short_name}/"
+
+      - name: "artwork"
+        description: "Visual assets"
+
+      - name: "releases"
+        description: "Release packages"
+
+    optional_subdirs:
+      - name: "stems"
+        description: "Audio stems (not committed)"
+
+      - name: "_archive"
+        description: "Archived versions"
+
+  track_level:
+    pattern: "track_{number}_{short_name}"
+    validation:
+      regex: "^track_[0-9]{2}_[a-z0-9_]+$"
+    contains:
+      - "All artifacts for single track"
+      - "Version history"
+
+# -----------------------------------------------------------------------------
+# PROHIBITED PATTERNS
+# -----------------------------------------------------------------------------
+
+prohibited:
+
+  characters:
+    list:
+      - " "                     # Space
+      - "!"                     # Exclamation
+      - "@"                     # At sign
+      - "#"                     # Hash
+      - "$"                     # Dollar
+      - "%"                     # Percent
+      - "^"                     # Caret
+      - "&"                     # Ampersand
+      - "*"                     # Asterisk
+      - "("                     # Open paren
+      - ")"                     # Close paren
+      - "+"                     # Plus
+      - "="                     # Equals
+      - "{"                     # Open brace
+      - "}"                     # Close brace
+      - "["                     # Open bracket
+      - "]"                     # Close bracket
+      - "|"                     # Pipe
+      - "\\"                    # Backslash
+      - ":"                     # Colon
+      - "\""                    # Double quote
+      - ";"                     # Semicolon
+      - "'"                     # Single quote
+      - "<"                     # Less than
+      - ">"                     # Greater than
+      - ","                     # Comma
+      - "?"                     # Question mark
+      - "/"                     # Forward slash (except path separator)
+
+    reason: "Causes issues with file systems, URLs, and automation"
+
+  patterns:
+
+    uppercase:
+      pattern: "[A-Z]"
+      applies_to: "filenames"
+      reason: "Consistency; prevents case-sensitivity issues"
+      exception: "PROJECT_ID in folder names"
+
+    spaces:
+      pattern: "\\s"
+      applies_to: "filenames and folder names"
+      reason: "Causes path parsing issues"
+      alternative: "Use underscore (_)"
+
+    leading_underscore:
+      pattern: "^_"
+      applies_to: "filenames"
+      reason: "Reserved for special files (_archive, etc.)"
+      exception: "System folders like _archive"
+
+    trailing_underscore:
+      pattern: "_$"
+      applies_to: "filenames"
+      reason: "Appears unfinished; parsing issues"
+
+    double_underscore:
+      pattern: "__"
+      applies_to: "filenames"
+      reason: "Ambiguous parsing"
+
+    consecutive_dots:
+      pattern: "\\.\\."
+      applies_to: "filenames"
+      reason: "Path traversal concerns"
+
+    leading_dot:
+      pattern: "^\\."
+      applies_to: "user files"
+      reason: "Reserved for system/hidden files"
+      exception: ".gitignore, .claude, etc."
+
+  reserved_words:
+    list:
+      - "con"
+      - "prn"
+      - "aux"
+      - "nul"
+      - "com1"
+      - "com2"
+      - "com3"
+      - "lpt1"
+      - "lpt2"
+      - "lpt3"
+    reason: "Windows reserved device names"
+
+# -----------------------------------------------------------------------------
+# AUDIO FILE NAMING (Reference Only - Not Committed)
+# -----------------------------------------------------------------------------
+
+audio_files:
+
+  note: "Audio files are NOT committed to version control"
+
+  pattern:
+    format: "track_{number}_{short_name}_{stage}_{version}.{extension}"
+
+  stages:
+    - "demo"                    # Initial demo
+    - "rough"                   # Rough mix
+    - "mix"                     # Mixed
+    - "master"                  # Mastered
+    - "final"                   # Final release version
+
+  extensions:
+    production:
+      - "wav"                   # Lossless, preferred
+      - "aiff"                  # Lossless, alternative
+    distribution:
+      - "mp3"                   # Compressed
+      - "flac"                  # Lossless compressed
+
+  examples:
+    - "track_01_nightfall_demo_v1.wav"
+    - "track_01_nightfall_mix_v3.wav"
+    - "track_01_nightfall_master_final.wav"
+    - "track_01_nightfall_master_final.mp3"
+
+# -----------------------------------------------------------------------------
+# ARTWORK NAMING
+# -----------------------------------------------------------------------------
+
+artwork:
+
+  pattern:
+    format: "{scope}_{type}_{variant}.{extension}"
+
+  scopes:
+    - "album"                   # Full album artwork
+    - "single"                  # Single release
+    - "track"                   # Individual track
+    - "promo"                   # Promotional material
+
+  types:
+    - "cover"                   # Main cover art
+    - "back"                    # Back cover
+    - "banner"                  # Social media banner
+    - "square"                  # Square format
+    - "story"                   # Stories format (9:16)
+
+  variants:
+    - "primary"                 # Main version
+    - "alt1", "alt2"           # Alternatives
+    - "dark", "light"          # Theme variants
+
+  extensions:
+    - "png"                     # Preferred for graphics
+    - "jpg"                     # Preferred for photos
+    - "psd"                     # Source files
+    - "ai"                      # Vector source
+
+  examples:
+    - "album_cover_primary.png"
+    - "single_cover_track01.png"
+    - "promo_banner_dark.png"
+
+# -----------------------------------------------------------------------------
+# VALIDATION RULES
+# -----------------------------------------------------------------------------
+
+validation:
+
+  pre_commit_checks:
+    - name: "filename_pattern"
+      description: "Check all filenames match conventions"
+      severity: "error"
+
+    - name: "no_prohibited_chars"
+      description: "Check for prohibited characters"
+      severity: "error"
+
+    - name: "no_uppercase"
+      description: "Check for uppercase in filenames"
+      severity: "error"
+
+    - name: "version_sequence"
+      description: "Check version numbers are sequential"
+      severity: "warning"
+
+  reporting:
+    format: "json"
+    include_line_numbers: true
+    include_suggestions: true
+
+# -----------------------------------------------------------------------------
+# ERROR MESSAGES
+# -----------------------------------------------------------------------------
+
+error_messages:
+  invalid_track_pattern: |
+    Filename '{filename}' does not match track naming pattern.
+    Expected: track_NN_short_name_type.ext
+    Example: track_01_nightfall_prompt.md
+
+  prohibited_character: |
+    Filename '{filename}' contains prohibited character: '{char}'
+    Use only: lowercase letters, numbers, underscores, hyphens
+
+  uppercase_detected: |
+    Filename '{filename}' contains uppercase characters.
+    All filenames must be lowercase.
+
+  invalid_version_suffix: |
+    Version suffix '{suffix}' is invalid.
+    Allowed: _v1, _v2, ..., _draft, _review, _final, _alt
+
+  version_gap: |
+    Version gap detected: {current} follows {previous}.
+    Versions must be sequential (v1 -> v2 -> v3).
+
+  reserved_word: |
+    Filename '{filename}' contains reserved word: '{word}'
+    Windows does not allow this as a filename.

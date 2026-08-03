@@ -1,0 +1,45 @@
+=== TRACK 6: CLUB ANTHEM - SUNO PROMPT ===
+
+PROJECT: MAG Hardcore Drill Vol. 1
+TRACK: 6 (Club Anthem)
+DATE: 2025-12-31
+
+---
+
+## STYLE TAGS (Paste into Suno "Styles" box)
+
+UK Drill, Club anthem, Party energy, 98 BPM, Heavy bass, Male and Female vocals, Duet, Crowd chant, Portuguese hook, Call and response, Peak hours, Dance floor, Infectious rhythm, London vibes
+
+---
+
+## TRACK SPECIFICATIONS
+
+| Element | Specification |
+|---------|---------------|
+| BPM | 95-100 |
+| Duration | 3:00-3:30 |
+| Voice | Both male and female, alternating |
+| Language | 70% English, 30% Portuguese (hook) |
+| Mood | Club peak, crowd participation, anthem |
+| Energy | High but danceable, made for peak hours |
+
+---
+
+## PRODUCTION NOTES
+
+### MUST INCLUDE:
+- Crowd-ready chants
+- Call and response sections
+- Big bass drops
+- Portuguese hook everyone can sing
+- Peak hours club energy
+- Male/female vocal interplay
+
+### AVOID:
+- Too aggressive
+- Complex lyrics
+- Hard to follow sections
+
+---
+
+STATUS: PROMPT COMPLETE
