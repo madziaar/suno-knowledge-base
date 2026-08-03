@@ -10,9 +10,9 @@ class TestConfigExample:
     """config.example.yaml must exist and be valid."""
 
     def test_config_example_exists(self, config_dir):
-        assert (config_dir / "config.example.yaml").exists(), (
-            "config.example.yaml missing"
-        )
+        assert (
+            config_dir / "config.example.yaml"
+        ).exists(), "config.example.yaml missing"
 
     def test_config_example_valid_yaml(self, config_dir):
         config_example = config_dir / "config.example.yaml"
@@ -48,9 +48,9 @@ class TestConfigExample:
 
         with open(config_example) as f:
             data = yaml.safe_load(f)
-        assert section in data and field in data.get(section, {}), (
-            f"Config missing: {section}.{field}"
-        )
+        assert section in data and field in data.get(
+            section, {}
+        ), f"Config missing: {section}.{field}"
 
 
 class TestConfigDocs:
@@ -60,6 +60,6 @@ class TestConfigDocs:
         assert (config_dir / "README.md").exists(), "config/README.md missing"
 
     def test_config_path_in_claude_md(self, claude_md_content):
-        assert "~/.bitwize-music/config.yaml" in claude_md_content, (
-            "CLAUDE.md should reference ~/.bitwize-music/config.yaml"
-        )
+        assert (
+            "~/.bitwize-music/config.yaml" in claude_md_content
+        ), "CLAUDE.md should reference ~/.bitwize-music/config.yaml"

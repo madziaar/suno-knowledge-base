@@ -677,9 +677,9 @@ class TestToolsWithRealState:
         result = json.loads(_run(server.get_pending_verifications()))
         # Track 02 has sources_verified: "❌ Pending" → parser normalizes to "Pending"
         pending = result.get("albums_with_pending", {})
-        assert "integration-test-album" in pending, (
-            f"integration-test-album should have pending tracks, got: {list(pending.keys())}"
-        )
+        assert (
+            "integration-test-album" in pending
+        ), f"integration-test-album should have pending tracks, got: {list(pending.keys())}"
         track_slugs = [t["slug"] for t in pending["integration-test-album"]["tracks"]]
         assert "02-second-track" in track_slugs
 

@@ -823,16 +823,14 @@ async def db_get_tweet_stats(album_slug: str = "") -> str:
                 (slug,),
             )
         else:
-            cur.execute(
-                """SELECT
+            cur.execute("""SELECT
                        count(*) as total,
                        count(*) FILTER (WHERE posted = true) as posted,
                        count(*) FILTER (WHERE posted = false) as unposted,
                        count(*) FILTER (WHERE enabled = true) as enabled,
                        count(*) FILTER (WHERE enabled = false) as disabled,
                        coalesce(sum(times_posted), 0) as total_times_posted
-                   FROM tweets"""
-            )
+                   FROM tweets""")
 
         row = cur.fetchone()
 
@@ -864,15 +862,13 @@ async def db_get_tweet_stats(album_slug: str = "") -> str:
         # Per-album breakdown if global
         albums_breakdown = []
         if not album_slug:
-            cur.execute(
-                """SELECT a.slug, a.title, count(*) as tweet_count,
+            cur.execute("""SELECT a.slug, a.title, count(*) as tweet_count,
                           count(*) FILTER (WHERE t.posted = true) as posted,
                           count(*) FILTER (WHERE t.enabled = true) as enabled
                    FROM tweets t
                    JOIN albums a ON t.album_id = a.id
                    GROUP BY a.slug, a.title
-                   ORDER BY a.slug"""
-            )
+                   ORDER BY a.slug""")
             for arow in cur.fetchall():
                 albums_breakdown.append(
                     {

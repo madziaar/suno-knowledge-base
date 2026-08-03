@@ -371,9 +371,9 @@ class TestAnalyzeMixIssues:
             raw = _run(_mixing_mod.analyze_mix_issues("test"))
         result = json.loads(raw)
         track = result["tracks"][0]
-        assert track["click_count"] < 10, (
-            f"vocal stem produced {track['click_count']} false-positive clicks"
-        )
+        assert (
+            track["click_count"] < 10
+        ), f"vocal stem produced {track['click_count']} false-positive clicks"
         assert "clicks_detected" not in track["issues"]
         assert "click_removal" not in track["recommendations"]
 
@@ -404,9 +404,9 @@ class TestAnalyzeMixIssues:
         )
 
         by_stem = {s["stem"]: s for s in result["stems_processed"]}
-        assert by_stem["vocals"]["clicks_removed"] >= 1, (
-            f"vocal declicker did not run: {by_stem['vocals']}"
-        )
+        assert (
+            by_stem["vocals"]["clicks_removed"] >= 1
+        ), f"vocal declicker did not run: {by_stem['vocals']}"
 
     def test_actual_clicks_still_detected(self, tmp_path):
         """Single-sample discontinuities inserted into an otherwise clean

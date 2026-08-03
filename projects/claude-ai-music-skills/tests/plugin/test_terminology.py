@@ -56,9 +56,9 @@ class TestDeprecatedTerms:
             if term in content:
                 found_in.append(rel_path)
 
-        assert not found_in, (
-            f"Deprecated term '{term}' found in: {', '.join(found_in[:5])}. {replacement}"
-        )
+        assert (
+            not found_in
+        ), f"Deprecated term '{term}' found in: {', '.join(found_in[:5])}. {replacement}"
 
 
 class TestPathVariables:

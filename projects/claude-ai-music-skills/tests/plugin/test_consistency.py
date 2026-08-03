@@ -46,9 +46,9 @@ class TestVersionSync:
                 "version", "unknown"
             )
 
-        assert plugin_version == marketplace_version, (
-            f"plugin.json: {plugin_version}, marketplace.json: {marketplace_version}"
-        )
+        assert (
+            plugin_version == marketplace_version
+        ), f"plugin.json: {plugin_version}, marketplace.json: {marketplace_version}"
 
 
 class TestNoSkillJson:
@@ -56,9 +56,9 @@ class TestNoSkillJson:
 
     def test_no_skill_json_files(self, skills_dir):
         skill_json_files = list(skills_dir.glob("*/skill.json"))
-        assert not skill_json_files, (
-            f"Found invalid skill.json files: {[str(f.relative_to(skills_dir)) for f in skill_json_files]}"
-        )
+        assert (
+            not skill_json_files
+        ), f"Found invalid skill.json files: {[str(f.relative_to(skills_dir)) for f in skill_json_files]}"
 
 
 class TestModelTierConsistency:
@@ -136,6 +136,6 @@ class TestGitignore:
             pytest.skip(".gitignore not found")
 
         content = gitignore_path.read_text()
-        assert entry in content or entry.rstrip("/") in content, (
-            f".gitignore missing recommended entry: {entry}"
-        )
+        assert (
+            entry in content or entry.rstrip("/") in content
+        ), f".gitignore missing recommended entry: {entry}"

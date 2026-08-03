@@ -34,7 +34,6 @@ from tools.mastering.qc_tracks import (
     qc_track,
 )
 
-
 # ─── Helpers ──────────────────────────────────────────────────────────
 
 
@@ -522,9 +521,9 @@ class TestQcTrackIntegration:
         result = qc_track(normal_wav)
         assert result["verdict"] == "PASS"
         for check_name, check_result in result["checks"].items():
-            assert check_result["status"] in ("PASS",), (
-                f"Check '{check_name}' was {check_result['status']}: {check_result['detail']}"
-            )
+            assert check_result["status"] in (
+                "PASS",
+            ), f"Check '{check_name}' was {check_result['status']}: {check_result['detail']}"
 
     def test_out_of_phase_fails(self, out_of_phase_wav):
         """Out-of-phase signal should get FAIL verdict."""
@@ -577,6 +576,8 @@ class TestQcTrackIntegration:
             assert "status" in check_result, f"'{check_name}' missing 'status'"
             assert "value" in check_result, f"'{check_name}' missing 'value'"
             assert "detail" in check_result, f"'{check_name}' missing 'detail'"
-            assert check_result["status"] in ("PASS", "WARN", "FAIL"), (
-                f"'{check_name}' has invalid status: {check_result['status']}"
-            )
+            assert check_result["status"] in (
+                "PASS",
+                "WARN",
+                "FAIL",
+            ), f"'{check_name}' has invalid status: {check_result['status']}"

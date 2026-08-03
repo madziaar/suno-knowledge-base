@@ -101,17 +101,17 @@ def test_master_album_completes_with_adm_off(
         result = json.loads(asyncio.run(audio_mod.master_album(album_slug=album_slug)))
 
     # Pipeline completed (no halt).
-    assert result.get("failed_stage") is None, (
-        f"master_album halted: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"master_album halted: {result.get('failure_detail')}"
 
     stages = result["stages"]
 
     # ADM stage must be explicitly skipped, not "pass" / "warn" / "fail".
     adm = stages.get("adm_validation", {})
-    assert adm.get("status") == "skipped", (
-        f"Expected adm_validation skipped (default-off), got: {adm}"
-    )
+    assert (
+        adm.get("status") == "skipped"
+    ), f"Expected adm_validation skipped (default-off), got: {adm}"
 
     # All unconditional post-loop stages ran — this is the anti-regression
     # guard. If ADM-off broke ANY of these, we'd halt before reaching them.
@@ -198,6 +198,6 @@ def test_master_album_adm_on_via_frontmatter(
     assert result.get("failed_stage") is None
     adm = result["stages"].get("adm_validation", {})
     # ADM stage ran — status is "pass" (no clips) not "skipped".
-    assert adm.get("status") == "pass", (
-        f"Expected adm_validation pass with frontmatter opt-in, got: {adm}"
-    )
+    assert (
+        adm.get("status") == "pass"
+    ), f"Expected adm_validation pass with frontmatter opt-in, got: {adm}"

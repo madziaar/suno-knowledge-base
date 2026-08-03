@@ -26,9 +26,9 @@ def test_analyzer_rec_overrides_high_tame_db():
     from tools.mixing.mix_tracks import _get_stem_settings
 
     baseline = _get_stem_settings("synth", genre="electronic")
-    assert baseline.get("high_tame_db") == pytest.approx(-1.5), (
-        f"precondition failed: expected electronic synth default -1.5, got {baseline.get('high_tame_db')}"
-    )
+    assert baseline.get("high_tame_db") == pytest.approx(
+        -1.5
+    ), f"precondition failed: expected electronic synth default -1.5, got {baseline.get('high_tame_db')}"
     merged = _get_stem_settings(
         "synth",
         genre="electronic",

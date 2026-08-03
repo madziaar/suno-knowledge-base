@@ -77,7 +77,6 @@ from handlers.processing._album_stages import (  # noqa: E402
 )
 from tools.mastering.signature_persistence import SIGNATURE_FILENAME  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -285,9 +284,9 @@ class TestPromotesNonTerminalStatuses:
         _run(_stage_status_update(ctx))
 
         track_info = state["albums"]["test-album"]["tracks"]["01-track-one"]
-        assert track_info["status"] == "Final", (
-            f"Expected promotion from '{starting_status}' to 'Final'"
-        )
+        assert (
+            track_info["status"] == "Final"
+        ), f"Expected promotion from '{starting_status}' to 'Final'"
         assert ctx.stages["status_update"]["tracks_updated"] == 1
 
     def test_updates_status_row_in_track_file(

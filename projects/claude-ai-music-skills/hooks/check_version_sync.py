@@ -3,17 +3,19 @@
 
 Only activates when editing plugin.json or marketplace.json.
 """
+
 import json
 import os
 import subprocess
 import sys
 
-
 MANIFEST_FILES = {"plugin.json", "marketplace.json"}
 
 
 def is_manifest_file(file_path: str) -> bool:
-    return os.path.basename(file_path) in MANIFEST_FILES and ".claude-plugin" in file_path
+    return (
+        os.path.basename(file_path) in MANIFEST_FILES and ".claude-plugin" in file_path
+    )
 
 
 def check_sync(data: dict) -> list[str]:
@@ -50,12 +52,21 @@ def check_sync(data: dict) -> list[str]:
         try:
             result = subprocess.run(
                 ["git", "diff", "--name-only"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
                 cwd=plugin_dir,
             )
             modified = set(result.stdout.strip().splitlines())
-            other_file = "marketplace.json" if file_path.endswith("plugin.json") else "plugin.json"
-            if other_file in modified or os.path.join(".claude-plugin", other_file) in modified:
+            other_file = (
+                "marketplace.json"
+                if file_path.endswith("plugin.json")
+                else "plugin.json"
+            )
+            if (
+                other_file in modified
+                or os.path.join(".claude-plugin", other_file) in modified
+            ):
                 return []
         except (subprocess.TimeoutExpired, OSError):
             pass

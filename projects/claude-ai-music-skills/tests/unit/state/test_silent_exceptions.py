@@ -157,9 +157,7 @@ class TestRenameReParseWarning:
         # The rename should succeed (track title updated) but log the parse warning
         assert any(
             "Could not re-parse track after rename" in r.message for r in caplog.records
-        ), (
-            f"Expected re-parse warning in logs. Records: {[r.message for r in caplog.records]}"
-        )
+        ), f"Expected re-parse warning in logs. Records: {[r.message for r in caplog.records]}"
 
 
 # ---------------------------------------------------------------------------
@@ -193,9 +191,7 @@ class TestTextAnalysisOverridePathWarning:
 
         assert any(
             "Could not resolve override path" in r.message for r in caplog.records
-        ), (
-            f"Expected override path warning. Records: {[r.message for r in caplog.records]}"
-        )
+        ), f"Expected override path warning. Records: {[r.message for r in caplog.records]}"
 
 
 # ---------------------------------------------------------------------------
@@ -283,9 +279,7 @@ class TestSheetMusicConfigWarning:
 
         assert any(
             "Could not load sheet music config" in r.message for r in caplog.records
-        ), (
-            f"Expected sheet music config warning. Records: {[r.message for r in caplog.records]}"
-        )
+        ), f"Expected sheet music config warning. Records: {[r.message for r in caplog.records]}"
 
 
 # ---------------------------------------------------------------------------
@@ -314,9 +308,9 @@ class TestHelpersCloudConfigWarning:
 
         assert result is not None
         assert "Could not load config" in result
-        assert any("Config load failed" in r.message for r in caplog.records), (
-            f"Expected config load warning. Records: {[r.message for r in caplog.records]}"
-        )
+        assert any(
+            "Config load failed" in r.message for r in caplog.records
+        ), f"Expected config load warning. Records: {[r.message for r in caplog.records]}"
 
 
 # ---------------------------------------------------------------------------

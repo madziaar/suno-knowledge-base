@@ -47,9 +47,9 @@ class TestPrerequisites:
         visited: set = set()
         for node in prereq_graph:
             if node not in visited:
-                assert not has_cycle(node, visited, set()), (
-                    "Circular dependency detected in skill prerequisites"
-                )
+                assert not has_cycle(
+                    node, visited, set()
+                ), "Circular dependency detected in skill prerequisites"
 
 
 class TestLyricWorkflowChain:
@@ -76,9 +76,9 @@ class TestLyricWorkflowChain:
 
         writer_count = int(writer_match.group(1) or writer_match.group(2))
         reviewer_count = int(reviewer_match.group(1))
-        assert reviewer_count >= writer_count, (
-            f"Reviewer ({reviewer_count}-point) should cover >= writer ({writer_count}-point)"
-        )
+        assert (
+            reviewer_count >= writer_count
+        ), f"Reviewer ({reviewer_count}-point) should cover >= writer ({writer_count}-point)"
 
 
 class TestPreGenerationCheck:
@@ -159,13 +159,13 @@ class TestInstrumentalRouting:
             pytest.skip(f"{skill_name} has errors")
         content = fm.get("_content", "")
         # Must mention instrumental detection
-        assert "instrumental" in content.lower(), (
-            f"{skill_name} SKILL.md missing instrumental track handling"
-        )
+        assert (
+            "instrumental" in content.lower()
+        ), f"{skill_name} SKILL.md missing instrumental track handling"
         # Must route to suno-engineer for instrumental tracks
-        assert "suno-engineer" in content, (
-            f"{skill_name} SKILL.md missing suno-engineer routing for instrumental tracks"
-        )
+        assert (
+            "suno-engineer" in content
+        ), f"{skill_name} SKILL.md missing suno-engineer routing for instrumental tracks"
 
     def test_resume_handles_mixed_albums(self, all_skill_frontmatter):
         """resume must handle albums with both vocal and instrumental tracks."""
@@ -175,9 +175,9 @@ class TestInstrumentalRouting:
         content = fm.get("_content", "")
         # Check for mixed album awareness (vocal + instrumental)
         has_mixed = "vocal" in content.lower() and "instrumental" in content.lower()
-        assert has_mixed, (
-            "resume SKILL.md missing mixed vocal/instrumental album handling"
-        )
+        assert (
+            has_mixed
+        ), "resume SKILL.md missing mixed vocal/instrumental album handling"
 
 
 class TestReviewAndApprovePhase:
@@ -189,9 +189,9 @@ class TestReviewAndApprovePhase:
         if "_error" in fm:
             pytest.skip("resume has errors")
         content = fm.get("_content", "")
-        assert "Review & Approve" in content, (
-            "resume SKILL.md missing 'Review & Approve' phase for all-Generated albums"
-        )
+        assert (
+            "Review & Approve" in content
+        ), "resume SKILL.md missing 'Review & Approve' phase for all-Generated albums"
 
 
 class TestRegenerationPaths:
@@ -205,9 +205,9 @@ class TestRegenerationPaths:
         content = fm.get("_content", "")
         has_style_path = "style issue" in content.lower() or "Style issue" in content
         has_lyrics_path = "lyrics issue" in content.lower() or "Lyrics issue" in content
-        assert has_style_path, (
-            "next-step SKILL.md missing style issue regeneration path"
-        )
-        assert has_lyrics_path, (
-            "next-step SKILL.md missing lyrics issue regeneration path"
-        )
+        assert (
+            has_style_path
+        ), "next-step SKILL.md missing style issue regeneration path"
+        assert (
+            has_lyrics_path
+        ), "next-step SKILL.md missing lyrics issue regeneration path"

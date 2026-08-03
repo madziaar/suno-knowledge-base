@@ -90,9 +90,11 @@ def find_anthemscore() -> str | None:
     # Try PATH
     try:
         result = subprocess.run(
-            ["which", "anthemscore"]
-            if system != "windows"
-            else ["where", "anthemscore"],
+            (
+                ["which", "anthemscore"]
+                if system != "windows"
+                else ["where", "anthemscore"]
+            ),
             capture_output=True,
             text=True,
         )

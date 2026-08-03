@@ -65,7 +65,6 @@ server = _import_server()
 from handlers.processing import _helpers as _processing_helpers
 from handlers import _shared as _shared_mod
 
-
 SAMPLE_STATE = {
     "version": 2,
     "config": {

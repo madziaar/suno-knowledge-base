@@ -82,9 +82,9 @@ class TestFixDynamic:
         meter = pyln.Meter(rate)
         actual_lufs = meter.integrated_loudness(processed)
 
-        assert abs(actual_lufs - target) <= 0.5, (
-            f"LUFS {actual_lufs:.1f} not within ±0.5 of target {target}"
-        )
+        assert (
+            abs(actual_lufs - target) <= 0.5
+        ), f"LUFS {actual_lufs:.1f} not within ±0.5 of target {target}"
         assert abs(metrics["final_lufs"] - actual_lufs) < 0.1
 
     def test_respects_ceiling(self):
@@ -96,9 +96,9 @@ class TestFixDynamic:
         processed, metrics = fix_dynamic(data.copy(), rate, ceiling_db=ceiling)
 
         peak = np.max(np.abs(processed))
-        assert peak <= ceiling_linear + 1e-6, (
-            f"Peak {peak:.6f} exceeds ceiling {ceiling_linear:.6f}"
-        )
+        assert (
+            peak <= ceiling_linear + 1e-6
+        ), f"Peak {peak:.6f} exceeds ceiling {ceiling_linear:.6f}"
         assert metrics["final_peak_db"] <= ceiling + 0.01
 
     def test_custom_eq(self):
@@ -152,6 +152,6 @@ class TestFixDynamic:
         meter = pyln.Meter(rate)
         actual_lufs = meter.integrated_loudness(processed)
 
-        assert abs(actual_lufs - target) <= 0.5, (
-            f"LUFS {actual_lufs:.1f} not within ±0.5 of target {target}"
-        )
+        assert (
+            abs(actual_lufs - target) <= 0.5
+        ), f"LUFS {actual_lufs:.1f} not within ±0.5 of target {target}"

@@ -40,9 +40,9 @@ def test_dark_condition_emits_high_tame_zero_and_already_dark_issue():
         data, rate, filename="dark-track.wav", stem_name="synth", genre="electronic"
     )
 
-    assert "already_dark" in result["issues"], (
-        f"expected already_dark, got {result['issues']}"
-    )
+    assert (
+        "already_dark" in result["issues"]
+    ), f"expected already_dark, got {result['issues']}"
     assert result["recommendations"]["high_tame_db"] == pytest.approx(0.0)
     assert result["high_mid_ratio"] < 0.10
 
@@ -64,9 +64,9 @@ def test_harsh_condition_still_fires_above_0_25():
         data, rate, filename="harsh-track.wav", stem_name="synth", genre="electronic"
     )
 
-    assert "harsh_highmids" in result["issues"], (
-        f"expected harsh_highmids, got {result['issues']}"
-    )
+    assert (
+        "harsh_highmids" in result["issues"]
+    ), f"expected harsh_highmids, got {result['issues']}"
     assert result["recommendations"]["high_tame_db"] == pytest.approx(-2.0)
 
 

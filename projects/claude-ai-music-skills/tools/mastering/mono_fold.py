@@ -236,9 +236,9 @@ def mono_fold_metrics(
             "delta_db": lufs_delta,
         },
         "vocal_rms": {
-            "stereo_db": float(stereo_vocal_db)
-            if np.isfinite(stereo_vocal_db)
-            else None,
+            "stereo_db": (
+                float(stereo_vocal_db) if np.isfinite(stereo_vocal_db) else None
+            ),
             "mono_db": float(mono_vocal_db) if np.isfinite(mono_vocal_db) else None,
             "delta_db": vocal_delta,
         },

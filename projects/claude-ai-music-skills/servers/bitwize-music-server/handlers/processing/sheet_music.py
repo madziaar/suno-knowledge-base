@@ -679,9 +679,9 @@ async def publish_sheet_music(
 
             # Group single URLs by track number
             # Singles are named like "01 - The Mountain.pdf"
-            track_urls: dict[
-                int, dict[str, str]
-            ] = {}  # {1: {"pdf": url, "musicxml": url, "midi": url}, ...}
+            track_urls: dict[int, dict[str, str]] = (
+                {}
+            )  # {1: {"pdf": url, "musicxml": url, "midi": url}, ...}
             songbook_urls: dict[str, str] = {}  # {"songbook": url}
             ext_to_key = {
                 ".pdf": "pdf",

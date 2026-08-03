@@ -107,9 +107,9 @@ class TestAnalyzerEmitsExcitationRec:
 
         result = self._call_analyze_one(dark, rate, "vocals", adm_aware=False)
         assert "already_dark" in result["issues"], "Fixture should be classified dark"
-        assert "excitation_db" not in result["recommendations"], (
-            "Flag off → no excitation rec"
-        )
+        assert (
+            "excitation_db" not in result["recommendations"]
+        ), "Flag off → no excitation rec"
 
     def test_rec_emitted_when_flag_on_and_dark(self):
         """Dark stem + flag on → excitation_db rec at stem's per-stem
@@ -118,9 +118,9 @@ class TestAnalyzerEmitsExcitationRec:
 
         result = self._call_analyze_one(dark, rate, "vocals", adm_aware=True)
         assert "already_dark" in result["issues"]
-        assert result["recommendations"].get("excitation_db") == 2.5, (
-            "Vocals preset's excitation_db_when_dark is 2.5"
-        )
+        assert (
+            result["recommendations"].get("excitation_db") == 2.5
+        ), "Vocals preset's excitation_db_when_dark is 2.5"
 
     def test_no_rec_on_bright_stem(self):
         """Bright stem + flag on → no excitation rec (only dark stems
@@ -163,9 +163,9 @@ class TestStemProcessorAppliesExcitation:
             if hasattr(mx, name):
                 vocals_fn = getattr(mx, name)
                 break
-        assert vocals_fn is not None, (
-            "Could not find a vocals stem processor — check mix_tracks.py"
-        )
+        assert (
+            vocals_fn is not None
+        ), "Could not find a vocals stem processor — check mix_tracks.py"
 
         base = {
             "click_removal": False,
@@ -200,9 +200,9 @@ class TestStemProcessorAppliesExcitation:
         # percentage terms — a 0.5 pp threshold would require nearly all energy
         # to shift bands. Instead assert a meaningful relative increase (≥ 1.5×)
         # which verifies the excitation block ran and added harmonics.
-        assert post > pre * 1.5, (
-            f"Excitation did not raise high_mid: no={pre:.4f}%, with={post:.4f}%"
-        )
+        assert (
+            post > pre * 1.5
+        ), f"Excitation did not raise high_mid: no={pre:.4f}%, with={post:.4f}%"
 
 
 class TestEndToEnd:

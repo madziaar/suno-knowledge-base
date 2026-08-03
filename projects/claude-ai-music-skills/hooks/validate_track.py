@@ -4,10 +4,10 @@
 Only activates for files matching */tracks/*.md pattern.
 Checks required frontmatter fields and valid status values.
 """
+
 import json
 import sys
 import re
-
 
 REQUIRED_FIELDS = ["title", "track_number", "status"]
 VALID_STATUSES = [
@@ -82,7 +82,9 @@ def main():
 
     issues = validate(data)
     if issues:
-        msg = "Track frontmatter validation failed:\n" + "\n".join(f"  - {i}" for i in issues)
+        msg = "Track frontmatter validation failed:\n" + "\n".join(
+            f"  - {i}" for i in issues
+        )
         print(msg, file=sys.stderr)
         sys.exit(2)
 

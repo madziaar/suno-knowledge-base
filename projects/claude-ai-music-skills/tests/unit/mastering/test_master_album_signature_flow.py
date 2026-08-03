@@ -87,9 +87,9 @@ def test_master_album_writes_signature_on_success(tmp_path: Path, monkeypatch) -
         result_json = asyncio.run(audio_mod.master_album(album_slug="sig-album"))
 
     result = json.loads(result_json)
-    assert result.get("failed_stage") is None, (
-        f"master_album failed: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"master_album failed: {result.get('failure_detail')}"
     assert "signature_persist" in result["stages"]
     assert result["stages"]["signature_persist"]["status"] == "pass"
 

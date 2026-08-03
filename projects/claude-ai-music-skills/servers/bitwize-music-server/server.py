@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """
 MCP server for bitwize-music plugin.
 
@@ -29,8 +31,6 @@ Tool handlers are organized into modules under ``handlers/``:
     database        - Tweet/promo management via PostgreSQL
     maintenance     - Reset mastering, legacy cleanup, audio layout migration
 """
-
-from __future__ import annotations
 
 import logging
 import os

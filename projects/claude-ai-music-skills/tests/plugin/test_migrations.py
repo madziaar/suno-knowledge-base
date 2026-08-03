@@ -84,24 +84,24 @@ class TestMigrationFileFormat:
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
         for field in ("version", "summary", "categories", "actions"):
-            assert field in fm, (
-                f"{migration_file.name}: missing required field '{field}'"
-            )
+            assert (
+                field in fm
+            ), f"{migration_file.name}: missing required field '{field}'"
 
     def test_summary_is_string(self, migration_file):
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
-        assert isinstance(fm["summary"], str), (
-            f"{migration_file.name}: summary must be string"
-        )
+        assert isinstance(
+            fm["summary"], str
+        ), f"{migration_file.name}: summary must be string"
 
     def test_categories_valid(self, migration_file):
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
         categories = fm.get("categories", [])
-        assert isinstance(categories, list), (
-            f"{migration_file.name}: categories must be list"
-        )
+        assert isinstance(
+            categories, list
+        ), f"{migration_file.name}: categories must be list"
         invalid = set(categories) - VALID_CATEGORIES
         assert not invalid, (
             f"{migration_file.name}: invalid categories: {invalid}. "
@@ -114,9 +114,9 @@ class TestMigrationFileFormat:
         actions = fm.get("actions", [])
         assert isinstance(actions, list), f"{migration_file.name}: actions must be list"
         for i, action in enumerate(actions):
-            assert isinstance(action, dict), (
-                f"{migration_file.name}: action {i} must be dict"
-            )
+            assert isinstance(
+                action, dict
+            ), f"{migration_file.name}: action {i} must be dict"
             assert "type" in action, f"{migration_file.name}: action {i} missing 'type'"
             assert action["type"] in VALID_ACTION_TYPES, (
                 f"{migration_file.name}: action {i} invalid type '{action['type']}'. "
@@ -128,41 +128,41 @@ class TestMigrationFileFormat:
         assert fm is not None
         for i, action in enumerate(fm.get("actions", [])):
             if action.get("type") == "auto":
-                assert "check" in action, (
-                    f"{migration_file.name}: auto action {i} missing 'check'"
-                )
-                assert "command" in action, (
-                    f"{migration_file.name}: auto action {i} missing 'command'"
-                )
+                assert (
+                    "check" in action
+                ), f"{migration_file.name}: auto action {i} missing 'check'"
+                assert (
+                    "command" in action
+                ), f"{migration_file.name}: auto action {i} missing 'command'"
 
     def test_action_type_has_confirm(self, migration_file):
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
         for i, action in enumerate(fm.get("actions", [])):
             if action.get("type") == "action":
-                assert action.get("confirm") is True, (
-                    f"{migration_file.name}: action {i} (type=action) must have confirm: true"
-                )
+                assert (
+                    action.get("confirm") is True
+                ), f"{migration_file.name}: action {i} (type=action) must have confirm: true"
 
     def test_manual_actions_have_instruction(self, migration_file):
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
         for i, action in enumerate(fm.get("actions", [])):
             if action.get("type") == "manual":
-                assert "instruction" in action, (
-                    f"{migration_file.name}: manual action {i} missing 'instruction'"
-                )
+                assert (
+                    "instruction" in action
+                ), f"{migration_file.name}: manual action {i} missing 'instruction'"
 
     def test_has_markdown_body(self, migration_file):
         _, body = _parse_migration(migration_file)
-        assert body.strip(), (
-            f"{migration_file.name}: must have markdown body after frontmatter"
-        )
+        assert (
+            body.strip()
+        ), f"{migration_file.name}: must have markdown body after frontmatter"
 
     def test_version_is_semver(self, migration_file):
         fm, _ = _parse_migration(migration_file)
         assert fm is not None
         version = fm.get("version", "")
-        assert re.match(r"^\d+\.\d+\.\d+$", version), (
-            f"{migration_file.name}: version '{version}' is not valid semver"
-        )
+        assert re.match(
+            r"^\d+\.\d+\.\d+$", version
+        ), f"{migration_file.name}: version '{version}' is not valid semver"

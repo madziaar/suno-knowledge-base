@@ -532,9 +532,9 @@ async def _stage_anchor_selection(ctx: MasterAlbumCtx) -> str | None:
             "scores": [],
         }
         ctx.stages["anchor_selection"] = {
-            "status": "pass"
-            if ctx.anchor_result["selected_index"] is not None
-            else "warn",
+            "status": (
+                "pass" if ctx.anchor_result["selected_index"] is not None else "warn"
+            ),
             "selected_index": ctx.anchor_result["selected_index"],
             "method": "frozen_signature",
             "override_index": None,
@@ -609,9 +609,9 @@ async def _stage_anchor_selection(ctx: MasterAlbumCtx) -> str | None:
             override_index=anchor_override,
         )
         ctx.stages["anchor_selection"] = {
-            "status": "pass"
-            if ctx.anchor_result["selected_index"] is not None
-            else "warn",
+            "status": (
+                "pass" if ctx.anchor_result["selected_index"] is not None else "warn"
+            ),
             "selected_index": ctx.anchor_result["selected_index"],
             "method": ctx.anchor_result["method"],
             "override_index": ctx.anchor_result["override_index"],
@@ -863,9 +863,9 @@ def _emit_verification_warn_fallback(
     append notice + warning, and set ctx.verify_results. Called by
     _stage_verification when all remaining out-of-spec tracks are
     unrecoverable recovery casualties."""
-    assert ctx.output_dir is not None, (
-        "warn-fallback requires output_dir (set by _stage_mastering)"
-    )
+    assert (
+        ctx.output_dir is not None
+    ), "warn-fallback requires output_dir (set by _stage_mastering)"
     sidecar_lines = [
         "# Verification Warnings",
         "",

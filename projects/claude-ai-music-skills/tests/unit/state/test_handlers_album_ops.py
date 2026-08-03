@@ -75,7 +75,6 @@ server = _import_server()
 from handlers import album_ops as _album_ops_mod
 from handlers import _shared as _shared_mod
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -346,9 +345,9 @@ class TestValidateAlbumStructure:
     def test_tracks_check_suno_link_warning(self):
         """Track with Final status but no Suno link should warn."""
         state = _fresh_state()
-        state["albums"]["test-album"]["tracks"]["01-first-track"]["has_suno_link"] = (
-            False
-        )
+        state["albums"]["test-album"]["tracks"]["01-first-track"][
+            "has_suno_link"
+        ] = False
         _shared_mod.cache = MockStateCache(state)
 
         with patch("pathlib.Path.is_dir", return_value=True), patch(

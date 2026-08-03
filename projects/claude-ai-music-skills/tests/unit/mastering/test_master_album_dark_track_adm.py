@@ -23,7 +23,6 @@ from handlers.processing import _helpers as processing_helpers  # noqa: E402
 from handlers.processing import audio as audio_mod  # noqa: E402
 from handlers.processing import _album_stages as album_stages_mod  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
@@ -205,25 +204,25 @@ def test_all_dark_clipping_breaks_to_warn_fallback(
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
     # Pipeline must complete (warn-fallback, not halt).
-    assert result.get("failed_stage") is None, (
-        f"Expected warn-fallback completion, got failure: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected warn-fallback completion, got failure: {result.get('failure_detail')}"
 
     adm_stage = result.get("stages", {}).get("adm_validation", {})
 
     # ADM stage must be warn with clip_failure_persisted=True.
-    assert adm_stage.get("status") == "warn", (
-        f"Expected adm_validation status='warn', got: {adm_stage.get('status')}"
-    )
-    assert adm_stage.get("clip_failure_persisted") is True, (
-        f"Expected clip_failure_persisted=True, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "warn"
+    ), f"Expected adm_validation status='warn', got: {adm_stage.get('status')}"
+    assert (
+        adm_stage.get("clip_failure_persisted") is True
+    ), f"Expected clip_failure_persisted=True, got: {adm_stage}"
 
     # 01-dark.wav must appear in dark_casualties (not in tightened_tracks).
     dark_casualties = adm_stage.get("dark_casualties", [])
-    assert "01-dark.wav" in dark_casualties, (
-        f"Expected '01-dark.wav' in dark_casualties, got: {dark_casualties}"
-    )
+    assert (
+        "01-dark.wav" in dark_casualties
+    ), f"Expected '01-dark.wav' in dark_casualties, got: {dark_casualties}"
 
     # Nothing should have been tightened.
     tightened_tracks = adm_stage.get("tightened_tracks", [])
@@ -251,9 +250,9 @@ def test_all_dark_clipping_breaks_to_warn_fallback(
     # Bug #1: cycle counts must reflect what actually happened, not the
     # configured _ADM_MAX_CYCLES. On an all-dark short-circuit, exactly
     # 1 full ADM pass ran and 0 tightening cycles were attempted.
-    assert adm_stage.get("adm_cycles_executed") == 1, (
-        f"Expected adm_cycles_executed=1, got: {adm_stage.get('adm_cycles_executed')}"
-    )
+    assert (
+        adm_stage.get("adm_cycles_executed") == 1
+    ), f"Expected adm_cycles_executed=1, got: {adm_stage.get('adm_cycles_executed')}"
     assert adm_stage.get("adm_tightening_cycles") == 0, (
         f"Expected adm_tightening_cycles=0 (all-dark short-circuit), "
         f"got: {adm_stage.get('adm_tightening_cycles')}"
@@ -277,16 +276,16 @@ def test_all_dark_clipping_breaks_to_warn_fallback(
     # tightening happened. The orchestrator classified 01-dark.wav as a
     # dark casualty — that decision must be visible in the stage output.
     per_track = adm_stage.get("per_track_decisions", {})
-    assert "01-dark.wav" in per_track, (
-        f"Expected per_track_decisions to include '01-dark.wav', got: {per_track}"
-    )
+    assert (
+        "01-dark.wav" in per_track
+    ), f"Expected per_track_decisions to include '01-dark.wav', got: {per_track}"
     dark_decision = per_track["01-dark.wav"]
-    assert dark_decision.get("classification") == "dark_casualty", (
-        f"Expected classification='dark_casualty', got: {dark_decision}"
-    )
-    assert dark_decision.get("outcome") == "not_tightened", (
-        f"Expected outcome='not_tightened', got: {dark_decision}"
-    )
+    assert (
+        dark_decision.get("classification") == "dark_casualty"
+    ), f"Expected classification='dark_casualty', got: {dark_decision}"
+    assert (
+        dark_decision.get("outcome") == "not_tightened"
+    ), f"Expected outcome='not_tightened', got: {dark_decision}"
 
     # Bug #3: ADM_VALIDATION.md must not recommend the generic "tighten
     # and re-master" action when all failing tracks are dark casualties.

@@ -513,9 +513,9 @@ class TestGenrePresets:
     def test_all_presets_have_nonpositive_eq(self):
         """EQ values should be cuts (negative) or zero."""
         for genre, preset in GENRE_PRESETS.items():
-            assert preset["cut_highmid"] <= 0, (
-                f"Genre '{genre}' high-mid should be <= 0"
-            )
+            assert (
+                preset["cut_highmid"] <= 0
+            ), f"Genre '{genre}' high-mid should be <= 0"
             assert preset["cut_highs"] <= 0, f"Genre '{genre}' highs should be <= 0"
 
     def test_common_genres_exist(self):
@@ -653,27 +653,27 @@ class TestYamlPresetLoading:
             "dither_bits",
         ]
         for key in expected_keys:
-            assert key in defaults, (
-                f"Default key '{key}' missing from genre-presets.yaml"
-            )
+            assert (
+                key in defaults
+            ), f"Default key '{key}' missing from genre-presets.yaml"
 
     def test_loaded_presets_match_yaml(self):
         """GENRE_PRESETS dict should match what's in the YAML file."""
         data = _load_yaml_file(_BUILTIN_PRESETS_FILE)
         for genre, settings in data["genres"].items():
-            assert genre in GENRE_PRESETS, (
-                f"Genre '{genre}' in YAML but not in GENRE_PRESETS"
-            )
+            assert (
+                genre in GENRE_PRESETS
+            ), f"Genre '{genre}' in YAML but not in GENRE_PRESETS"
             preset = GENRE_PRESETS[genre]
-            assert preset["target_lufs"] == float(settings["target_lufs"]), (
-                f"Genre '{genre}' target_lufs mismatch"
-            )
-            assert preset["cut_highmid"] == float(settings["cut_highmid"]), (
-                f"Genre '{genre}' cut_highmid mismatch"
-            )
-            assert preset["cut_highs"] == float(settings["cut_highs"]), (
-                f"Genre '{genre}' cut_highs mismatch"
-            )
+            assert preset["target_lufs"] == float(
+                settings["target_lufs"]
+            ), f"Genre '{genre}' target_lufs mismatch"
+            assert preset["cut_highmid"] == float(
+                settings["cut_highmid"]
+            ), f"Genre '{genre}' cut_highmid mismatch"
+            assert preset["cut_highs"] == float(
+                settings["cut_highs"]
+            ), f"Genre '{genre}' cut_highs mismatch"
 
     def test_load_yaml_file_missing(self, tmp_path):
         """Loading a nonexistent YAML file should return empty dict."""
@@ -913,9 +913,9 @@ class TestPresetResolution:
         """All preset values should be floats."""
         for genre, preset in GENRE_PRESETS.items():
             for key, value in preset.items():
-                assert isinstance(value, float), (
-                    f"Genre '{genre}' key '{key}' is {type(value).__name__}, expected float"
-                )
+                assert isinstance(
+                    value, float
+                ), f"Genre '{genre}' key '{key}' is {type(value).__name__}, expected float"
 
     def test_default_preset_matches_hardcoded_defaults(self):
         """_PRESET_DEFAULTS should match the previously hardcoded values."""

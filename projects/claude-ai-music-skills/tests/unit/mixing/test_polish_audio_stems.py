@@ -246,9 +246,9 @@ class TestPolishAudioAnalyzerCoupling:
         result = json.loads(result_json)
 
         overrides = result["summary"].get("overrides_applied", [])
-        assert len(overrides) == 1, (
-            f"expected 1 override (synth high_tame_db), got {overrides}"
-        )
+        assert (
+            len(overrides) == 1
+        ), f"expected 1 override (synth high_tame_db), got {overrides}"
         entry = overrides[0]
         assert entry["track"] == "01-dark"
         assert entry["stem"] == "synth"
@@ -326,9 +326,9 @@ class TestPolishAudioAnalyzerCoupling:
         )
         result = json.loads(result_json)
 
-        assert "stages" in result, (
-            f"expected stages in polish_album result, got {list(result.keys())}"
-        )
+        assert (
+            "stages" in result
+        ), f"expected stages in polish_album result, got {list(result.keys())}"
         polish_stage = result["stages"].get("polish", {})
         assert "overrides_applied" in polish_stage, (
             f"polish_album stages.polish must expose overrides_applied; "
@@ -337,9 +337,9 @@ class TestPolishAudioAnalyzerCoupling:
         # Exactly one override expected: synth.high_tame_db = 0.0 (already_dark)
         overrides = polish_stage["overrides_applied"]
         assert isinstance(overrides, list)
-        assert len(overrides) == 1, (
-            f"expected 1 override for dark synth stem, got {overrides}"
-        )
+        assert (
+            len(overrides) == 1
+        ), f"expected 1 override for dark synth stem, got {overrides}"
         assert overrides[0]["track"] == "01-dark"
         assert overrides[0]["stem"] == "synth"
         assert overrides[0]["parameter"] == "high_tame_db"

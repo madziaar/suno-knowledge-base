@@ -77,7 +77,6 @@ from handlers import _shared as _shared_mod
 from handlers import text_analysis as _text_analysis_mod
 from handlers import lyrics_analysis as _lyrics_analysis_mod
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
@@ -1425,9 +1424,9 @@ class TestTokenizeLyricsWithSections:
             tag = f"[{section_type.title()}]"
             lyrics = f"{tag}\nTest words here"
             result = _lyrics_analysis_mod._tokenize_lyrics_with_sections(lyrics)
-            assert result[0]["section_type"] == section_type, (
-                f"Failed for {section_type}"
-            )
+            assert (
+                result[0]["section_type"] == section_type
+            ), f"Failed for {section_type}"
 
     def test_unknown_section_defaults_to_verse(self):
         lyrics = "[Breakdown]\nHeavy riff here"

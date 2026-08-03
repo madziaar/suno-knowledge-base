@@ -190,9 +190,11 @@ def build_config_section(config: dict[str, Any]) -> dict[str, Any]:
         "require_source_path_for_documentary": bool(
             gen_config.get("require_source_path_for_documentary", True)
         ),
-        "additional_genres": [str(g).lower().strip() for g in additional_genres_raw]
-        if isinstance(additional_genres_raw, list)
-        else [],
+        "additional_genres": (
+            [str(g).lower().strip() for g in additional_genres_raw]
+            if isinstance(additional_genres_raw, list)
+            else []
+        ),
     }
 
     return {

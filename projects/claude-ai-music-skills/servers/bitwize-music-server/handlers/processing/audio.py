@@ -1451,9 +1451,9 @@ async def mono_fold_check(
             "vocal_delta_db": metrics["vocal_rms"]["delta_db"],
             "stereo_correlation": metrics["stereo_correlation"],
             "report_path": str(output_dir / f"{stem}.MONO_FOLD.md"),
-            "sample_path": str(output_dir / sample_filename)
-            if sample_filename
-            else None,
+            "sample_path": (
+                str(output_dir / sample_filename) if sample_filename else None
+            ),
         }
 
     tracks: list[dict[str, Any]] = []

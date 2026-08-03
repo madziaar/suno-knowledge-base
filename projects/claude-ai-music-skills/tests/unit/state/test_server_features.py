@@ -84,7 +84,6 @@ from handlers import _shared as _shared_mod
 from handlers import status as _status_mod
 from handlers import gates as _gates_mod
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers (duplicated from test_server.py to keep files independent)
 # ---------------------------------------------------------------------------
@@ -895,9 +894,11 @@ class TestAlbumAutoAdvancement:
                 "status": status,
                 "explicit": False,
                 "has_suno_link": status in ("Generated", "Final"),
-                "sources_verified": "Verified"
-                if status not in ("Not Started", "Sources Pending")
-                else "Pending",
+                "sources_verified": (
+                    "Verified"
+                    if status not in ("Not Started", "Sources Pending")
+                    else "Pending"
+                ),
                 "mtime": 1234567890.0,
             }
             for slug, status in track_statuses.items()

@@ -12,7 +12,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.mastering.master_tracks import load_genre_presets
 
-
 COHERENCE_FIELDS = {
     "coherence_stl_95_lu": 0.5,
     "coherence_lra_floor_lu": 1.0,
@@ -30,6 +29,6 @@ class TestCoherenceTolerancesInDefaults:
         pop = presets["pop"]
         for key, expected in COHERENCE_FIELDS.items():
             assert key in pop, f"{key} missing from merged pop preset"
-            assert pop[key] == pytest.approx(expected), (
-                f"{key} default = {pop[key]}, expected {expected}"
-            )
+            assert pop[key] == pytest.approx(
+                expected
+            ), f"{key} default = {pop[key]}, expected {expected}"

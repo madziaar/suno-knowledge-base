@@ -98,9 +98,9 @@ class TestHarmonicExcitation:
         low_mask = (freqs >= 20) & (freqs < 500)
         if np.sum(psd_in[low_mask]) > 0:
             ratio = np.sum(psd_out[low_mask]) / np.sum(psd_in[low_mask])
-            assert 0.95 <= ratio <= 1.05, (
-                f"Low-frequency energy ratio {ratio:.3f} should be ~1.0"
-            )
+            assert (
+                0.95 <= ratio <= 1.05
+            ), f"Low-frequency energy ratio {ratio:.3f} should be ~1.0"
 
     def test_shape_preserved(self):
         data = _pink_stereo()

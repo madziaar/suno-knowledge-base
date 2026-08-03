@@ -208,9 +208,9 @@ class TestInstrumentalGuard:
         if "_error" in fm:
             pytest.skip(f"{skill_name} has errors")
         content = fm.get("_content", "")
-        assert "Instrumental Guard" in content, (
-            f"{skill_name} SKILL.md missing 'Instrumental Guard' section"
-        )
+        assert (
+            "Instrumental Guard" in content
+        ), f"{skill_name} SKILL.md missing 'Instrumental Guard' section"
 
 
 class TestPreGenInstrumental:
@@ -222,12 +222,12 @@ class TestPreGenInstrumental:
         if "_error" in fm:
             pytest.skip("pre-generation-check has errors")
         content = fm.get("_content", "")
-        assert "instrumental" in content.lower(), (
-            "pre-generation-check SKILL.md missing instrumental gate skipping"
-        )
-        assert "skip" in content.lower(), (
-            "pre-generation-check SKILL.md missing skip logic for instrumental gates"
-        )
+        assert (
+            "instrumental" in content.lower()
+        ), "pre-generation-check SKILL.md missing instrumental gate skipping"
+        assert (
+            "skip" in content.lower()
+        ), "pre-generation-check SKILL.md missing skip logic for instrumental gates"
 
     def test_instrumental_field_sync_validation(self, all_skill_frontmatter):
         """pre-generation-check must block on instrumental field mismatch (#129)."""
@@ -235,9 +235,9 @@ class TestPreGenInstrumental:
         if "_error" in fm:
             pytest.skip("pre-generation-check has errors")
         content = fm.get("_content", "")
-        assert "mismatch" in content.lower(), (
-            "pre-generation-check SKILL.md missing instrumental field mismatch blocking"
-        )
+        assert (
+            "mismatch" in content.lower()
+        ), "pre-generation-check SKILL.md missing instrumental field mismatch blocking"
 
 
 class TestGuidedRegeneration:
@@ -250,9 +250,9 @@ class TestGuidedRegeneration:
         if "_error" in fm:
             pytest.skip(f"{skill_name} has errors")
         content = fm.get("_content", "")
-        assert "Generation Log Rating" in content, (
-            f"{skill_name} SKILL.md missing Generation Log Rating reference"
-        )
+        assert (
+            "Generation Log Rating" in content
+        ), f"{skill_name} SKILL.md missing Generation Log Rating reference"
 
     @pytest.mark.parametrize("skill_name", ["resume", "next-step"])
     def test_batch_approve_workflow(self, all_skill_frontmatter, skill_name):
@@ -261,9 +261,9 @@ class TestGuidedRegeneration:
         if "_error" in fm:
             pytest.skip(f"{skill_name} has errors")
         content = fm.get("_content", "")
-        assert "batch-approve" in content, (
-            f"{skill_name} SKILL.md missing batch-approve workflow documentation"
-        )
+        assert (
+            "batch-approve" in content
+        ), f"{skill_name} SKILL.md missing batch-approve workflow documentation"
 
 
 class TestAlbumStatusManagement:
@@ -275,18 +275,18 @@ class TestAlbumStatusManagement:
         if "_error" in fm:
             pytest.skip("verify-sources has errors")
         content = fm.get("_content", "")
-        assert "auto-advance" in content.lower() or "auto advance" in content.lower(), (
-            "verify-sources SKILL.md missing auto-advancement documentation"
-        )
+        assert (
+            "auto-advance" in content.lower() or "auto advance" in content.lower()
+        ), "verify-sources SKILL.md missing auto-advancement documentation"
 
     def test_claude_md_documentary_album_flow(self, claude_md_content):
         """CLAUDE.md must document documentary album status flow."""
         assert (
             "Documentary" in claude_md_content or "documentary" in claude_md_content
         ), "CLAUDE.md missing documentary album status flow"
-        assert "Research Complete" in claude_md_content, (
-            "CLAUDE.md missing 'Research Complete' status for documentary flow"
-        )
+        assert (
+            "Research Complete" in claude_md_content
+        ), "CLAUDE.md missing 'Research Complete' status for documentary flow"
 
     def test_claude_md_standard_album_flow(self, claude_md_content):
         """CLAUDE.md must document standard (non-documentary) album status flow."""
@@ -304,9 +304,9 @@ class TestInstrumentalFieldSyncValidation:
         if "_error" in fm:
             pytest.skip("validate-album has errors")
         content = fm.get("_content", "")
-        assert "mismatch" in content.lower(), (
-            "validate-album SKILL.md missing instrumental field mismatch warning"
-        )
+        assert (
+            "mismatch" in content.lower()
+        ), "validate-album SKILL.md missing instrumental field mismatch warning"
 
 
 class TestSkillIndex:

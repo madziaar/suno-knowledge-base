@@ -26,7 +26,6 @@ from handlers.processing._album_stages import (  # noqa: E402
     _stage_coherence_correct,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -151,9 +150,9 @@ def test_coherence_check_counts_spectral_correctables() -> None:
 
     _, ctx = asyncio.run(_run())
     stage = ctx.stages["coherence_check"]
-    assert stage["outlier_count"] == 1, (
-        f"Expected 1 outlier (spectral), got {stage['outlier_count']}"
-    )
+    assert (
+        stage["outlier_count"] == 1
+    ), f"Expected 1 outlier (spectral), got {stage['outlier_count']}"
     assert stage["correctable_count"] == 1, (
         "correctable_count must include spectral outliers — "
         f"got {stage['correctable_count']}"
@@ -317,9 +316,9 @@ def test_coherence_correct_clamps_to_1_5_db(
     applied = captured_calls[0]["target_lufs"]
     # build_correction_plan sets corrected_target_lufs = anchor_lufs = -14.0.
     # Clamp window: [-15.5, -12.5]. -14.0 is within, so no clamp fires.
-    assert applied == pytest.approx(anchor_lufs, abs=1e-6), (
-        f"Expected target_lufs={anchor_lufs}, got {applied}"
-    )
+    assert applied == pytest.approx(
+        anchor_lufs, abs=1e-6
+    ), f"Expected target_lufs={anchor_lufs}, got {applied}"
     # tilt_clamped observability sentinel: every correction record,
     # whether the tilt was clamped or not, must expose the field so
     # operators reading the stage JSON can see fixed-point risk per
@@ -445,9 +444,9 @@ def test_coherence_correct_clamps_when_target_below_window(
     assert len(captured_calls) == 1
     applied = captured_calls[0]["target_lufs"]
     expected_clamped = anchor_lufs - 1.5  # -15.5
-    assert applied == pytest.approx(expected_clamped, abs=1e-6), (
-        f"Expected clamped target {expected_clamped}, got {applied}"
-    )
+    assert applied == pytest.approx(
+        expected_clamped, abs=1e-6
+    ), f"Expected clamped target {expected_clamped}, got {applied}"
 
 
 # ---------------------------------------------------------------------------
@@ -761,9 +760,9 @@ def test_coherence_correct_breaks_on_fixed_point_with_tilt_clamp(
         f"Expected unconvergent entry for 02-bassy.wav, got corrections: "
         f"{stage['corrections']}"
     )
-    assert "fixed_point" in unconvergent[0].get("reason", ""), (
-        f"Expected fixed_point reason, got: {unconvergent[0].get('reason')}"
-    )
+    assert "fixed_point" in unconvergent[0].get(
+        "reason", ""
+    ), f"Expected fixed_point reason, got: {unconvergent[0].get('reason')}"
 
 
 # ---------------------------------------------------------------------------
@@ -1143,12 +1142,12 @@ def test_coherence_correct_all_clamp_bound_downgrades_to_pass(
     ctx = asyncio.run(_run())
 
     stage = ctx.stages["coherence_correct"]
-    assert stage["status"] == "pass", (
-        f"expected pass (clamp-only), got {stage['status']}"
-    )
-    assert "advisories" in stage, (
-        f"expected advisories field, got keys {list(stage.keys())}"
-    )
+    assert (
+        stage["status"] == "pass"
+    ), f"expected pass (clamp-only), got {stage['status']}"
+    assert (
+        "advisories" in stage
+    ), f"expected advisories field, got keys {list(stage.keys())}"
     advisories = stage["advisories"]
     assert len(advisories) == 1
     adv = advisories[0]
@@ -1158,17 +1157,15 @@ def test_coherence_correct_all_clamp_bound_downgrades_to_pass(
     assert "intended +0.78 dB" in adv["message"]
     assert "applied +0.50 dB" in adv["message"]
     # ctx.warnings starts empty; clamp-only must NOT append.
-    assert ctx.warnings == [], (
-        f"clamp-only should NOT append to ctx.warnings, got {ctx.warnings}"
-    )
+    assert (
+        ctx.warnings == []
+    ), f"clamp-only should NOT append to ctx.warnings, got {ctx.warnings}"
     # Downgrade must log one INFO line so live-run operators still see it.
     assert any(
         "correction ceiling" in record.message
         for record in caplog.records
         if record.levelname == "INFO"
-    ), (
-        f"expected INFO log mentioning 'correction ceiling', got {[r.message for r in caplog.records]}"
-    )
+    ), f"expected INFO log mentioning 'correction ceiling', got {[r.message for r in caplog.records]}"
 
 
 def test_coherence_correct_mixed_clamp_and_drift_stays_warn(
@@ -1353,12 +1350,12 @@ def test_coherence_correct_mixed_clamp_and_drift_stays_warn(
     )
 
     stage = ctx.stages["coherence_correct"]
-    assert stage["status"] == "warn", (
-        f"mixed clamp+drift must stay warn, got {stage['status']}"
-    )
+    assert (
+        stage["status"] == "warn"
+    ), f"mixed clamp+drift must stay warn, got {stage['status']}"
     assert "advisories" in stage
     assert len(stage["advisories"]) == 1  # only the clamp-bound track
     assert stage["advisories"][0]["filename"] == "02-clamp.wav"
-    assert len(ctx.warnings) == 1, (
-        f"mixed case must append exactly one warning, got {ctx.warnings}"
-    )
+    assert (
+        len(ctx.warnings) == 1
+    ), f"mixed case must append exactly one warning, got {ctx.warnings}"

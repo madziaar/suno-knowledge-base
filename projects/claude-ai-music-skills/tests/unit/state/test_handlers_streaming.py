@@ -76,7 +76,6 @@ server = _import_server()
 from handlers import streaming as _streaming_mod
 from handlers import _shared as _shared_mod
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -437,7 +436,9 @@ streaming:
         ), patch(
             "tools.state.parsers.parse_album_readme",
             return_value={"streaming_urls": {}},
-        ), patch("handlers.database._check_db_deps", side_effect=ImportError("no db")):
+        ), patch(
+            "handlers.database._check_db_deps", side_effect=ImportError("no db")
+        ):
             result = json.loads(
                 _run(
                     _streaming_mod.update_streaming_url(

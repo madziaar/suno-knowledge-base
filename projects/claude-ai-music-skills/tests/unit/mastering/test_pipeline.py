@@ -37,7 +37,6 @@ from tools.mastering.fix_dynamic_track import fix_dynamic
 from tools.mastering.master_tracks import master_track
 from tools.mastering.qc_tracks import qc_track
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — realistic audio on disk
 # ---------------------------------------------------------------------------

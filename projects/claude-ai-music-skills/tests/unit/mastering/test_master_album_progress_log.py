@@ -110,9 +110,9 @@ def test_progress_log_written_on_successful_run(
     content = log_path.read_text()
 
     # Run header
-    assert "RUN START" in content, (
-        f"Expected RUN START header in log, head: {content[:200]}"
-    )
+    assert (
+        "RUN START" in content
+    ), f"Expected RUN START header in log, head: {content[:200]}"
     assert f"album={album_slug}" in content
 
     # A representative subset of stages that always run
@@ -126,21 +126,21 @@ def test_progress_log_written_on_successful_run(
         "signature_persist",
         "status_update",
     ):
-        assert f"ENTER | {stage}" in content, (
-            f"Missing ENTER for stage {stage!r}. Content:\n{content}"
-        )
-        assert f"EXIT | {stage}" in content, (
-            f"Missing EXIT for stage {stage!r}. Content:\n{content}"
-        )
+        assert (
+            f"ENTER | {stage}" in content
+        ), f"Missing ENTER for stage {stage!r}. Content:\n{content}"
+        assert (
+            f"EXIT | {stage}" in content
+        ), f"Missing EXIT for stage {stage!r}. Content:\n{content}"
 
     # Terminal COMPLETE event on successful pipeline
     assert "COMPLETE | pipeline" in content
 
     # ISO8601 UTC timestamps — one sample line must parse.
     ts_pattern = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z")
-    assert ts_pattern.search(content), (
-        f"Expected ISO8601 UTC timestamps, got:\n{content[:500]}"
-    )
+    assert ts_pattern.search(
+        content
+    ), f"Expected ISO8601 UTC timestamps, got:\n{content[:500]}"
 
 
 def test_progress_log_survives_halt(
@@ -175,15 +175,15 @@ def test_progress_log_survives_halt(
     result = _run_master_album(tmp_path, album_slug=album_slug)
 
     # Pipeline halted somewhere; sidecar should have the HALT record.
-    assert result.get("failed_stage") is not None, (
-        f"Expected halt but pipeline completed: {result.get('stage_reached')}"
-    )
+    assert (
+        result.get("failed_stage") is not None
+    ), f"Expected halt but pipeline completed: {result.get('stage_reached')}"
     log_path = tmp_path / "MASTERING_PROGRESS.log"
     assert log_path.exists()
     content = log_path.read_text()
-    assert "HALT | " in content, (
-        f"Expected HALT record on halted pipeline, got:\n{content}"
-    )
+    assert (
+        "HALT | " in content
+    ), f"Expected HALT record on halted pipeline, got:\n{content}"
 
 
 def test_progress_log_appends_across_runs(
@@ -214,6 +214,6 @@ def test_progress_log_appends_across_runs(
         f"(had {first_headers}, now {second_headers})"
     )
     # Second run's content must include all of the first.
-    assert second_content.startswith(first_content), (
-        "2nd run should append to (not rewrite) existing log — got divergent prefix."
-    )
+    assert second_content.startswith(
+        first_content
+    ), "2nd run should append to (not rewrite) existing log — got divergent prefix."

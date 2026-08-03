@@ -3127,9 +3127,9 @@ class TestValidateStateDocumentsRoot:
             "config_mtime",
         ]
         for key in required:
-            assert any(f"config.{key}" in e for e in errors), (
-                f"Missing error for config.{key}"
-            )
+            assert any(
+                f"config.{key}" in e for e in errors
+            ), f"Missing error for config.{key}"
 
 
 @pytest.mark.unit

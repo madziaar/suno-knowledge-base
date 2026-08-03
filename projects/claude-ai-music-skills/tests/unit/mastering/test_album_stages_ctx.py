@@ -15,7 +15,10 @@ SERVER_DIR = PROJECT_ROOT / "servers" / "bitwize-music-server"
 if str(SERVER_DIR) not in sys.path:
     sys.path.insert(0, str(SERVER_DIR))
 
-from handlers.processing._album_stages import MasterAlbumCtx, _build_notices  # noqa: E402
+from handlers.processing._album_stages import (
+    MasterAlbumCtx,
+    _build_notices,
+)  # noqa: E402
 
 
 def _make_ctx(**kwargs) -> MasterAlbumCtx:

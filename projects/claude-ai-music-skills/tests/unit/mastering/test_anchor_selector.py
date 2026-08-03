@@ -21,7 +21,6 @@ from tools.mastering.anchor_selector import (
     _album_medians,
 )
 
-
 REF = {
     "sub_bass": 8.0,
     "bass": 18.0,

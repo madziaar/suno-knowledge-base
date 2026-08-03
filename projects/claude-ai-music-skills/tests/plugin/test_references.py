@@ -36,9 +36,9 @@ class TestMasteringDocs:
 
     def test_mastering_workflow_exists(self, reference_dir):
         mastering_doc = reference_dir / "mastering" / "mastering-workflow.md"
-        assert mastering_doc.exists(), (
-            "reference/mastering/mastering-workflow.md missing"
-        )
+        assert (
+            mastering_doc.exists()
+        ), "reference/mastering/mastering-workflow.md missing"
 
 
 class TestClaudeMdRefs:

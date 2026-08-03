@@ -93,9 +93,9 @@ def test_analyzer_keys_stems_by_canonical_category(
     assert track["track"] == "01-mytrack"
     stems = track["stems"]
     # Keys MUST be canonical categories from STEM_NAMES, not filename stems.
-    assert "vocals" in stems, (
-        f"Expected 'vocals' canonical key, got stems: {list(stems.keys())}"
-    )
+    assert (
+        "vocals" in stems
+    ), f"Expected 'vocals' canonical key, got stems: {list(stems.keys())}"
     assert "drums" in stems
     assert "bass" in stems
     assert "other" in stems  # MysteryStem falls through to other

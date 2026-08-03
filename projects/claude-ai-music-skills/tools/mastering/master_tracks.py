@@ -1938,27 +1938,31 @@ Examples:
         "eq_low_freq": args.eq_low_freq,
         "eq_sub_cut_freq": float(args.sub_cut) if args.sub_cut is not None else None,
         "stereo_width": args.stereo_width,
-        "stereo_bass_mono_freq": float(args.bass_mono_freq)
-        if args.bass_mono_freq is not None
-        else None,
-        "output_bits": float(args.output_bits)
-        if args.output_bits is not None
-        else None,
-        "dither_bits": float(args.dither_bits)
-        if args.dither_bits is not None
-        else None,
+        "stereo_bass_mono_freq": (
+            float(args.bass_mono_freq) if args.bass_mono_freq is not None else None
+        ),
+        "output_bits": (
+            float(args.output_bits) if args.output_bits is not None else None
+        ),
+        "dither_bits": (
+            float(args.dither_bits) if args.dither_bits is not None else None
+        ),
         "limiter_lookahead_ms": args.limiter_lookahead,
         "limiter_release_ms": args.limiter_release,
         "compress_mix": args.compress_mix,
         "compress_makeup": args.compress_makeup,
-        "processing_oversample": float(args.processing_oversample)
-        if args.processing_oversample is not None
-        else None,
+        "processing_oversample": (
+            float(args.processing_oversample)
+            if args.processing_oversample is not None
+            else None
+        ),
         "target_lra": args.target_lra,
         "dc_filter_freq": args.dc_filter_freq,
-        "output_sample_rate": float(args.output_sample_rate)
-        if args.output_sample_rate is not None
-        else None,
+        "output_sample_rate": (
+            float(args.output_sample_rate)
+            if args.output_sample_rate is not None
+            else None
+        ),
         "deess_enabled": 1.0 if args.deess else None,
         "deess_freq": args.deess_freq,
         "deess_bandwidth": args.deess_bandwidth,

@@ -87,9 +87,9 @@ def test_post_qc_passes_genre_to_qc_track(
 
     asyncio.run(_run())
 
-    assert len(captured_calls) == 1, (
-        f"Expected exactly 1 qc_track call, got {len(captured_calls)}"
-    )
+    assert (
+        len(captured_calls) == 1
+    ), f"Expected exactly 1 qc_track call, got {len(captured_calls)}"
     call = captured_calls[0]
     expected_genre = album_genre or None
     assert call["genre"] == expected_genre, (

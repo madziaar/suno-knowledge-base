@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 """
 Cross-platform wrapper for MCP server that uses venv if available.
 

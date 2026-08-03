@@ -61,13 +61,13 @@ def test_short_term_range_is_non_negative(full_mix_wav: str) -> None:
     """short_term_range (loudness range) is >= 0 LU."""
     result = analyze_track(full_mix_wav)
     short_term_range = result.get("short_term_range")
-    assert short_term_range is not None, (
-        "analyze_track must return short_term_range key"
-    )
+    assert (
+        short_term_range is not None
+    ), "analyze_track must return short_term_range key"
     assert isinstance(short_term_range, (int, float))
-    assert short_term_range >= 0.0, (
-        f"short_term_range must be non-negative, got {short_term_range}"
-    )
+    assert (
+        short_term_range >= 0.0
+    ), f"short_term_range must be non-negative, got {short_term_range}"
 
 
 def test_stl_95_within_4_lu_of_lufs(full_mix_wav: str) -> None:

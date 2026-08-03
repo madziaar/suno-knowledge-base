@@ -29,9 +29,9 @@ class TestTemplateExistence:
 
     @pytest.mark.parametrize("template", REQUIRED_TEMPLATES)
     def test_required_template_exists(self, templates_dir, template):
-        assert (templates_dir / template).exists(), (
-            f"Required template missing: {template}"
-        )
+        assert (
+            templates_dir / template
+        ).exists(), f"Required template missing: {template}"
 
     def test_referenced_templates_exist(self, templates_dir, claude_md_content):
         template_refs = re.findall(
@@ -52,9 +52,9 @@ class TestTrackTemplate:
         if not track_template.exists():
             pytest.skip("track.md not found")
         content = track_template.read_text()
-        assert section.lower() in content.lower(), (
-            f"track.md missing section: {section}"
-        )
+        assert (
+            section.lower() in content.lower()
+        ), f"track.md missing section: {section}"
 
 
 class TestAlbumTemplate:
@@ -66,9 +66,9 @@ class TestAlbumTemplate:
         if not album_template.exists():
             pytest.skip("album.md not found")
         content = album_template.read_text()
-        assert section.lower() in content.lower(), (
-            f"album.md missing section: {section}"
-        )
+        assert (
+            section.lower() in content.lower()
+        ), f"album.md missing section: {section}"
 
 
 PROMO_TEMPLATES = [
@@ -96,9 +96,9 @@ class TestPromoTemplates:
     @pytest.mark.parametrize("template", PROMO_TEMPLATES)
     def test_promo_template_exists(self, templates_dir, template):
         promo_dir = templates_dir / "promo"
-        assert (promo_dir / template).exists(), (
-            f"Promo template missing: promo/{template}"
-        )
+        assert (
+            promo_dir / template
+        ).exists(), f"Promo template missing: promo/{template}"
 
     @pytest.mark.parametrize("template", PROMO_TEMPLATES)
     def test_promo_template_not_empty(self, templates_dir, template):
@@ -119,9 +119,9 @@ class TestPromoTemplates:
             pytest.skip(f"promo/{template} not found")
         content = promo_file.read_text().lower()
         for section in sections:
-            assert section.lower() in content, (
-                f"promo/{template} missing section: {section}"
-            )
+            assert (
+                section.lower() in content
+            ), f"promo/{template} missing section: {section}"
 
 
 class TestSourcesTemplatePromoPointer:
@@ -141,14 +141,14 @@ class TestTemplateFrontmatter:
     def test_album_has_frontmatter(self, templates_dir):
         album = templates_dir / "album.md"
         content = album.read_text()
-        assert content.startswith("---"), (
-            "album.md must start with YAML frontmatter delimiter"
-        )
+        assert content.startswith(
+            "---"
+        ), "album.md must start with YAML frontmatter delimiter"
         fm = parse_frontmatter(content)
         assert isinstance(fm, dict), "album.md frontmatter must parse to a dict"
-        assert "_error" not in fm, (
-            f"album.md frontmatter parse error: {fm.get('_error')}"
-        )
+        assert (
+            "_error" not in fm
+        ), f"album.md frontmatter parse error: {fm.get('_error')}"
 
     def test_album_frontmatter_required_fields(self, templates_dir):
         album = templates_dir / "album.md"
@@ -170,30 +170,30 @@ class TestTemplateFrontmatter:
             "youtube_music",
             "amazon_music",
         ):
-            assert platform in streaming, (
-                f"streaming block missing platform: {platform}"
-            )
+            assert (
+                platform in streaming
+            ), f"streaming block missing platform: {platform}"
 
     def test_album_frontmatter_no_legacy_url_fields(self, templates_dir):
         """album.md should not have legacy soundcloud_url/spotify_url flat fields."""
         album = templates_dir / "album.md"
         fm = parse_frontmatter(album.read_text())
-        assert "soundcloud_url" not in fm, (
-            "album.md still has legacy soundcloud_url field"
-        )
+        assert (
+            "soundcloud_url" not in fm
+        ), "album.md still has legacy soundcloud_url field"
         assert "spotify_url" not in fm, "album.md still has legacy spotify_url field"
 
     def test_track_has_frontmatter(self, templates_dir):
         track = templates_dir / "track.md"
         content = track.read_text()
-        assert content.startswith("---"), (
-            "track.md must start with YAML frontmatter delimiter"
-        )
+        assert content.startswith(
+            "---"
+        ), "track.md must start with YAML frontmatter delimiter"
         fm = parse_frontmatter(content)
         assert isinstance(fm, dict), "track.md frontmatter must parse to a dict"
-        assert "_error" not in fm, (
-            f"track.md frontmatter parse error: {fm.get('_error')}"
-        )
+        assert (
+            "_error" not in fm
+        ), f"track.md frontmatter parse error: {fm.get('_error')}"
 
     def test_track_frontmatter_required_fields(self, templates_dir):
         track = templates_dir / "track.md"
@@ -234,9 +234,9 @@ class TestTrackTemplateLyricsWarning:
     def test_lyrics_box_has_parentheses_warning(self, templates_dir):
         track = templates_dir / "track.md"
         content = track.read_text()
-        assert "Suno sings EVERYTHING literally" in content, (
-            "track.md Lyrics Box missing parentheses warning comment"
-        )
+        assert (
+            "Suno sings EVERYTHING literally" in content
+        ), "track.md Lyrics Box missing parentheses warning comment"
 
     def test_no_parenthetical_directions_in_template(self, templates_dir):
         track = templates_dir / "track.md"
@@ -252,9 +252,9 @@ class TestTrackTemplateLyricsWarning:
         # Strip the warning comment before checking
         without_comment = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         for direction in bad_directions:
-            assert direction.lower() not in without_comment.lower(), (
-                f"track.md contains parenthetical direction '{direction}' outside warning comment"
-            )
+            assert (
+                direction.lower() not in without_comment.lower()
+            ), f"track.md contains parenthetical direction '{direction}' outside warning comment"
 
 
 TRACK_REQUIRED_SECTIONS = [
@@ -279,9 +279,9 @@ class TestTrackTemplateStructure:
     def test_has_all_required_sections(self, templates_dir, section):
         track = templates_dir / "track.md"
         content = track.read_text()
-        assert section.lower() in content.lower(), (
-            f"track.md missing required section: {section}"
-        )
+        assert (
+            section.lower() in content.lower()
+        ), f"track.md missing required section: {section}"
 
 
 class TestAlbumArtSection:
@@ -298,9 +298,9 @@ class TestAlbumArtSection:
     def test_album_art_subsections(self, templates_dir, subsection):
         album = templates_dir / "album.md"
         content = album.read_text()
-        assert subsection.lower() in content.lower(), (
-            f"album.md Album Art missing subsection: {subsection}"
-        )
+        assert (
+            subsection.lower() in content.lower()
+        ), f"album.md Album Art missing subsection: {subsection}"
 
 
 PROMO_PLATFORM_TEMPLATES = [
@@ -321,9 +321,9 @@ class TestPromoCampaignCrossRefs:
         if not promo_file.exists():
             pytest.skip(f"promo/{template} not found")
         content = promo_file.read_text()
-        assert "campaign.md" in content, (
-            f"promo/{template} missing campaign.md cross-reference link"
-        )
+        assert (
+            "campaign.md" in content
+        ), f"promo/{template} missing campaign.md cross-reference link"
 
 
 class TestCampaignLanguageField:
@@ -334,18 +334,18 @@ class TestCampaignLanguageField:
         if not campaign.exists():
             pytest.skip("promo/campaign.md not found")
         content = campaign.read_text()
-        assert "language" in content.lower(), (
-            "campaign.md missing Language field in overview table"
-        )
+        assert (
+            "language" in content.lower()
+        ), "campaign.md missing Language field in overview table"
 
     def test_platform_copy_table(self, templates_dir):
         campaign = templates_dir / "promo" / "campaign.md"
         if not campaign.exists():
             pytest.skip("promo/campaign.md not found")
         content = campaign.read_text()
-        assert "platform copy" in content.lower(), (
-            "campaign.md missing Platform Copy section"
-        )
+        assert (
+            "platform copy" in content.lower()
+        ), "campaign.md missing Platform Copy section"
 
     @pytest.mark.parametrize("platform_file", PROMO_PLATFORM_TEMPLATES)
     def test_platform_copy_links(self, templates_dir, platform_file):
@@ -353,9 +353,9 @@ class TestCampaignLanguageField:
         if not campaign.exists():
             pytest.skip("promo/campaign.md not found")
         content = campaign.read_text()
-        assert platform_file in content, (
-            f"campaign.md Platform Copy table missing link to {platform_file}"
-        )
+        assert (
+            platform_file in content
+        ), f"campaign.md Platform Copy table missing link to {platform_file}"
 
 
 class TestPromoTemplateFormatting:
@@ -369,9 +369,9 @@ class TestPromoTemplateFormatting:
         content = promo_file.read_text()
         # Check for common emoji that were removed in PR #75
         for emoji in ["🎵", "🤖", "🔗"]:
-            assert emoji not in content, (
-                f"promo/{template} contains emoji '{emoji}' — should be removed"
-            )
+            assert (
+                emoji not in content
+            ), f"promo/{template} contains emoji '{emoji}' — should be removed"
 
     @pytest.mark.parametrize("template", PROMO_PLATFORM_TEMPLATES)
     def test_em_dash_title(self, templates_dir, template):
@@ -381,9 +381,9 @@ class TestPromoTemplateFormatting:
             pytest.skip(f"promo/{template} not found")
         content = promo_file.read_text()
         first_line = content.strip().split("\n")[0]
-        assert "—" in first_line or "#" not in first_line, (
-            f"promo/{template} title should use em dash separator"
-        )
+        assert (
+            "—" in first_line or "#" not in first_line
+        ), f"promo/{template} title should use em dash separator"
 
 
 class TestTrackTemplateInstrumental:
@@ -394,17 +394,17 @@ class TestTrackTemplateInstrumental:
         track = templates_dir / "track.md"
         fm = parse_frontmatter(track.read_text())
         assert "instrumental" in fm, "track.md frontmatter missing 'instrumental' field"
-        assert fm["instrumental"] is False, (
-            "track.md instrumental field should default to false"
-        )
+        assert (
+            fm["instrumental"] is False
+        ), "track.md instrumental field should default to false"
 
     def test_instrumental_table_row(self, templates_dir):
         """track.md Track Details table must have an Instrumental row."""
         track = templates_dir / "track.md"
         content = track.read_text()
-        assert "**Instrumental**" in content, (
-            "track.md missing **Instrumental** row in Track Details table"
-        )
+        assert (
+            "**Instrumental**" in content
+        ), "track.md missing **Instrumental** row in Track Details table"
 
     @pytest.mark.parametrize(
         "comment",
@@ -417,6 +417,6 @@ class TestTrackTemplateInstrumental:
         """track.md must have HTML comments marking vocal-only and instrumental sections."""
         track = templates_dir / "track.md"
         content = track.read_text()
-        assert comment in content, (
-            f"track.md missing expected comment marker: {comment}"
-        )
+        assert (
+            comment in content
+        ), f"track.md missing expected comment marker: {comment}"

@@ -13,7 +13,6 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from tools.promotion import generate_all_promos as mod
 
-
 # ---------------------------------------------------------------------------
 # find_mastered_dir
 # ---------------------------------------------------------------------------

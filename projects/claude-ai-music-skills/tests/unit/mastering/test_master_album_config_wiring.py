@@ -185,9 +185,9 @@ def test_master_album_no_upsampling_notice_when_rates_match(
     assert result["settings"]["upsampled_from_source"] is False
 
     notices = result.get("notices", [])
-    assert not any("upsampled" in n.lower() for n in notices), (
-        f"Did not expect upsampling notice at matched rates, got: {notices}"
-    )
+    assert not any(
+        "upsampled" in n.lower() for n in notices
+    ), f"Did not expect upsampling notice at matched rates, got: {notices}"
 
     mastered = three_track_audio_dir / "mastered" / "01-track.wav"
     info = sf.info(str(mastered))

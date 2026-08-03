@@ -586,28 +586,37 @@ def _resolve_audio_dir(
     album_data = albums.get(normalized, {})
     genre = album_data.get("genre", "")
     if not genre:
-        return _safe_json(
-            {
-                "error": f"Genre not found for album '{album_slug}'. Ensure album exists in state.",
-            }
-        ), None
+        return (
+            _safe_json(
+                {
+                    "error": f"Genre not found for album '{album_slug}'. Ensure album exists in state.",
+                }
+            ),
+            None,
+        )
     audio_path = Path(audio_root) / "artists" / artist / "albums" / genre / normalized
     if subfolder:
         if not _is_path_confined(audio_path, subfolder):
-            return _safe_json(
-                {
-                    "error": "Invalid subfolder: path must not escape the album directory",
-                    "subfolder": subfolder,
-                }
-            ), None
+            return (
+                _safe_json(
+                    {
+                        "error": "Invalid subfolder: path must not escape the album directory",
+                        "subfolder": subfolder,
+                    }
+                ),
+                None,
+            )
         audio_path = audio_path / subfolder
     if not audio_path.is_dir():
-        return _safe_json(
-            {
-                "error": f"Audio directory not found: {audio_path}",
-                "suggestion": "Check album slug or download audio first.",
-            }
-        ), None
+        return (
+            _safe_json(
+                {
+                    "error": f"Audio directory not found: {audio_path}",
+                    "suggestion": "Check album slug or download audio first.",
+                }
+            ),
+            None,
+        )
     return None, audio_path
 
 

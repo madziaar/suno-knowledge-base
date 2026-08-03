@@ -122,18 +122,18 @@ def test_selective_remaster_only_writes_requested_tracks(tmp_path: Path) -> None
     bytes_after_a = (out / "01-a.wav").read_bytes()
     bytes_after_b = (out / "02-b.wav").read_bytes()
 
-    assert bytes_after_a == bytes_before_a, (
-        "track a was re-mastered despite not being in remaster_filenames"
-    )
-    assert bytes_after_b != bytes_before_b, (
-        "track b was NOT re-mastered despite being in remaster_filenames"
-    )
+    assert (
+        bytes_after_a == bytes_before_a
+    ), "track a was re-mastered despite not being in remaster_filenames"
+    assert (
+        bytes_after_b != bytes_before_b
+    ), "track b was NOT re-mastered despite being in remaster_filenames"
 
     # ctx.mastered_files must contain both files after the selective cycle.
     mastered_names = {f.name for f in ctx2.mastered_files}
-    assert "01-a.wav" in mastered_names, (
-        "retained track a missing from ctx.mastered_files"
-    )
-    assert "02-b.wav" in mastered_names, (
-        "re-mastered track b missing from ctx.mastered_files"
-    )
+    assert (
+        "01-a.wav" in mastered_names
+    ), "retained track a missing from ctx.mastered_files"
+    assert (
+        "02-b.wav" in mastered_names
+    ), "re-mastered track b missing from ctx.mastered_files"

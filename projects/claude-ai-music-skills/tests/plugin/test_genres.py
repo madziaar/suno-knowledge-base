@@ -66,9 +66,9 @@ class TestGenreIndex:
         actual_genres = _get_actual_genres(genres_dir)
 
         orphans = index_refs - actual_genres
-        assert not orphans, (
-            f"INDEX.md references missing dirs: {', '.join(sorted(orphans))}"
-        )
+        assert (
+            not orphans
+        ), f"INDEX.md references missing dirs: {', '.join(sorted(orphans))}"
 
 
 class TestGenreListRef:
@@ -91,9 +91,9 @@ class TestGenreReadmeStructure:
             if not re.search(r"^# .+", content, re.MULTILINE):
                 missing_headings.append(genre)
 
-        assert not missing_headings, (
-            f"Genre READMEs missing headings: {', '.join(missing_headings)}"
-        )
+        assert (
+            not missing_headings
+        ), f"Genre READMEs missing headings: {', '.join(missing_headings)}"
 
 
 GENRE_README_REQUIRED_SECTIONS = [
@@ -179,6 +179,6 @@ class TestGenrePresetsYaml:
         data = yaml.safe_load(presets_file.read_text())
         genres = data.get("genres", {})
         for expected in ("chanson", "middle-eastern-pop", "schlager"):
-            assert expected in genres, (
-                f"genre-presets.yaml missing preset for: {expected}"
-            )
+            assert (
+                expected in genres
+            ), f"genre-presets.yaml missing preset for: {expected}"

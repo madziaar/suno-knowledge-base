@@ -29,7 +29,6 @@ from handlers.processing import audio as audio_mod  # noqa: E402
 from handlers.processing import _album_stages as album_stages_mod  # noqa: E402
 from handlers.processing.audio import _adm_adaptive_ceiling_per_track  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers (mirrored from test_master_album_adm_retry.py pattern)
 # ---------------------------------------------------------------------------
@@ -238,9 +237,11 @@ def test_clean_tracks_keep_original_ceiling_when_neighbor_clips_adm(
 
     async def _spy_stage_mastering(ctx: album_stages_mod.MasterAlbumCtx) -> str | None:
         remaster_filenames_history.append(
-            frozenset(ctx.remaster_filenames)
-            if ctx.remaster_filenames is not None
-            else None,
+            (
+                frozenset(ctx.remaster_filenames)
+                if ctx.remaster_filenames is not None
+                else None
+            ),
         )
         track_ceilings_snapshots.append(dict(ctx.track_ceilings))
         return await real_stage_mastering(ctx)
@@ -250,15 +251,15 @@ def test_clean_tracks_keep_original_ceiling_when_neighbor_clips_adm(
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
     # Pipeline must complete without failure.
-    assert result.get("failed_stage") is None, (
-        f"Expected pipeline to succeed, got failure: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected pipeline to succeed, got failure: {result.get('failure_detail')}"
 
     # ADM must converge (pass), not warn-fallback.
     adm_stage = result.get("stages", {}).get("adm_validation", {})
-    assert adm_stage.get("status") == "pass", (
-        f"Expected adm_validation status='pass' after convergence, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "pass"
+    ), f"Expected adm_validation status='pass' after convergence, got: {adm_stage}"
 
     # Cycle 0: remaster all (remaster_filenames=None before ADM runs).
     assert remaster_filenames_history, "Expected at least one _stage_mastering call"
@@ -272,9 +273,9 @@ def test_clean_tracks_keep_original_ceiling_when_neighbor_clips_adm(
         f"Expected at least 2 _stage_mastering calls (cycle 0 + cycle 1), "
         f"got {len(remaster_filenames_history)}: {remaster_filenames_history}"
     )
-    assert "02-clipper.wav" in remaster_filenames_history[1], (
-        f"Cycle 1 must remaster 02-clipper.wav, got: {remaster_filenames_history[1]}"
-    )
+    assert (
+        "02-clipper.wav" in remaster_filenames_history[1]
+    ), f"Cycle 1 must remaster 02-clipper.wav, got: {remaster_filenames_history[1]}"
     assert "01-clean.wav" not in remaster_filenames_history[1], (
         f"Cycle 1 must NOT remaster 01-clean.wav (it was clean), "
         f"got: {remaster_filenames_history[1]}"
@@ -283,9 +284,9 @@ def test_clean_tracks_keep_original_ceiling_when_neighbor_clips_adm(
     # ctx.track_ceilings must contain 02-clipper.wav with a tightened ceiling.
     # The tightened ceiling snapshot is captured on the cycle-1 mastering call.
     cycle1_ceilings = track_ceilings_snapshots[1]
-    assert "02-clipper.wav" in cycle1_ceilings, (
-        f"Expected 02-clipper.wav in track_ceilings on cycle 1, got: {cycle1_ceilings}"
-    )
+    assert (
+        "02-clipper.wav" in cycle1_ceilings
+    ), f"Expected 02-clipper.wav in track_ceilings on cycle 1, got: {cycle1_ceilings}"
     assert "01-clean.wav" not in cycle1_ceilings, (
         f"01-clean.wav must NOT be in track_ceilings (it never clipped), "
         f"got: {cycle1_ceilings}"

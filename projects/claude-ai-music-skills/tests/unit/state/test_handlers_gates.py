@@ -77,7 +77,6 @@ from handlers import gates as _gates_mod
 from handlers import text_analysis as _text_analysis_mod
 from handlers import _shared as _shared_mod
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -838,9 +837,9 @@ class TestRunPreGenerationGates:
         """Album where all tracks fail returns NOT READY."""
         state = _fresh_state()
         for slug in state["albums"]["test-album"]["tracks"]:
-            state["albums"]["test-album"]["tracks"][slug]["sources_verified"] = (
-                "Pending"
-            )
+            state["albums"]["test-album"]["tracks"][slug][
+                "sources_verified"
+            ] = "Pending"
             state["albums"]["test-album"]["tracks"][slug]["explicit"] = None
         self._mock_cache._state = state
 

@@ -23,7 +23,6 @@ from handlers.processing import _helpers as processing_helpers  # noqa: E402
 from handlers.processing import audio as audio_mod  # noqa: E402
 from handlers.processing import _album_stages as album_stages_mod  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
@@ -195,17 +194,17 @@ def test_adm_retry_tightens_ceiling_on_clips(
 
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
-    assert result.get("failed_stage") is None, (
-        f"Expected pipeline to succeed, got failure: {result.get('failure_detail')}"
-    )
-    assert call_count["n"] >= 2, (
-        f"Expected _adm_check_fn to be called at least twice, got {call_count['n']}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected pipeline to succeed, got failure: {result.get('failure_detail')}"
+    assert (
+        call_count["n"] >= 2
+    ), f"Expected _adm_check_fn to be called at least twice, got {call_count['n']}"
     # ADM retry notice must be present
     notices = result.get("notices", [])
-    assert any("ADM cycle" in n for n in notices), (
-        f"Expected ADM retry notice, got notices: {notices}"
-    )
+    assert any(
+        "ADM cycle" in n for n in notices
+    ), f"Expected ADM retry notice, got notices: {notices}"
 
     # #323 comment: cycle 2 must re-master with the tightened ceiling.
     # Default ceiling is -1.0 dBTP; tightened by 0.5 dB → -1.5 dBTP.
@@ -264,40 +263,40 @@ def test_adm_retry_warn_fallback_after_max_cycles(
         f"{result.get('failure_detail')}"
     )
     adm_stage = result.get("stages", {}).get("adm_validation", {})
-    assert adm_stage.get("status") == "warn", (
-        f"Expected adm_validation stage status=warn, got: {adm_stage.get('status')}"
-    )
-    assert adm_stage.get("clip_failure_persisted") is True, (
-        f"Expected clip_failure_persisted=True on warn-fallback, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "warn"
+    ), f"Expected adm_validation stage status=warn, got: {adm_stage.get('status')}"
+    assert (
+        adm_stage.get("clip_failure_persisted") is True
+    ), f"Expected clip_failure_persisted=True on warn-fallback, got: {adm_stage}"
     warnings = result.get("warnings", [])
-    assert any("ADM validation" in w and "clips persist on" in w for w in warnings), (
-        f"Expected ADM warn-fallback warning, got warnings: {warnings}"
-    )
+    assert any(
+        "ADM validation" in w and "clips persist on" in w for w in warnings
+    ), f"Expected ADM warn-fallback warning, got warnings: {warnings}"
 
     # Post-loop warn-fallback must populate the new per-track fields
     # on adm_validation stage so operators can inspect which tracks
     # were tightened vs skipped as dark casualties.
     stage = result.get("stages", {}).get("adm_validation")
     assert stage is not None
-    assert "dark_casualties" in stage, (
-        f"Expected dark_casualties key in adm_validation stage, got: {list(stage.keys())}"
-    )
-    assert "tightened_tracks" in stage, (
-        f"Expected tightened_tracks key in adm_validation stage, got: {list(stage.keys())}"
-    )
-    assert "track_ceilings" in stage, (
-        f"Expected track_ceilings key in adm_validation stage, got: {list(stage.keys())}"
-    )
-    assert isinstance(stage["dark_casualties"], list), (
-        f"Expected dark_casualties to be a list, got: {type(stage['dark_casualties'])}"
-    )
-    assert isinstance(stage["tightened_tracks"], list), (
-        f"Expected tightened_tracks to be a list, got: {type(stage['tightened_tracks'])}"
-    )
-    assert isinstance(stage["track_ceilings"], dict), (
-        f"Expected track_ceilings to be a dict, got: {type(stage['track_ceilings'])}"
-    )
+    assert (
+        "dark_casualties" in stage
+    ), f"Expected dark_casualties key in adm_validation stage, got: {list(stage.keys())}"
+    assert (
+        "tightened_tracks" in stage
+    ), f"Expected tightened_tracks key in adm_validation stage, got: {list(stage.keys())}"
+    assert (
+        "track_ceilings" in stage
+    ), f"Expected track_ceilings key in adm_validation stage, got: {list(stage.keys())}"
+    assert isinstance(
+        stage["dark_casualties"], list
+    ), f"Expected dark_casualties to be a list, got: {type(stage['dark_casualties'])}"
+    assert isinstance(
+        stage["tightened_tracks"], list
+    ), f"Expected tightened_tracks to be a list, got: {type(stage['tightened_tracks'])}"
+    assert isinstance(
+        stage["track_ceilings"], dict
+    ), f"Expected track_ceilings to be a dict, got: {type(stage['track_ceilings'])}"
     # This fixture has one bright (non-dark) track that clips every cycle.
     # The _always_clips stub returns peak = ceiling + 0.3, so adaptive
     # tightening does make progress each cycle (new_ceiling < current),
@@ -306,9 +305,9 @@ def test_adm_retry_warn_fallback_after_max_cycles(
         f"Expected at least one track in tightened_tracks or dark_casualties, "
         f"got tightened={stage['tightened_tracks']}, dark={stage['dark_casualties']}"
     )
-    assert stage["tightened_tracks"] == ["01-track.wav"], (
-        f"Expected tightened_tracks=['01-track.wav'], got: {stage['tightened_tracks']}"
-    )
+    assert stage["tightened_tracks"] == [
+        "01-track.wav"
+    ], f"Expected tightened_tracks=['01-track.wav'], got: {stage['tightened_tracks']}"
 
 
 # ---------------------------------------------------------------------------
@@ -372,19 +371,19 @@ def test_adm_retry_adaptive_ceiling_from_worst_peak(
 
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
-    assert result.get("failed_stage") is None, (
-        f"Expected pipeline to succeed, got: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected pipeline to succeed, got: {result.get('failure_detail')}"
     # Cycle 1 (post-adaptive) ceilings: any call below -1.0 is cycle 1+.
     cycle1_ceilings = [c for c in mastered_ceilings if c < -1.0]
-    assert cycle1_ceilings, (
-        f"Expected cycle 1 ceiling < -1.0, got ceilings: {mastered_ceilings}"
-    )
+    assert (
+        cycle1_ceilings
+    ), f"Expected cycle 1 ceiling < -1.0, got ceilings: {mastered_ceilings}"
     # Target ~-1.59; accept [-1.65, -1.55] to cover float rounding.
     for c in cycle1_ceilings:
-        assert -1.65 <= c <= -1.55, (
-            f"Expected adaptive cycle-1 ceiling near -1.59, got {c:.3f}"
-        )
+        assert (
+            -1.65 <= c <= -1.55
+        ), f"Expected adaptive cycle-1 ceiling near -1.59, got {c:.3f}"
 
 
 # ---------------------------------------------------------------------------
@@ -435,16 +434,16 @@ def test_adm_retry_respects_hard_floor(
 
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
-    assert result.get("failed_stage") is None, (
-        f"Expected warn-fallback completion, got: {result.get('failure_detail')}"
-    )
-    assert all(c >= -6.0 for c in mastered_ceilings), (
-        f"Ceiling breached floor at -6 dBTP, got ceilings: {mastered_ceilings}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected warn-fallback completion, got: {result.get('failure_detail')}"
+    assert all(
+        c >= -6.0 for c in mastered_ceilings
+    ), f"Ceiling breached floor at -6 dBTP, got ceilings: {mastered_ceilings}"
     adm_stage = result.get("stages", {}).get("adm_validation", {})
-    assert adm_stage.get("status") == "warn", (
-        f"Expected warn status after floor exhaustion, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "warn"
+    ), f"Expected warn status after floor exhaustion, got: {adm_stage}"
 
 
 # ---------------------------------------------------------------------------
@@ -583,9 +582,9 @@ def test_adm_retry_converges_on_third_cycle(
 
     result = _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
-    assert result.get("failed_stage") is None, (
-        f"Expected 3-cycle convergence, got failure: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected 3-cycle convergence, got failure: {result.get('failure_detail')}"
     # 3 cycles: initial + 2 retries. 3 master_track calls on a
     # single-track fixture (cycle 0: all tracks; cycles 1+2: selective
     # remaster of the clipping track only).
@@ -638,9 +637,9 @@ def test_adm_warn_fallback_writes_sidecar(
         f"listing dir: {sorted(p.name for p in tmp_path.iterdir())}"
     )
     content = sidecar.read_text()
-    assert "01-track.wav" in content, (
-        f"Expected sidecar to reference track, got content head: {content[:300]}"
-    )
+    assert (
+        "01-track.wav" in content
+    ), f"Expected sidecar to reference track, got content head: {content[:300]}"
 
 
 # ---------------------------------------------------------------------------
@@ -724,19 +723,19 @@ def test_adm_skipped_by_default(
         tmp_path, album_slug=album_slug, adm_enabled=False, monkeypatch=monkeypatch
     )
 
-    assert result.get("failed_stage") is None, (
-        f"Expected pipeline to complete, got failure: {result.get('failure_detail')}"
-    )
-    assert adm_called["n"] == 0, (
-        f"Expected 0 ADM calls when disabled, got {adm_called['n']}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected pipeline to complete, got failure: {result.get('failure_detail')}"
+    assert (
+        adm_called["n"] == 0
+    ), f"Expected 0 ADM calls when disabled, got {adm_called['n']}"
     adm_stage = result.get("stages", {}).get("adm_validation", {})
-    assert adm_stage.get("status") == "skipped", (
-        f"Expected adm_validation.status=skipped, got: {adm_stage}"
-    )
-    assert adm_stage.get("reason") == "disabled_by_config", (
-        f"Expected reason=disabled_by_config, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "skipped"
+    ), f"Expected adm_validation.status=skipped, got: {adm_stage}"
+    assert (
+        adm_stage.get("reason") == "disabled_by_config"
+    ), f"Expected reason=disabled_by_config, got: {adm_stage}"
     notices = result.get("notices", [])
     assert any(
         "ADM validation skipped" in n and "adm_validation_enabled" in n for n in notices
@@ -778,13 +777,13 @@ def test_adm_enabled_runs_validation(
     )
 
     assert result.get("failed_stage") is None
-    assert adm_called["n"] >= 1, (
-        f"Expected >= 1 ADM call when enabled, got {adm_called['n']}"
-    )
+    assert (
+        adm_called["n"] >= 1
+    ), f"Expected >= 1 ADM call when enabled, got {adm_called['n']}"
     adm_stage = result.get("stages", {}).get("adm_validation", {})
-    assert adm_stage.get("status") == "pass", (
-        f"Expected adm_validation.status=pass with clean checks, got: {adm_stage}"
-    )
+    assert (
+        adm_stage.get("status") == "pass"
+    ), f"Expected adm_validation.status=pass with clean checks, got: {adm_stage}"
 
 
 def test_adm_failure_detail_suggests_dynamic_ceiling(
@@ -862,9 +861,9 @@ def test_adm_failure_detail_suggests_dynamic_ceiling(
         tmp_path, album_slug=album_slug, adm_enabled=True, monkeypatch=monkeypatch
     )
 
-    assert captured_suggestions, (
-        "Expected at least one suggestion to be generated on clip failure"
-    )
+    assert (
+        captured_suggestions
+    ), "Expected at least one suggestion to be generated on clip failure"
     suggestion = captured_suggestions[0]
     suggested_ceiling = captured_suggested_ceilings[0]
     # Dynamic suggestion: worst_peak -0.4 at ceiling -1.0 → min(
@@ -879,9 +878,9 @@ def test_adm_failure_detail_suggests_dynamic_ceiling(
     # must NOT use the literal hardcoded phrasing from the pre-fix
     # code: "set mastering.true_peak_ceiling: -1.5 in config.yaml"
     # without the "Worst decoded peak was ..." prefix.
-    assert "Worst decoded peak" in suggestion, (
-        f"Suggestion must reference observed worst peak (dynamic), got: {suggestion}"
-    )
+    assert (
+        "Worst decoded peak" in suggestion
+    ), f"Suggestion must reference observed worst peak (dynamic), got: {suggestion}"
     assert f"{suggested_ceiling:.2f}" in suggestion, (
         f"Suggestion must name the computed ceiling {suggested_ceiling:.2f}, got: "
         f"{suggestion}"
@@ -949,9 +948,9 @@ def test_adm_slope_aware_scales_tighten_on_sub_linear_ripple(
         tmp_path, album_slug=album_slug, adm_enabled=True, monkeypatch=monkeypatch
     )
 
-    assert result.get("failed_stage") is None, (
-        f"Expected pipeline completion, got: {result.get('failure_detail')}"
-    )
+    assert (
+        result.get("failed_stage") is None
+    ), f"Expected pipeline completion, got: {result.get('failure_detail')}"
     # On 0.6:1 material, slope-aware convergence fits inside the 5-
     # cycle budget. Pre-fix behavior (fixed 0.5 dB steps) would NOT
     # converge with base_overshoot=1.0. Upper bound: ≤4 re-masters.
@@ -1022,12 +1021,12 @@ def test_adm_divergence_triggers_warn_fallback(
         f"got: {result.get('failure_detail')}"
     )
     stage = result.get("stages", {}).get("adm_validation", {})
-    assert stage.get("status") == "warn", (
-        f"Expected warn status on divergent material, got: {stage}"
-    )
-    assert stage.get("diverging") is True, (
-        f"Expected diverging=True on slope-≤-0 material, got: {stage}"
-    )
+    assert (
+        stage.get("status") == "warn"
+    ), f"Expected warn status on divergent material, got: {stage}"
+    assert (
+        stage.get("diverging") is True
+    ), f"Expected diverging=True on slope-≤-0 material, got: {stage}"
     # Divergence detection must bail well before the 5-cycle budget —
     # cycle 0 + cycle 1 produce enough observations, cycle 2 detects.
     assert len(mastered_ceilings) <= 2, (
@@ -1035,9 +1034,9 @@ def test_adm_divergence_triggers_warn_fallback(
         f"{len(mastered_ceilings)}: {mastered_ceilings}"
     )
     notices = result.get("notices", [])
-    assert any("adm loop terminated" in n.lower() for n in notices), (
-        f"Expected ADM termination notice on divergent material, got notices: {notices}"
-    )
+    assert any(
+        "adm loop terminated" in n.lower() for n in notices
+    ), f"Expected ADM termination notice on divergent material, got notices: {notices}"
 
 
 # ---------------------------------------------------------------------------
@@ -1078,9 +1077,9 @@ def test_adm_warn_fallback_emits_terminal_notice(
         tmp_path, album_slug=album_slug, adm_enabled=True, monkeypatch=monkeypatch
     )
     notices = result.get("notices", [])
-    assert any("adm loop terminated" in n.lower() for n in notices), (
-        f"Expected terminal warn-fallback notice, got notices: {notices}"
-    )
+    assert any(
+        "adm loop terminated" in n.lower() for n in notices
+    ), f"Expected terminal warn-fallback notice, got notices: {notices}"
 
 
 # ---------------------------------------------------------------------------
@@ -1152,9 +1151,9 @@ def test_adm_retry_caps_tighten_per_cycle(
 
     _run_master_album(tmp_path, album_slug=album_slug, monkeypatch=monkeypatch)
 
-    assert len(mastered_ceilings) >= 2, (
-        f"Expected at least 2 cycles, got: {mastered_ceilings}"
-    )
+    assert (
+        len(mastered_ceilings) >= 2
+    ), f"Expected at least 2 cycles, got: {mastered_ceilings}"
     for prev, curr in zip(mastered_ceilings, mastered_ceilings[1:]):
         step = prev - curr
         assert step <= 1.0 + 1e-3, (

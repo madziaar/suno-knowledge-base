@@ -613,9 +613,9 @@ async def analyze_mix_issues(
                 {
                     "track": track_name,
                     "stems": stems_result,
-                    "issues": sorted(track_issues)
-                    if track_issues
-                    else ["none_detected"],
+                    "issues": (
+                        sorted(track_issues) if track_issues else ["none_detected"]
+                    ),
                 }
             )
     else:
@@ -885,9 +885,11 @@ async def polish_and_master_album(
     return _safe_json(
         {
             "album_slug": album_slug,
-            "phase_reached": "master"
-            if not failed
-            else f"master:{master_result.get('failed_stage')}",
+            "phase_reached": (
+                "master"
+                if not failed
+                else f"master:{master_result.get('failed_stage')}"
+            ),
             "failed_phase": "master" if failed else None,
             "polish": polish_result,
             "master": master_result,
