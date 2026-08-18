@@ -1,91 +1,96 @@
 # Workspace Status Dashboard
 
+> Maintenance dashboard for this repository. See [`README.md`](README.md) for
+> the project index and the main knowledge base.
+
 ## Overview
-- **Total Projects:** 12
-- **Active Projects:** 9
-- **Archived/Incomplete:** 3
-- **Documentation Files:** 2,258+
-- **Python Files:** 716+
+
+- **Active projects:** 10
+- **Archived projects:** 2 (see [`archive/README.md`](archive/README.md))
+- **Markdown documentation files:** ~2,300
+- **Python files:** ~700
+- **TypeScript/TSX files:** ~530
+- **Working tree size:** ~45 MB (`.git`: ~13 MB)
 
 ## Project Status
 
-### Active Projects ✅
-| Project | Status | Tests | CI/CD | Notes |
-|---------|--------|-------|-------|-------|
-| claude-ai-music-skills | ✅ Ready | ✓ | ✓ | Main music production toolkit |
-| SunoSync | ✅ Ready | - | - | Audio sync tool |
-| sonicforge | ✅ Ready | - | - | Audio processing |
-| coherence-system | ⚠️ Needs merge | - | - | Duplicate functionality |
-| SUNO-AI-Music-Skills-codex | ⚠️ Needs merge | - | - | Duplicate functionality |
-| MAG-Music-Records | ✅ Ready | - | - | Music label tools |
-| song-creator-pro | ✅ Ready | - | - | Song creation |
-| suno-ai-plugin | ✅ Ready | - | - | Suno AI integration |
-| bitwize-audio-tools | ✅ Ready | - | - | Audio utilities |
+### Healthy ✅
 
-### Archived/Incomplete 📦
-| Project | Status | Action Needed |
-|---------|--------|---------------|
-| pseuno-ai | ❌ Incomplete | Complete or archive |
-| suno-song-creator-skill | ❌ Incomplete | Complete or archive |
-| duplicate projects | ⚠️ Redundant | Merge into main project |
+| Project | Language | Notes |
+|---------|----------|-------|
+| claude-ai-music-skills | Python | Main album-production toolkit. **Canonical copy**; has CI + pre-commit |
+| MAG-Music-Records | Workflow/tooling | Music label workflow for Suno content |
+| SunoSync | Python | Desktop audio sync / download / radio |
+| sonicforge | Web (Node) | Sonic Forge V5 prompt generator (AI Studio app) |
+| suno-prompting | TypeScript | Desktop Suno V5 prompt builder (Electrobun) |
+| Suno-Architect | TypeScript | Vite + Cloudflare Workers prompt generator with Suno API integration |
+| Sumini-Pro-Suno-Architect | TypeScript | AI Studio chat-style prompt engine (distinct codebase from Suno-Architect) |
+| Cynaps3-OpenClaw-Plugin | TypeScript | `@cynaps3/openclaw-plugin` |
+| suno-song-creator-skill | Markdown (`SKILL.md`) | Cross-platform co-writing skill |
+
+### Archived 📦
+
+| Project | Relationship | Location |
+|---------|--------------|----------|
+| coherence-system | ~81% identical to `claude-ai-music-skills` (v0.91.0) | [`archive/coherence-system`](archive/coherence-system) |
+| SUNO-AI-Music-Skills-codex | ~73% identical; Codex port of `claude-ai-music-skills` | [`archive/SUNO-AI-Music-Skills-codex`](archive/SUNO-AI-Music-Skills-codex) |
+
+### Incomplete 📦
+
+| Project | Status | Action |
+|---------|--------|--------|
+| pseuno-ai | Incomplete (backend + frontend scaffold) | Complete or archive |
 
 ## Recent Improvements Applied
 
-### Code Quality
-- ✅ Added `from __future__ import annotations` to server files
-- ✅ Configured ruff linting with auto-fix
-- ✅ Set up black formatting
-- ✅ Created pre-commit hooks configuration
-- ✅ Added CI/CD pipeline with GitHub Actions
-
-### Documentation
-- ✅ Organized workspace into clean structure (docs/, projects/, resources/, tools/)
-- ✅ Created this status dashboard
+- Added root [`README.md`](README.md) as the project index
+- Fixed malformed `docs/README.md` (was wrapped in an unclosed code fence)
+- Removed stray ` ``` ` fence lines from `.gitignore`
+- **Consolidated duplicates:** archived `coherence-system` and
+  `SUNO-AI-Music-Skills-codex` into [`archive/`](archive/), keeping
+  `claude-ai-music-skills` as canonical (~30 MB removed from `projects/`)
+- **De-duplicated content:** removed 10 docs from `docs/` that were identical
+  copies of files in `resources/sunopormpten/`, and removed a PDF committed twice
 
 ## Technical Debt Summary
 
-| Category | Count | Priority |
-|----------|-------|----------|
-| TODO/FIXME/XXX comments | 4+ | Medium |
-| Large test files (>1000 lines) | 3 | High |
-| Missing type hints | ~50 files | Low |
-| Duplicate code across projects | 3 projects | High |
+| Category | Detail | Priority |
+|----------|--------|----------|
+| Oversized test file | `claude-ai-music-skills/tests/unit/state/test_server.py` (~17K lines / 676 KB) | High |
+| No root-level CI | Markdown link-check + lints only run inside individual projects | Medium |
+| Stale/incomplete wiki | `llm-wiki/` README references files that don't exist (`getting-started.md`, `building-apps.md`, `projects/`, …) | Medium |
+| Vendored third-party lists | 3 "awesome" lists committed directly instead of submodules | Low |
+| TODO/FIXME comments | ~66 across code | Low |
 
 ## Recommended Next Steps
 
-1. **High Priority:**
-   - [ ] Merge duplicate projects (coherence-system, SUNO-AI-Music-Skills-codex → claude-ai-music-skills)
-   - [ ] Break down large test files (test_server.py: 17K lines)
-   - [ ] Complete or archive incomplete projects
+1. **High priority**
+   - [ ] Split the 17K-line `test_server.py` into suites
 
-2. **Medium Priority:**
-   - [ ] Address remaining TODO comments
-   - [ ] Add documentation index for 2,258+ markdown files
-   - [ ] Consolidate dependency management
+2. **Medium priority**
+   - [ ] Add repo-level CI (Markdown link-check, lint, format)
+   - [ ] Fix `llm-wiki/` links or move it out of this repo
+   - [ ] Resolve remaining TODO/FIXME comments
 
-3. **Low Priority:**
-   - [ ] Add future annotations to all Python files
-   - [ ] Increase test coverage
-   - [ ] Add more comprehensive type checking
+3. **Low priority**
+   - [ ] Convert vendored "awesome" lists / PDFs to submodules or external storage
+   - [ ] Tidy `.gitignore` (duplicate entries) and standardize project licenses
 
 ## Quick Commands
 
 ```bash
-# Run linter
+# Lint (Python projects)
 ruff check .
 
-# Format code
+# Format
 black .
 
-# Run tests
+# Run tests (within a project)
 pytest tests/ -v
 
 # Type check
 mypy servers/bitwize-music-server tools --ignore-missing-imports
-
-# Install pre-commit hooks
-pre-commit install
 ```
 
 ---
-*Last updated: $(date +%Y-%m-%d)*
+*Last updated: 2026-08-18*
