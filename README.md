@@ -21,12 +21,15 @@ projects for writing prompts, producing tracks, and shipping releases.
 
 ```
 .
-├── docs/        # Core knowledge base and prompt guides
-├── projects/    # Active tools, apps, plugins and skills (10 projects)
-├── archive/     # Retired/duplicate projects (see archive/README.md)
-├── resources/   # Vendored "awesome" lists, prompt collections, PDFs
-└── llm-wiki/    # Small LLM-development wiki (separate topic)
+├── docs/          # Core knowledge base and prompt guides
+├── cli-skillset/  # Skills for CLI coding agents (Claude Code, Codex, Gemini CLI, …)
+├── projects/      # Active tools, apps, plugins and skills (10 projects)
+├── archive/       # Retired/duplicate projects (see archive/README.md)
+├── resources/     # Vendored "awesome" lists, prompt collections, PDFs
+└── llm-wiki/      # Small LLM-development wiki (separate topic)
 ```
+
+CLI agents should start at [`cli-skillset/AGENTS.md`](cli-skillset/AGENTS.md).
 
 ## Projects
 
