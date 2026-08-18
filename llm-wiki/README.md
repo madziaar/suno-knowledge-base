@@ -47,9 +47,9 @@ llm-wiki/
 ## 🔗 Related Projects
 
 This wiki complements the projects in `/workspace/projects/`:
-- `claude-ai-music-skills` - Music generation with LLMs
-- `coherence-system` - Long-form content coherence
-- `suno-ai-integration` - Audio synthesis workflows
+- [`claude-ai-music-skills`](../projects/claude-ai-music-skills) - Music generation with LLMs
+- [`sonicforge`](../projects/sonicforge) - AI music prompt generator
+- [`suno-prompting`](../projects/suno-prompting) - Suno V5 prompt builder
 
 ## 🤝 Contributing
 

@@ -5,11 +5,12 @@
 
 ## Overview
 
-- **Projects:** 12
+- **Active projects:** 10
+- **Archived projects:** 2 (see [`archive/README.md`](archive/README.md))
 - **Markdown documentation files:** ~2,300
 - **Python files:** ~700
 - **TypeScript/TSX files:** ~530
-- **Working tree size:** ~74 MB (`.git`: ~13 MB)
+- **Working tree size:** ~45 MB (`.git`: ~13 MB)
 
 ## Project Status
 
@@ -17,25 +18,22 @@
 
 | Project | Language | Notes |
 |---------|----------|-------|
-| claude-ai-music-skills | Python | Main album-production toolkit. **Canonical copy** of the 3 duplicates; has CI + pre-commit |
+| claude-ai-music-skills | Python | Main album-production toolkit. **Canonical copy**; has CI + pre-commit |
 | MAG-Music-Records | Workflow/tooling | Music label workflow for Suno content |
 | SunoSync | Python | Desktop audio sync / download / radio |
 | sonicforge | Web (Node) | Sonic Forge V5 prompt generator (AI Studio app) |
 | suno-prompting | TypeScript | Desktop Suno V5 prompt builder (Electrobun) |
-| Suno-Architect | TypeScript | Vite + Cloudflare Workers prompt generator |
-| Sumini-Pro-Suno-Architect | TypeScript | AI Studio app — lyric structures + style prompts |
+| Suno-Architect | TypeScript | Vite + Cloudflare Workers prompt generator with Suno API integration |
+| Sumini-Pro-Suno-Architect | TypeScript | AI Studio chat-style prompt engine (distinct codebase from Suno-Architect) |
 | Cynaps3-OpenClaw-Plugin | TypeScript | `@cynaps3/openclaw-plugin` |
 | suno-song-creator-skill | Markdown (`SKILL.md`) | Cross-platform co-writing skill |
 
-### Duplicates ⚠️ (needs consolidation)
+### Archived 📦
 
-| Project | Relationship | Action |
-|---------|--------------|--------|
-| coherence-system | ~81% identical to `claude-ai-music-skills` (v0.91.0) | Merge into canonical, then archive |
-| SUNO-AI-Music-Skills-codex | ~73% identical; Codex port of `claude-ai-music-skills` | Merge or keep as thin port, then archive |
-
-Also: `Suno-Architect` and `Sumini-Pro-Suno-Architect` are two variants of the
-same app concept — reconcile into one.
+| Project | Relationship | Location |
+|---------|--------------|----------|
+| coherence-system | ~81% identical to `claude-ai-music-skills` (v0.91.0) | [`archive/coherence-system`](archive/coherence-system) |
+| SUNO-AI-Music-Skills-codex | ~73% identical; Codex port of `claude-ai-music-skills` | [`archive/SUNO-AI-Music-Skills-codex`](archive/SUNO-AI-Music-Skills-codex) |
 
 ### Incomplete 📦
 
@@ -48,14 +46,17 @@ same app concept — reconcile into one.
 - Added root [`README.md`](README.md) as the project index
 - Fixed malformed `docs/README.md` (was wrapped in an unclosed code fence)
 - Removed stray ` ``` ` fence lines from `.gitignore`
+- **Consolidated duplicates:** archived `coherence-system` and
+  `SUNO-AI-Music-Skills-codex` into [`archive/`](archive/), keeping
+  `claude-ai-music-skills` as canonical (~30 MB removed from `projects/`)
+- **De-duplicated content:** removed 10 docs from `docs/` that were identical
+  copies of files in `resources/sunopormpten/`, and removed a PDF committed twice
 
 ## Technical Debt Summary
 
 | Category | Detail | Priority |
 |----------|--------|----------|
-| Duplicate projects | 3 copies of the album-production toolkit (~45 MB) | High |
-| Duplicate content | `docs/*.md` ↔ `resources/sunopormpten/*.md` (9 identical files); one PDF committed twice | High |
-| Oversized test file | `tests/unit/state/test_server.py` (~17K lines / 676 KB, triplicated) | High |
+| Oversized test file | `claude-ai-music-skills/tests/unit/state/test_server.py` (~17K lines / 676 KB) | High |
 | No root-level CI | Markdown link-check + lints only run inside individual projects | Medium |
 | Stale/incomplete wiki | `llm-wiki/` README references files that don't exist (`getting-started.md`, `building-apps.md`, `projects/`, …) | Medium |
 | Vendored third-party lists | 3 "awesome" lists committed directly instead of submodules | Low |
@@ -64,9 +65,6 @@ same app concept — reconcile into one.
 ## Recommended Next Steps
 
 1. **High priority**
-   - [ ] Consolidate the 3 duplicate projects → keep `claude-ai-music-skills`
-   - [ ] Reconcile `Suno-Architect` ↔ `Sumini-Pro-Suno-Architect`
-   - [ ] De-duplicate `docs/` ↔ `resources/sunopormpten/` and the duplicate PDF
    - [ ] Split the 17K-line `test_server.py` into suites
 
 2. **Medium priority**
