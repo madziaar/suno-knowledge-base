@@ -1,4 +1,3 @@
-```markdown
 # Suno AI Song Syntax
 
 Es importante indicar la duración en el prompt, ejemplo 
@@ -2036,7 +2035,6 @@ vs
 - album art, psychedelic, a robot surfing the waves, longboard, "STARGAZER" at the top
 
 Sometimes less is more and sometimes you have a very specific concept you want to portray. Mix it up
-```
 Song for Suno:
 Complete structure of Suno sections in English (introduction, verse, chorus, etc.),
 Indicates embedded within the example structure [Introduction - Indicial of the song], [verse 1 - appropriate appropriate]
