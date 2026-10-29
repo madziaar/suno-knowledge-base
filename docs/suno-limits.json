@@ -1,0 +1,79 @@
+{
+  "schema": "suno-limits/1",
+  "about": "Canonical, machine-readable recording of the character budgets the suno-helper tools enforce. Suno does not publish a stable official specification for the web app, so every number carries its provenance and confidence. Tools read THIS file; prose guides link to it instead of restating numbers.",
+  "updated_at": "2026-10-29",
+  "verified": "2026-10-29",
+  "fields": {
+    "simple_prompt_chars": 500,
+    "title_chars": 100,
+    "title_chars_api": 80,
+    "style_chars_default": 1000,
+    "lyrics_chars_default": 5000,
+    "lyrics_soft_target_chars": 3000,
+    "exclude_styles_chars": 1000
+  },
+  "models": {
+    "v3.5": {"style_chars": 200, "lyrics_chars": 3000, "status": "legacy"},
+    "v4": {"style_chars": 200, "lyrics_chars": 3000, "status": "legacy"},
+    "v4.5": {"style_chars": 1000, "lyrics_chars": 5000, "status": "current"},
+    "v4.5+": {"style_chars": 1000, "lyrics_chars": 5000, "status": "current"},
+    "v5": {"style_chars": 1000, "lyrics_chars": 5000, "status": "current"},
+    "v5.5": {"style_chars": 1000, "lyrics_chars": 5000, "status": "current", "note": "personalization layer over v5 audio engine"}
+  },
+  "quality_guidance": {
+    "style_tags_sweet_spot": [6, 12],
+    "style_tags_overloaded": 18,
+    "lyrics_soft_target_chars": 3000,
+    "lyrics_soft_target_lines": [40, 60],
+    "front_load_terms": "Suno weights earlier terms more heavily; put genre + vocal character in the first 20-30 words.",
+    "brackets": "Square brackets are structure tags inside the Lyrics field. Do not wrap BPM or key in brackets inside the Style field."
+  },
+  "sources": [
+    {
+      "id": "aimusicapi-limits-2026",
+      "title": "Suno API Character Limits 2026: 1000 Style, 5000 Lyrics",
+      "url": "https://aimusicapi.ai/en/blog/suno-ai-prompt-character-limits",
+      "retrieved_at": "2026-10-29T22:10:00Z",
+      "confidence": "high",
+      "supports": ["v4.5/v5/v5.5 style 1000", "v4.5/v5/v5.5 lyrics 5000", "v4 style 200", "v4 lyrics 3000", "api title 80"]
+    },
+    {
+      "id": "aiunfiltered-guide-2026",
+      "title": "Suno AI Prompt Guide 2026: What Changed Since v5.5",
+      "url": "https://aiunfiltered.beehiiv.com/p/suno-ai-prompt-guide-2026",
+      "retrieved_at": "2026-10-29T22:10:00Z",
+      "confidence": "medium-high",
+      "supports": ["style front-loading", "app title 100", "bracket myth", "v5.5 launch 2026-03-26"]
+    },
+    {
+      "id": "iflow-v5-secrets",
+      "title": "Suno v5 Secrets: Crafting AI-Generated Songs",
+      "url": "https://iflow.bot/suno-v5-secrets-crafting-ai-generated-songs/",
+      "retrieved_at": "2026-10-29T22:12:00Z",
+      "confidence": "medium",
+      "supports": ["simple mode 500 chars", "custom mode style 1000 / lyrics 5000"]
+    },
+    {
+      "id": "earngenix-tag-system",
+      "title": "Don't Waste Time Learning Suno's Tags — Use This System",
+      "url": "https://www.earngenix.com/blog/suno-ai-prompt-guide",
+      "retrieved_at": "2026-10-29T22:12:00Z",
+      "confidence": "medium",
+      "supports": ["lyrics quality sweet spot ~3000 chars", "tag vocabulary stable since 2026-03"]
+    },
+    {
+      "id": "usesuno-tools",
+      "title": "16 Free Suno Tools: Prompts, Lyrics, Downloads & MV",
+      "url": "https://usesuno.com/tools",
+      "retrieved_at": "2026-10-29T22:08:00Z",
+      "confidence": "high",
+      "supports": ["tool inventory", "local-first text processing", "five-pillar builder"]
+    }
+  ],
+  "rules": [
+    "Never present these application defaults as official Suno limits.",
+    "Never truncate user-approved lyrics silently; surface the overflow instead.",
+    "Prefer the Exclude Styles field over negative phrasing inside Style.",
+    "Older-model guidance must be labelled with its model."
+  ]
+}

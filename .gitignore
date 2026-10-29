@@ -80,3 +80,6 @@ wheels/
 coverage/
 htmlcov/
 .coverage
+
+# Suno Helper loop runtime state (lives at the repo root, not in the project dir)
+.suno-helper/

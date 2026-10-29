@@ -7464,14 +7464,20 @@ latin pop production, auto-tune, modern production
 ## 📚 Recursos Complementarios
 
 ### Archivos relacionados:
-- [NEGATIVE_PROMPTS.md](./NEGATIVE_PROMPTS.md) - Guía completa de exclusiones
-- [README.md](./README.md) - Sintaxis completa de Suno AI
-- [EXAMPLES.md](./EXAMPLES.md) - Este archivo con ejemplos
+- [`docs/Suno-Knowledge-Base.md`](./Suno-Knowledge-Base.md) - Guía principal de la plataforma
+- [`docs/suno-limits.json`](./suno-limits.json) - Límites por modelo, con fuentes
+- [`resources/sunopormpten/README.md`](../resources/sunopormpten/README.md) - Colección de prompts y trucos (ES/EN)
+- [`resources/sunopormpten/Suno_Tricks.md`](../resources/sunopormpten/Suno_Tricks.md) - Trucos y tags
+- [`resources/sunopormpten/Suno_Dirty_Tricks_Completo.md`](../resources/sunopormpten/Suno_Dirty_Tricks_Completo.md) - Guía de exclusiones y negativos
+- [`projects/suno-helper/docs/field-guide.md`](../projects/suno-helper/docs/field-guide.md) - Guía de creación (cinco pilares, límites, workflow)
 
-### Plantillas listas para usar:
-- [Balada íntima](./templates/balada_intima.md)
-- [Folk acústico](./templates/folk_acustico.md)
-- [Bolero romántico](./templates/bolero_romantico.md)
+### Herramientas listas para usar:
+- [`projects/suno-helper/extension`](../projects/suno-helper/extension) - Extensión local-first: constructor, limpiador, normalizador, diff
+- [`projects/suno-helper/docs/prompt-experiments.md`](../projects/suno-helper/docs/prompt-experiments.md) - Registro de experimentos de una variable
+
+> Las plantillas `templates/*.md` y `NEGATIVE_PROMPTS.md` que se enlazaban aquí eran
+> copias duplicadas y se consolidaron en `resources/sunopormpten/`. Los enlaces se
+> actualizaron a los archivos reales.
 
 ---
 
