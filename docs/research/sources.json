@@ -1,0 +1,182 @@
+{
+  "schema": "suno-helper/research-sources@1",
+  "updated_at": "2026-10-29T22:32:09Z",
+  "sources": [
+    {
+      "id": "aimusicapi-limits-2026",
+      "title": "Suno API Character Limits 2026: 1000 Style, 5000 Lyrics",
+      "url": "https://aimusicapi.ai/en/blog/suno-ai-prompt-character-limits",
+      "kind": "docs",
+      "trust": 0.85,
+      "retrieved_at": "2026-10-29T22:10:00Z",
+      "retrieved_by": "agent",
+      "notes": "Per-model table with a stated method: v3.5/v4 style 200 and lyrics 3000; v4.5/v4.5+/v5/v5.5 style 1000 and lyrics 5000; API title 80. Says exceeding the limit returns a 400 before credits are charged.",
+      "snippet": "On the current Suno models (V4.5, V4.5+, V5, V5.5), custom lyrics cap at 5,000 characters and the style prompt caps at 1,000 characters."
+    },
+    {
+      "id": "aiunfiltered-guide-2026",
+      "title": "Suno AI Prompt Guide 2026: What Changed Since v5.5",
+      "url": "https://aiunfiltered.beehiiv.com/p/suno-ai-prompt-guide-2026",
+      "kind": "primary",
+      "trust": 0.8,
+      "retrieved_at": "2026-10-29T22:10:00Z",
+      "retrieved_by": "agent",
+      "notes": "Front-loading, the bracket myth (no BPM/key in brackets inside Style), app title 100 vs API 80, v5.5 launched 2026-03-26 as a personalisation layer over v5 (Voices, Custom Models, My Taste).",
+      "snippet": "Suno truncates silently past the limit with no warning, so front-load genre, vocal direction and BPM early in the Style field."
+    },
+    {
+      "id": "awesome-suno",
+      "title": "Zizwar/Awesome-Suno",
+      "url": "https://github.com/Zizwar/Awesome-Suno",
+      "kind": "repo",
+      "trust": 0.5,
+      "retrieved_at": "2026-10-29T22:28:00Z",
+      "retrieved_by": "agent",
+      "notes": "Community link list: prompt guides, meta-tag references, downloaders. Useful as a discovery surface, not as a specification.",
+      "snippet": "Curated list of Suno AI tools, prompts and guides."
+    },
+    {
+      "id": "chrome-mv3-content-scripts",
+      "title": "Manifest V3 — content scripts",
+      "url": "https://developer.chrome.com/docs/extensions/reference/manifest/content-scripts",
+      "kind": "docs",
+      "trust": 0.95,
+      "retrieved_at": "2026-10-29T22:14:00Z",
+      "retrieved_by": "agent",
+      "notes": "Content scripts run in an isolated world; communicate via chrome.runtime.sendMessage. Source for the selector isolation and message-passing design.",
+      "snippet": "Content scripts live in an isolated world and cannot access variables defined by the host page."
+    },
+    {
+      "id": "chrome-storage-api",
+      "title": "chrome.storage API reference",
+      "url": "https://developer.chrome.com/docs/extensions/reference/api/storage",
+      "kind": "docs",
+      "trust": 0.95,
+      "retrieved_at": "2026-10-29T22:14:00Z",
+      "retrieved_by": "agent",
+      "notes": "storage.local quota ~10 MB (unlimitedStorage raises it), async access, onChanged events, sync area ~100 KB total.",
+      "snippet": "chrome.storage.local: 10 MB quota; async; stores objects and arrays natively."
+    },
+    {
+      "id": "earngenix-tag-system",
+      "title": "Don't Waste Time Learning Suno's Tags — Use This System",
+      "url": "https://www.earngenix.com/blog/suno-ai-prompt-guide",
+      "kind": "community",
+      "trust": 0.6,
+      "retrieved_at": "2026-10-29T22:12:00Z",
+      "retrieved_by": "agent",
+      "notes": "Tag vocabulary has been stable since the March 2026 update. Lyrics allow ~5000 but ~3000 characters (40-60 lines) is the quality sweet spot; beyond that Suno rushes or drops sections.",
+      "snippet": "Roughly 3,000 characters — about 40 to 60 lines — is the real quality sweet spot."
+    },
+    {
+      "id": "gcui-suno-api",
+      "title": "gcui-art/suno-api",
+      "url": "https://github.com/gcui-art/suno-api",
+      "kind": "repo",
+      "trust": 0.6,
+      "retrieved_at": "2026-10-29T22:26:00Z",
+      "retrieved_by": "agent",
+      "notes": "Reverse-engineered wrapper around the Suno web app (cookie-based). Documents /api/custom_generate style flows. Recorded as a RISK, not a recommendation: fragile, ToS-uncertain, and out of scope for a local-first tool.",
+      "snippet": "Self-hosted wrapper exposing Suno's private API endpoints; requires the user's session cookie."
+    },
+    {
+      "id": "iflow-v5-secrets",
+      "title": "Suno v5 Secrets: Crafting AI-Generated Songs",
+      "url": "https://iflow.bot/suno-v5-secrets-crafting-ai-generated-songs/",
+      "kind": "community",
+      "trust": 0.6,
+      "retrieved_at": "2026-10-29T22:12:00Z",
+      "retrieved_by": "agent",
+      "notes": "Simple mode is a single box with 500 characters; custom mode exposes Style 1000 / Lyrics 5000 plus instrumental toggle and audio upload.",
+      "snippet": "Simple Mode: one input box (500 characters). Custom Mode: Style (1,000 chars) and Lyrics (5,000 chars)."
+    },
+    {
+      "id": "playbook-local-first",
+      "title": "The Local-First Playbook: Building a Privacy-Centric AI Music Companion",
+      "url": "docs/research/playbook-local-first.md",
+      "kind": "primary",
+      "trust": 0.8,
+      "retrieved_at": "2026-10-29T22:06:00Z",
+      "retrieved_by": "owner",
+      "notes": "Architecture source: five pillars of local-first (client-side processing, robust storage, clear operational boundaries, responsible permissions, on-device AI), chrome.storage.local vs localStorage table, MV3 component model, phased roadmap, explicit warnings about reverse-engineered APIs and DOM patching fragility. Local summary kept in this repo so the claim stays checkable without the original PDF.",
+      "snippet": "chrome.storage.local: extension-specific, ~10 MB, async, native objects; localStorage: page-scoped, ~5 MB, strings only, sync."
+    },
+    {
+      "id": "reddit-god-mode-manual",
+      "title": "Updated my master prompting doc (r/SunoAI)",
+      "url": "https://www.reddit.com/r/SunoAI/comments/1ryouzb/updated_my_master_prompting_doc/",
+      "kind": "community",
+      "trust": 0.5,
+      "retrieved_at": "2026-10-29T22:13:00Z",
+      "retrieved_by": "agent",
+      "notes": "Community consensus, explicitly not specification: front-load the first 20-30 words, max 2 genre anchors, 3-4 instruments, 2 mood words, one variable per test. Comments correct it toward 4-7 strong descriptors.",
+      "snippet": "Front-load the most important tags — the first 20-30 words carry the most weight."
+    },
+    {
+      "id": "suno-api-legal-risk",
+      "title": "The Suno API Reality: Unofficial Tools & Legal Risks",
+      "url": "https://aimlapi.com/blog/the-suno-api-reality",
+      "kind": "community",
+      "trust": 0.55,
+      "retrieved_at": "2026-10-29T22:27:00Z",
+      "retrieved_by": "agent",
+      "notes": "Unofficial APIs break without notice and carry legal uncertainty; commercial use of reverse-engineered access is precarious. Supports the decision to keep the companion local-first and API-free.",
+      "snippet": "Reverse-engineered access is fragile and legally uncertain; commercial use is precarious."
+    },
+    {
+      "id": "suno-super-friends",
+      "title": "Spankie0001/suno-super-friends",
+      "url": "https://github.com/Spankie0001/suno-super-friends",
+      "kind": "repo",
+      "trust": 0.5,
+      "retrieved_at": "2026-10-29T22:29:00Z",
+      "retrieved_by": "agent",
+      "notes": "Prior art for a Suno browser extension: bulk operations and library features. Cited for feature parity and for the permission-review discussion around extensions that ask for too much.",
+      "snippet": "Chrome/Edge extension for Suno with bulk tools and library management."
+    },
+    {
+      "id": "superpowers",
+      "title": "obra/superpowers — agentic skills framework",
+      "url": "https://github.com/obra/superpowers",
+      "kind": "repo",
+      "trust": 0.85,
+      "retrieved_at": "2026-10-29T22:20:00Z",
+      "retrieved_by": "agent",
+      "notes": "SKILL.md format and process skills adopted here: using-superpowers (invoke before any action), brainstorming, writing-plans, subagent-driven-development, dispatching-parallel-agents, verification-before-completion, writing-skills (TDD for docs), systematic-debugging.",
+      "snippet": "If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill."
+    },
+    {
+      "id": "usesuno-repeatable-testing",
+      "title": "A Repeatable Suno Prompt Testing Plan for Creators",
+      "url": "https://usesuno.com/articles/repeatable-suno-prompt-testing-plan/",
+      "kind": "primary",
+      "trust": 0.85,
+      "retrieved_at": "2026-10-29T22:09:00Z",
+      "retrieved_by": "agent",
+      "notes": "One-variable-at-a-time testing: hypothesis, single change, evidence, decision (keep / revert / narrow). Source for the experiment log design.",
+      "snippet": "Define a single variable question, keep every other prompt element constant, record the change, the evidence and the decision."
+    },
+    {
+      "id": "usesuno-tools",
+      "title": "16 Free Suno Tools: Prompts, Lyrics, Downloads & MV",
+      "url": "https://usesuno.com/tools",
+      "kind": "primary",
+      "trust": 0.9,
+      "retrieved_at": "2026-10-29T22:08:00Z",
+      "retrieved_by": "agent",
+      "notes": "Tool inventory for feature parity: prompt builder (five pillars, lock/re-roll), style cleaner, tag normaliser, duration estimator, lyric diff, exclude builder, batch/profile downloaders, lyrics MV. States prompt and lyrics tools process text locally in the tab; link tools send the URL over the network.",
+      "snippet": "16 free browser helpers. Prompt Builder composes a Style string from genre, instrumentation and texture, mood, vocal delivery and production notes."
+    },
+    {
+      "id": "wxt",
+      "title": "WXT — next-gen web extension framework",
+      "url": "https://github.com/wxt-dev/wxt",
+      "kind": "repo",
+      "trust": 0.85,
+      "retrieved_at": "2026-10-29T22:24:00Z",
+      "retrieved_by": "agent",
+      "notes": "File-based entrypoints (background/content/popup/options), defineBackground/defineContentScript, manifest generation from config. Entrypoint side-effect rule enforced by the build: chrome APIs and instance construction must happen inside main().",
+      "snippet": "Cannot use imported variable outside the main function — entrypoint side effects are rejected at build time."
+    }
+  ]
+}

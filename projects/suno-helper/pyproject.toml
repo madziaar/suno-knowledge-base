@@ -1,0 +1,20 @@
+[project]
+name = "suno-helper"
+version = "0.1.0"
+description = "Local-first Suno companion plus the autonomous goal/subgoal agent loop that maintains it"
+requires-python = ">=3.10"
+license = { text = "CC0-1.0" }
+dependencies = []
+
+[project.scripts]
+suno-helper = "suno_helper.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "agent" }
+
+[tool.setuptools.packages.find]
+where = ["agent"]
+
+[tool.pytest.ini_options]
+pythonpath = ["agent"]
+testpaths = ["agent/tests"]

@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Runtime state is kept at the repository root (`.suno-helper/` at the root of
+# this checkout), because the loop supervises repo-wide invariants such as
+# docs/suno-limits.json. See ../README.md § "Where state lives".
+extension/node_modules/
+extension/.output/
+extension/.wxt/
