@@ -36,7 +36,7 @@ src/backend/jobs.ts   pure job state machine (schedule, retry, settle)
 
 The rule is one sentence long: **if it can be pure, it is in `src/lib` or
 `backend/` and it has a test; if it touches the browser, it is in `entrypoints/`
-and it is as small as possible.** That is what lets 354 tests run in node with no
+and it is as small as possible.** That is what lets 354 extension tests run in node with no
 browser and no network.
 
 ## Decisions
@@ -127,6 +127,26 @@ procedures in code.
 that a human can fix in a pull request. It also keeps the per-turn context small:
 two skills, not fifteen.
 
+## The app
+
+A third surface, and the one that makes the loop watchable:
+
+```
+agent/suno_helper/app.py          HTTP server: routes, guards, SSE
+agent/suno_helper/webapp/         index.html + app.js + styles.css (no build step)
+```
+
+It is a *view* of the same engine the CLI drives, not a second implementation:
+`app.py` constructs the same `Engine`, reads the same `.suno-helper/` files,
+and calls the same `ToolBox`. The only new state is the run lock, so the app and
+a cron CLI run cannot both drive the engine.
+
+The guards are the interesting part, and they are all tested against a real
+socket: the bind address decides whether a token is required, a custom header
+provides CSRF protection that works even without one, `--readonly` removes every
+write route, and `--trusted-proxy` is the explicit escape hatch for a reverse
+proxy — it prints what it assumes instead of quietly widening access.
+
 ## Testing strategy
 
 | Layer | Tool | Count | What it protects |
@@ -134,7 +154,7 @@ two skills, not fifteen.
 | Pure text/state functions (TS) | vitest | 354 | every transform edge case, including emoji, CJK tags, quoted CSV and nested JSON-LD |
 | Canonical-data mirror | vitest | 1 | drift between `limits.ts` and `docs/suno-limits.json` |
 | Batch machine + capture parser | vitest | 47 | retry budgets, concurrency, partial pages, duplicate merging |
-| Agent state machine | unittest | 109 | selection policy, starvation, thrash guard, gate honesty, ledger integrity |
+| Agent state machine | unittest | 165 | selection policy, starvation, thrash guard, gate honesty, ledger integrity |
 | Convergence | unittest | 8 | the loop actually closes subgoals within a turn budget |
 | End-to-end | `npm run build` + `wxt build` | — | the extension still packages (267 kB, MV3) |
 

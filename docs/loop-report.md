@@ -1,25 +1,25 @@
 # Autonomous loop report
 
-- Turns recorded: **566**
+- Turns recorded: **530**
 - Ledger integrity: ok
 - Success rate (last 100): **100%**
-- Average cycle: **362 ms**
-- Tools: {'json_validate': 14, 'research_digest': 13, 'capability_docs': 12, 'extension_check': 12, 'improve_report': 11, 'md_audit': 15, 'skills_lint': 11, 'limits_audit': 12}
+- Average cycle: **2043 ms**
+- Tools: {'improve_report': 12, 'md_audit': 12, 'skills_lint': 13, 'limits_audit': 13, 'json_validate': 12, 'research_digest': 12, 'capability_docs': 13, 'extension_check': 11, 'agent_tests': 2}
 
-turns=50 success=100% avg=424ms top_tools=capability_docs:7,extension_check:7,improve_report:6 top_skills=
+turns=50 success=100% avg=3540ms top_tools=capability_docs:7,limits_audit:7,skills_lint:7 top_skills=local-app-server:3,hyperplan:2,project-router:2
 recent:
-  #552 audit/verified sg=- tool=md_audit OK :: backlog empty; audit rotation 1/8 (pass 69)
-  #553 audit/verified sg=- tool=skills_lint OK :: backlog empty; audit rotation 2/8 (pass 69)
-  #554 audit/verified sg=- tool=limits_audit OK :: backlog empty; audit rotation 3/8 (pass 69)
-  #555 audit/verified sg=- tool=json_validate OK :: backlog empty; audit rotation 4/8 (pass 69)
-  #556 audit/verified sg=- tool=research_digest OK :: backlog empty; audit rotation 5/8 (pass 69)
-  #557 audit/verified sg=- tool=capability_docs OK :: backlog empty; audit rotation 6/8 (pass 69)
-  #558 audit/verified sg=- tool=extension_check OK :: backlog empty; audit rotation 7/8 (pass 69)
-  #559 audit/verified sg=- tool=improve_report OK :: backlog empty; audit rotation 8/8 (pass 69)
-  #560 audit/verified sg=- tool=md_audit OK :: backlog empty; audit rotation 1/8 (pass 70)
-  #561 audit/verified sg=- tool=skills_lint OK :: backlog empty; audit rotation 2/8 (pass 70)
-  #562 audit/verified sg=- tool=limits_audit OK :: backlog empty; audit rotation 3/8 (pass 70)
-  #563 audit/verified sg=- tool=json_validate OK :: backlog empty; audit rotation 4/8 (pass 70)
-  #564 audit/verified sg=- tool=research_digest OK :: backlog empty; audit rotation 5/8 (pass 70)
-  #565 audit/verified sg=- tool=capability_docs OK :: backlog empty; audit rotation 6/8 (pass 70)
-  #566 audit/verified sg=- tool=extension_check OK :: backlog empty; audit rotation 7/8 (pass 70)
+  #516 audit/verified sg=- tool=research_digest OK :: backlog empty; audit rotation 5/8 (pass 64)
+  #517 audit/verified sg=- tool=capability_docs OK :: backlog empty; audit rotation 6/8 (pass 64)
+  #518 audit/verified sg=- tool=extension_check OK :: backlog empty; audit rotation 7/8 (pass 64)
+  #519 audit/verified sg=- tool=improve_report OK :: backlog empty; audit rotation 8/8 (pass 64)
+  #520 audit/verified sg=- tool=md_audit OK :: backlog empty; audit rotation 1/8 (pass 65)
+  #521 audit/verified sg=- tool=skills_lint OK :: backlog empty; audit rotation 2/8 (pass 65)
+  #522 audit/verified sg=- tool=limits_audit OK :: backlog empty; audit rotation 3/8 (pass 65)
+  #523 audit/verified sg=- tool=json_validate OK :: backlog empty; audit rotation 4/8 (pass 65)
+  #524 audit/verified sg=- tool=research_digest OK :: backlog empty; audit rotation 5/8 (pass 65)
+  #525 audit/verified sg=- tool=capability_docs OK :: backlog empty; audit rotation 6/8 (pass 65)
+  #526 audit/verified sg=- tool=extension_check OK :: backlog empty; audit rotation 7/8 (pass 65)
+  #527 audit/verified sg=- tool=improve_report OK :: backlog empty; audit rotation 8/8 (pass 65)
+  #528 audit/verified sg=- tool=md_audit OK :: backlog empty; audit rotation 1/8 (pass 66)
+  #529 audit/verified sg=- tool=skills_lint OK :: backlog empty; audit rotation 2/8 (pass 66)
+  #530 audit/verified sg=- tool=limits_audit OK :: backlog empty; audit rotation 3/8 (pass 66)

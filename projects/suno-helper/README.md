@@ -9,6 +9,7 @@ Two deliverables live here:
 |-------------|------------|-------|
 | **Extension** | Manifest V3 browser extension: five-tab popup (builder, batch, library, tools, studio), a full-page lyric-video renderer, options page, background batch capture. Zero network egress except the public pages you ask it to read. | [`extension/`](extension/) |
 | **Agent loop** | A goal/subgoal engine that runs unattended, turn after turn, updating `/goal` and `/subgoals`, loading skills, researching, delegating to an agent crew, verifying with deterministic tools, and improving its own process | [`agent/`](agent/) |
+| **Agent app** | A local dashboard over that loop: goal progress, live turns over server-sent events, subgoal editing, capability readiness, and a button per audit gate. Standard library only | [`docs/app.md`](docs/app.md) |
 
 Everything is standard-library Python and dependency-light TypeScript. No
 backend, no account, no telemetry.
@@ -27,13 +28,16 @@ PYTHONPATH=agent python3 -m suno_helper status
 # 2. run 10 turns synchronously
 PYTHONPATH=agent python3 -m suno_helper loop --turns 10
 
-# 3. the real thing: 500 unattended turns
+# 3. the app: watch the loop run, turn by turn
+PYTHONPATH=agent python3 -m suno_helper app        # http://127.0.0.1:8787/
+
+# 4. or the same thing headless: 500 unattended turns
 PYTHONPATH=agent python3 -m suno_helper loop --turns 500 --quiet --seed 7
 
-# 4. find the skill that applies to a task
+# 5. find the skill that applies to a task
 PYTHONPATH=agent python3 -m suno_helper skill find "clean duplicate style tags"
 
-# 5. adversarial review of a decision
+# 6. adversarial review of a decision
 PYTHONPATH=agent python3 -m suno_helper crew debate "add a profile downloader"
 ```
 
@@ -42,7 +46,7 @@ The extension:
 ```bash
 cd extension
 npm install
-npm test          # 191 unit tests, pure functions, no browser
+npm test          # 354 unit tests, pure functions, no browser
 npm run compile   # strict TypeScript
 npm run build     # .output/chrome-mv3/
 ```

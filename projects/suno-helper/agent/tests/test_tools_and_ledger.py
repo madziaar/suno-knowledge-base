@@ -12,11 +12,113 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from suno_helper.fsutil import PathEscapeError, atomic_write_json, atomic_write_text, read_json, resolve_inside  # noqa: E402
+from suno_helper.engine import Engine  # noqa: E402
 from suno_helper.ledger import Entry, Ledger  # noqa: E402
+from suno_helper.providers import HeuristicProvider  # noqa: E402
 from suno_helper.tools import ToolBox, insert_marker  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = PROJECT_ROOT.parents[1]
+
+from .test_engine import make_workspace  # noqa: E402
+
+
+class SkippedGateTests(unittest.TestCase):
+    """A gate that could not run must not read like one that passed."""
+
+    def _toolbox(self, tmp: str) -> "ToolBox":
+        from suno_helper.tools import ToolBox
+
+        root = make_workspace(Path(tmp))
+        ext = root / "projects" / "suno-helper" / "extension"
+        import shutil
+
+        if (ext / "node_modules").exists():
+            shutil.rmtree(ext / "node_modules")
+        return ToolBox(root, extension_dir=str(ext.relative_to(root)), run_checks=True)
+
+    def test_missing_dependencies_report_skipped_not_plain_ok(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self._toolbox(tmp).call("extension_check")
+            self.assertTrue(result.ok)
+            self.assertTrue(result.skipped)
+            self.assertTrue(result.summary.startswith("SKIPPED"), msg=result.summary)
+            self.assertIn("npm install", result.summary)
+
+    def test_scaffold_failure_is_not_reported_as_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_workspace(Path(tmp))
+            import shutil
+
+            shutil.rmtree(root / "projects" / "suno-helper" / "extension" / "entrypoints")
+            from suno_helper.tools import ToolBox
+
+            result = ToolBox(root, extension_dir="projects/suno-helper/extension", run_checks=True).call(
+                "extension_check"
+            )
+            self.assertFalse(result.ok)
+            self.assertFalse(result.skipped)
+
+    def test_the_engine_marks_skipped_gates_in_the_ledger(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_workspace(Path(tmp))
+            import shutil
+
+            ext = root / "projects" / "suno-helper" / "extension"
+            if (ext / "node_modules").exists():
+                shutil.rmtree(ext / "node_modules")
+            engine = Engine(root, provider=HeuristicProvider(), run_checks=True, auto_improve=False)
+            engine.bootstrap()
+            engine.state.add_subgoal(
+                title="Gate that cannot run",
+                description="extension_check with no node_modules",
+                priority=5,
+                weight=1.0,
+                action={"tool": "extension_check", "args": {}},
+                acceptance=[{"tool": "extension_check", "expect": "pass"}],
+            )
+            for _ in range(6):
+                engine.cycle()
+            rows = engine.ledger.entries()
+            evidence = " ".join(str(row.get("evidence", "")) for row in rows)
+            self.assertIn("[skipped]", evidence)
+
+
+class PermissionBudgetTests(unittest.TestCase):
+    """The manifest's permission list is a promise; this keeps it small."""
+
+    ALLOWED = {"storage", "downloads", "activeTab", "scripting"}
+    CONFIG = REPO_ROOT / "projects/suno-helper/extension/wxt.config.ts"
+
+    def test_permissions_stay_within_the_allowlist(self) -> None:
+        import re
+
+        text = self.CONFIG.read_text(encoding="utf-8")
+        match = re.search(r"permissions:\s*\[([^\]]*)\]", text)
+        self.assertIsNotNone(match, msg="wxt.config.ts has no permissions array")
+        declared = {item.strip().strip("'\"") for item in match.group(1).split(",") if item.strip()}
+        self.assertTrue(declared, msg="an extension with no permissions is a typo, not a design")
+        unexpected = declared - self.ALLOWED
+        self.assertEqual(unexpected, set(), msg=f"permissions outside the budget: {sorted(unexpected)}")
+
+    def test_host_access_is_enumerated_not_wildcarded(self) -> None:
+        """Every declared host must name one domain.
+
+        Checked against the parsed arrays, not the file text: the config's own
+        comment mentions `<all_urls>` to say it is absent, and a test that greps
+        the whole file would fail on the sentence forbidding what it checks.
+        """
+        import re
+
+        text = self.CONFIG.read_text(encoding="utf-8")
+        blocks = re.findall(r"host_permissions:\s*\[([^\]]*)\]", text)
+        self.assertTrue(blocks, msg="no host_permissions array")
+        hosts = {item.strip().strip("'\"") for item in blocks[0].split(",") if item.strip()}
+        self.assertTrue(hosts, msg="an extension that reads pages must declare which pages")
+        for host in hosts:
+            self.assertNotIn("<all_urls>", host)
+            self.assertNotIn("*://*", host)
+            self.assertRegex(host, r"^https://[^/]+/\*$", msg=f"host is not a single origin: {host}")
 
 
 class RepoHygieneTests(unittest.TestCase):

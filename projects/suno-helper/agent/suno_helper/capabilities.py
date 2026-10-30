@@ -591,6 +591,44 @@ CAPABILITIES: tuple[Capability, ...] = (
         related=("csv-export", "media-save"),
     ),
     Capability(
+        id="agent-app",
+        title="Agent App",
+        phase="ops",
+        summary=(
+            "A local HTTP server and dashboard over the loop: read the goal, subgoals, "
+            "ledger, capabilities and skills; edit the goal; add or finish subgoals; run "
+            "any gate; and watch a run turn by turn over server-sent events. Standard "
+            "library only, so it starts on a machine with no virtualenv and no network."
+        ),
+        sources=(
+            "agent/suno_helper/app.py",
+            "agent/suno_helper/webapp/index.html",
+            "agent/suno_helper/webapp/app.js",
+        ),
+        symbols=(
+            "class AgentApp",
+            "create_app",
+            "def stream",
+            "_writes_allowed",
+            "text/event-stream",
+        ),
+        behaviours=(
+            "`GET /api/state` returns goal, subgoals, ledger stats, capability readiness, skills and crew in one payload.",
+            "`GET /api/stream?turns=N` runs the loop and emits `start`, one `turn` event per cycle carrying progress, and a final `done`.",
+            "`POST /api/turn` runs a bounded batch synchronously; `POST /api/stop` interrupts a stream mid-run.",
+            "Writes are guarded twice: a token when the bind is not loopback, and an `X-Suno-Helper` header that cross-origin pages cannot set without a preflight.",
+            "`--readonly` serves every read route and refuses every write.",
+        ),
+        edge_cases=(
+            "A server that is never started must not deadlock on shutdown: the shutdown runs in a thread with a join timeout.",
+            "An unknown subgoal id is a 404, not a 500 — the caller's mistake is not a server fault.",
+            "An asset name that escapes `webapp/` is refused before the filesystem is touched.",
+            "Two runs at once are refused rather than interleaved, because the engine is a single writer.",
+        ),
+        tests=("agent/tests/test_app.py",),
+        related=("loop-engine", "self-improvement", "popup-ui"),
+    ),
+    Capability(
         id="privacy-model",
         title="Zero-Trust Privacy Model",
         phase="core",
@@ -600,7 +638,12 @@ CAPABILITIES: tuple[Capability, ...] = (
             "moves records."
         ),
         sources=("extension/wxt.config.ts", "extension/entrypoints/background.ts"),
-        symbols=("permissions: ['storage']", "host_permissions", "chrome.runtime.onMessage"),
+        # Not the literal permission list: that broke the moment `downloads` was
+        # added for the media tools, which is a change the privacy doc *permits*
+        # (each permission is justified in wxt.config.ts). The invariants are that
+        # a permission block exists, host access is enumerated, and nothing walks
+        # <all_urls>. The allowlist itself is asserted in the test suite.
+        symbols=("permissions: [", "host_permissions", "chrome.runtime.onMessage"),
         behaviours=(
             "Manifest V3 with `storage` as the only declared permission.",
             "Host permissions are limited to the two Suno origins.",

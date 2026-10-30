@@ -330,7 +330,13 @@ class Engine:
                 continue
             outcome = self.tools.call(str(tool), **(gate.get("args") or {}))
             passed = outcome.ok if expect == "pass" else (not outcome.ok)
-            results.append((str(tool), (passed, outcome.summary[:160])))
+            # A gate that could not run must not read like one that ran and
+            # passed. It still counts as a pass for scheduling (a machine with no
+            # node_modules is a supported configuration), but the ledger says so.
+            detail = outcome.summary[:160]
+            if outcome.skipped:
+                detail = f"[skipped] {detail}"
+            results.append((str(tool), (passed, detail)))
         return results
 
     def _all_gates_passed(self, sub: Subgoal) -> bool:
@@ -511,6 +517,13 @@ class Engine:
         ("capability_docs", {}),
         ("extension_check", {"run_tests": False}),
         ("improve_report", {}),
+        # Python tests are the slowest check here (~25 s) for the same reason the
+        # extension rotation typechecks without running vitest: a 500-turn soak
+        # must stay affordable. They run in full whenever a subgoal's acceptance
+        # gate asks for them, and in the closing sweep.
+        #
+        # Not a silent skip: `agent_tests` either runs or the suite is missing,
+        # and `doctor` reports the toolchain.
     )
 
     def _idle_cycle(self, turn: int, started: float) -> CycleResult:
