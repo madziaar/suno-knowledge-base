@@ -13,6 +13,7 @@ the engine stores ``summary`` as evidence and ``artifacts`` in the subgoal.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -32,6 +33,10 @@ class ToolResult:
     details: dict[str, Any] = field(default_factory=dict)
     artifacts: list[str] = field(default_factory=list)
     error: str = ""
+    #: The tool could not do its job and did not fail either — typically a
+    #: missing dependency. The ledger records it so a green run over a skipped
+    #: gate is visible instead of indistinguishable from a real pass.
+    skipped: bool = False
 
     @classmethod
     def fail(cls, summary: str, *, error: str = "", details: dict | None = None) -> "ToolResult":
@@ -55,6 +60,7 @@ class ToolBox:
             "improve_report": self.improve_report,
             "capability_docs": self.capability_docs,
             "repo_scan": self.repo_scan,
+            "agent_tests": self.agent_tests,
             "noop": self.noop,
         }
 
@@ -315,11 +321,13 @@ class ToolBox:
             return ToolResult(
                 ok=not missing,
                 summary=(
-                    "extension scaffold present; dependencies not installed so typecheck skipped"
+                    "SKIPPED — extension scaffold present, dependencies not installed "
+                    "(run `npm install` to make this a real check)"
                     if not missing
                     else f"extension scaffold incomplete: {missing}"
                 ),
                 details={"dependencies_installed": False, "missing": missing, "scripts": sorted(scripts)},
+                skipped=not missing,
             )
         nm = shutil.which("npm") or "npm"
         results: dict[str, Any] = {}
@@ -343,6 +351,41 @@ class ToolBox:
             summary="extension compile+tests green" if ok else "extension checks failed",
             details={"results": results, "dependencies_installed": True},
             artifacts=[self.extension_dir],
+        )
+
+    def agent_tests(self, *, timeout: int = 600) -> ToolResult:
+        """Run the agent's own unittest suite.
+
+        The loop could verify the *extension's* tests and not its own. That is
+        the same blind spot as a skipped gate: the thing that decides whether a
+        turn is good was never itself checked.
+        """
+        import sys
+
+        project = self.root / "projects" / "suno-helper"
+        tests_dir = project / "agent" / "tests"
+        if not tests_dir.exists():
+            return ToolResult.fail("agent/tests missing", error="missing-tests")
+        proc = subprocess.run(
+            [sys.executable, "-m", "unittest", "discover", "-s", "agent/tests", "-t", "agent"],
+            cwd=str(project),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, "PYTHONPATH": "agent"},
+        )
+        tail = (proc.stdout + proc.stderr)[-1500:]
+        match = re.search(r"Ran (\d+) tests?", tail)
+        count = int(match.group(1)) if match else 0
+        return ToolResult(
+            ok=proc.returncode == 0,
+            summary=(
+                f"agent tests green: {count} tests"
+                if proc.returncode == 0
+                else f"agent tests failed (exit {proc.returncode})"
+            ),
+            details={"returncode": proc.returncode, "tests": count, "tail": tail},
+            artifacts=["agent/tests"],
         )
 
     def research_digest(self) -> ToolResult:

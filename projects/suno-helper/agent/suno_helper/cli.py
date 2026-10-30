@@ -388,6 +388,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     checks.append(("canonical limits", limits.exists(), str(limits)))
     ext = project / "extension" / "package.json"
     checks.append(("extension manifest", ext.exists(), str(ext)))
+    # A gate that silently degrades is the failure this check exists to prevent:
+    # without node_modules every `extension_check` reports green while compiling
+    # nothing, and a 500-turn soak proves less than it claims.
+    deps = project / "extension" / "node_modules"
+    checks.append(
+        (
+            "extension dependencies",
+            deps.exists(),
+            "node_modules present" if deps.exists() else "MISSING — run `npm install` or extension_check only checks the scaffold",
+        )
+    )
     provider = build_provider(args.provider)
     completion = provider.complete("TASK: PLAN\nSUBGOAL: doctor\n")
     checks.append((f"provider ({completion.provider})", completion.ok, (completion.error or "ok")[:60]))
@@ -398,6 +409,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         failed += 0 if ok else 1
     print(f"\n{len(checks) - failed}/{len(checks)} checks passed")
     return 0 if failed == 0 else 1
+
+
+def cmd_app(args: argparse.Namespace) -> int:
+    """Serve the agent app (dashboard + streaming loop) on localhost."""
+    from .app import serve
+
+    root = project_root(getattr(args, "root", None))
+    serve(
+        root,
+        host=args.host,
+        port=args.port,
+        token=args.token or "",
+        provider=getattr(args, "provider", None),
+        allow_network=bool(getattr(args, "allow_network", False)),
+        run_checks=not bool(getattr(args, "no_checks", False)),
+        readonly=bool(args.readonly),
+        trusted_proxy=bool(getattr(args, "trusted_proxy", False)),
+    )
+    return 0
 
 
 def cmd_export(args: argparse.Namespace) -> int:
@@ -539,6 +569,20 @@ def build_parser() -> argparse.ArgumentParser:
     improve.add_argument("proposal_id", nargs="?", default="")
     improve.add_argument("--json", action="store_true")
     improve.set_defaults(func=cmd_improve)
+
+    app = sub.add_parser("app", help="serve the local agent app (dashboard + live loop)")
+    add_common(app)
+    app.add_argument("--host", default="127.0.0.1", help="bind address (0.0.0.0 exposes the dashboard)")
+    app.add_argument("--port", type=int, default=8787)
+    app.add_argument("--token", help="write token (auto-generated when binding a public interface)")
+    app.add_argument("--readonly", action="store_true", help="serve the dashboard without write routes")
+    app.add_argument(
+        "--trusted-proxy",
+        action="store_true",
+        help="no token for writes on a public bind (only behind a proxy you trust)",
+    )
+    app.add_argument("--no-checks", action="store_true", help="skip npm typecheck/tests inside the loop")
+    app.set_defaults(func=cmd_app)
 
     doctor = sub.add_parser("doctor", help="environment and state checks")
     add_common(doctor)

@@ -44,6 +44,7 @@ PYTHONPATH=agent python3 -m suno_helper tool capability_docs only=clean-style
 | Lyric Video Studio | 5 | [`lyric-video.md`](lyric-video.md) |
 | Capture Analytics | 5 | [`library-analytics.md`](library-analytics.md) |
 | ZIP Export | 5 | [`zip-export.md`](zip-export.md) |
+| Agent App | ops | [`agent-app.md`](agent-app.md) |
 
 The registry that drives all of this is
 [`agent/suno_helper/capabilities.py`](../../agent/suno_helper/capabilities.py);

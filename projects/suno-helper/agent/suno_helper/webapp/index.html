@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Suno Helper — agent app</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">◍</span>
+        <div>
+          <h1>Suno Helper</h1>
+          <p class="sub">agent app · local loop console</p>
+        </div>
+      </div>
+
+      <div class="goal-strip">
+        <div class="goal-line">
+          <strong id="goal-title">loading…</strong>
+          <span class="pill" id="goal-status">—</span>
+        </div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="goal-bar">
+          <div class="bar-fill" id="goal-fill"></div>
+        </div>
+        <div class="goal-meta">
+          <span id="goal-progress">0%</span>
+          <span id="goal-metric">—</span>
+          <span id="turn-badge">turn 0</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label class="turns">
+          <span>turns</span>
+          <input id="turns" type="number" min="1" max="200" value="25" />
+        </label>
+        <button id="run" class="btn primary">Run</button>
+        <button id="stop" class="btn" disabled>Stop</button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <nav class="rail" aria-label="Sections">
+        <button class="rail-item active" data-view="dashboard"><span>Dashboard</span><kbd>1</kbd></button>
+        <button class="rail-item" data-view="subgoals"><span>Subgoals</span><kbd>2</kbd></button>
+        <button class="rail-item" data-view="ledger"><span>Ledger</span><kbd>3</kbd></button>
+        <button class="rail-item" data-view="capabilities"><span>Capabilities</span><kbd>4</kbd></button>
+        <button class="rail-item" data-view="gates"><span>Gates</span><kbd>5</kbd></button>
+        <button class="rail-item" data-view="crew"><span>Skills &amp; crew</span><kbd>6</kbd></button>
+        <div class="rail-foot">
+          <span id="health" class="muted">connecting…</span>
+          <button id="token-btn" class="link" hidden>set token</button>
+        </div>
+      </nav>
+
+      <main id="main">
+        <section class="view" id="view-dashboard">
+          <div class="stats" id="stats"></div>
+
+          <div class="split">
+            <article class="card">
+              <header><h2>The goal</h2><span class="muted">writes <code>/goal</code> on save</span></header>
+              <div class="goal-form">
+                <label>Title<input id="f-title" type="text" /></label>
+                <label>Statement<textarea id="f-statement" rows="3"></textarea></label>
+                <div class="row">
+                  <label>Metric<input id="f-metric" type="text" /></label>
+                  <label class="narrow">Target<input id="f-target" type="number" step="1" /></label>
+                </div>
+                <div class="row end">
+                  <span class="muted" id="goal-save-note"></span>
+                  <button id="save-goal" class="btn primary">Save goal</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card live">
+              <header>
+                <h2>Live turns</h2>
+                <span class="muted" id="stream-state">idle</span>
+              </header>
+              <ol class="log" id="log"></ol>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-subgoals" hidden>
+          <div class="card">
+            <header>
+              <h2>Subgoals</h2>
+              <div class="row">
+                <input id="subgoal-filter" type="search" placeholder="filter…" />
+                <button id="refresh-subgoals" class="btn">Refresh</button>
+              </div>
+            </header>
+            <div id="subgoal-list" class="subgoals"></div>
+          </div>
+          <div class="card">
+            <header><h2>Add a subgoal</h2><span class="muted">appended to <code>/subgoals</code></span></header>
+            <div class="goal-form">
+              <label>Title<input id="s-title" type="text" placeholder="e.g. Ship the export dialog" /></label>
+              <label>Description<textarea id="s-desc" rows="2"></textarea></label>
+              <div class="row">
+                <label class="narrow">Priority<input id="s-priority" type="number" min="1" max="5" value="3" /></label>
+                <label class="narrow">Weight<input id="s-weight" type="number" min="0.1" step="0.1" value="1" /></label>
+                <label class="narrow">Gate tool<input id="s-tool" type="text" placeholder="md_audit" /></label>
+              </div>
+              <div class="row end">
+                <span class="muted" id="subgoal-note"></span>
+                <button id="add-subgoal" class="btn primary">Add</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-ledger" hidden>
+          <div class="card">
+            <header>
+              <h2>Ledger</h2>
+              <div class="row">
+                <label class="narrow">limit<input id="ledger-limit" type="number" min="10" max="500" value="100" /></label>
+                <button id="refresh-ledger" class="btn">Refresh</button>
+              </div>
+            </header>
+            <div id="ledger-wrap" class="table-wrap"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-capabilities" hidden>
+          <div class="card">
+            <header>
+              <h2>Capability registry</h2>
+              <span class="muted" id="cap-summary">—</span>
+            </header>
+            <div id="cap-list" class="caps"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-gates" hidden>
+          <div class="card">
+            <header>
+              <h2>Gates</h2>
+              <span class="muted">run any audit against the working tree</span>
+            </header>
+            <div class="row wrap" id="gate-buttons"></div>
+            <pre class="output" id="gate-output">Pick a gate to run.</pre>
+          </div>
+        </section>
+
+        <section class="view" id="view-crew" hidden>
+          <div class="split">
+            <div class="card">
+              <header><h2>Skills</h2><span class="muted" id="skill-count">—</span></header>
+              <div id="skill-list" class="list"></div>
+            </div>
+            <div class="card">
+              <header><h2>Crew</h2><span class="muted">delegation roster</span></header>
+              <div id="crew-list" class="list"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

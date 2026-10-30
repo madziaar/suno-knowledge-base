@@ -22,7 +22,7 @@
 |------|------|
 | implementation | `extension/wxt.config.ts` |
 | implementation | `extension/entrypoints/background.ts` |
-| declared symbols | `permissions: ['storage']`, `host_permissions`, `chrome.runtime.onMessage` |
+| declared symbols | `permissions: [`, `host_permissions`, `chrome.runtime.onMessage` |
 | related | prompt-storage |
 
 ## How this page stays true
