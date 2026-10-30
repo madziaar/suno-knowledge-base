@@ -45,7 +45,7 @@
   "homepage": "https://cynaps3.7cycle.life",
   "devDependencies": {
     "typescript": "^5.9.0",
-    "vitest": "^3.0.0",
+    "vitest": "^5.0.0",
     "@types/node": "^22.0.0"
   }
 }
