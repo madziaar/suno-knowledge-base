@@ -7,7 +7,7 @@ Two deliverables live here:
 
 | Deliverable | What it is | Where |
 |-------------|------------|-------|
-| **Extension** | Manifest V3 browser extension: prompt builder, style cleaner, tag normaliser, lyric diff, duration estimator, exclude builder, batch link parser, local library | [`extension/`](extension/) |
+| **Extension** | Manifest V3 browser extension: four-tab popup (builder, batch, library, tools), options page, background batch capture. Zero network egress except the public pages you ask it to read. | [`extension/`](extension/) |
 | **Agent loop** | A goal/subgoal engine that runs unattended, turn after turn, updating `/goal` and `/subgoals`, loading skills, researching, delegating to an agent crew, verifying with deterministic tools, and improving its own process | [`agent/`](agent/) |
 
 Everything is standard-library Python and dependency-light TypeScript. No
@@ -178,7 +178,7 @@ exit instead of interleaving state writes.
 ## Verify
 
 ```bash
-PYTHONPATH=agent python3 -m suno_helper selftest   # 106 agent tests
+PYTHONPATH=agent python3 -m suno_helper selftest   # 109 agent tests
 PYTHONPATH=agent python3 -m suno_helper doctor     # environment + state checks
 cd extension && npm test && npm run compile        # 191 extension tests
 ```

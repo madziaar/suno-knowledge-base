@@ -5,6 +5,11 @@ refuses to write a page unless every declared source file exists **and** the
 source text contains every symbol the page claims — documentation that can pass
 without the code is worse than no documentation.
 
+> This table is maintained by hand next to a generator that owns the pages. If
+> you add a row, add the page in the same commit — otherwise `md_audit` will
+> (correctly) report a dead link until the generator runs. See
+> [`../incidents/2026-10-30-index-raced-the-generator.md`](../incidents/2026-10-30-index-raced-the-generator.md).
+
 ```bash
 PYTHONPATH=agent python3 -m suno_helper tool capability_docs
 PYTHONPATH=agent python3 -m suno_helper tool capability_docs only=clean-style
@@ -21,6 +26,8 @@ PYTHONPATH=agent python3 -m suno_helper tool capability_docs only=clean-style
 | Duration Estimator | 3 | [`duration-estimator.md`](duration-estimator.md) |
 | Batch Link Parser | 4 | [`link-parser.md`](link-parser.md) |
 | Batch Fetch Planner | 4 | [`batch-planner.md`](batch-planner.md) |
+| Public Page Capture | 4 | [`song-capture.md`](song-capture.md) |
+| Batch Capture Backend | 4 | [`batch-backend.md`](batch-backend.md) |
 | CSV / JSON Export | 4 | [`csv-export.md`](csv-export.md) |
 | Per-Model Limit Table | core | [`model-limits.md`](model-limits.md) |
 | Zero-Trust Privacy Model | core | [`privacy-model.md`](privacy-model.md) |
@@ -28,6 +35,7 @@ PYTHONPATH=agent python3 -m suno_helper tool capability_docs only=clean-style
 | Generated Tool Reference | ops | [`capability-docs.md`](capability-docs.md) |
 | Research Desk | ops | [`research-desk.md`](research-desk.md) |
 | Self-Improvement Loop | ops | [`self-improvement.md`](self-improvement.md) |
+| Popup and Options UI | ui | [`popup-ui.md`](popup-ui.md) |
 
 The registry that drives all of this is
 [`agent/suno_helper/capabilities.py`](../../agent/suno_helper/capabilities.py);

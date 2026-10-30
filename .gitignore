@@ -49,8 +49,12 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# `lib/` here is the old cookiecutter build dir. Anchored to the repo root,
+# because an unanchored `lib/` silently ignored `extension/src/lib/` — every
+# TypeScript module in the extension — and the merge that "shipped" them
+# shipped a tree where the popup imported files that did not exist.
+/lib/
+/lib64/
 parts/
 sdist/
 var/

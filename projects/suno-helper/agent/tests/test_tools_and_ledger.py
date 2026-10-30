@@ -19,6 +19,46 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = PROJECT_ROOT.parents[1]
 
 
+class RepoHygieneTests(unittest.TestCase):
+    """Guards that would have caught the lost-`src/lib` merge."""
+
+    def test_extension_sources_are_not_gitignored(self) -> None:
+        import subprocess
+
+        required = [
+            "projects/suno-helper/extension/src/lib/limits.ts",
+            "projects/suno-helper/extension/src/components/ui.tsx",
+            "projects/suno-helper/extension/src/backend/jobs.ts",
+            "projects/suno-helper/extension/entrypoints/popup/App.tsx",
+        ]
+        problematic = [rel for rel in required if not (REPO_ROOT / rel).exists()]
+        self.assertEqual(problematic, [], msg=f"missing on disk: {problematic}")
+
+        proc = subprocess.run(
+            ["git", "check-ignore", *required],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+        )
+        # exit 1 means "nothing matched an ignore rule" — which is what we want.
+        self.assertEqual(
+            proc.returncode,
+            1,
+            msg=f"these files are gitignored and would vanish on merge:\n{proc.stdout}",
+        )
+
+    def test_entrypoints_import_only_real_modules(self) -> None:
+        import re
+
+        cli = (REPO_ROOT / "projects/suno-helper/extension/entrypoints/popup/App.tsx").read_text(encoding="utf-8")
+        imports = re.findall(r"from '(\.\./)+((?:src|entrypoints)/[^']+)'", cli)
+        for _dots, rel in imports:
+            self.assertTrue(
+                (REPO_ROOT / "projects/suno-helper/extension" / rel.split("/")[0]).exists(),
+                msg=f"App.tsx imports from a missing directory: {rel}",
+            )
+
+
 class FsUtilTests(unittest.TestCase):
     def test_atomic_write_creates_parents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

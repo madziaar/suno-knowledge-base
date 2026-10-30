@@ -1,13 +1,17 @@
 /**
  * Content script: minimal DOM presence on suno.com.
  *
- * It adds one floating button and answers two messages (capture / fill).
- * All text handling is delegated to the pure library — this file never
- * reformats a user's lyrics.
+ * It adds one floating button and answers three messages (fill / apply /
+ * capture). All real parsing happens in the pure library; this file only reads
+ * and writes the page.
  */
 
+import { defineContentScript } from 'wxt/sandbox';
+
+import { extractSongFromHtml } from '../../src/lib/htmlMeta';
+import { buildCapture } from '../../src/lib/capture';
 import { findField, isCreatePage, setFieldValue } from '../../src/selectors';
-import type { Request } from '../../src/messages';
+import { emit, type Request } from '../../src/messages';
 
 const BUTTON_ID = 'suno-helper-capture';
 
@@ -32,6 +36,28 @@ export default defineContentScript({
   },
 });
 
+function readField(name: 'style' | 'lyrics' | 'title' | 'exclude' | 'simplePrompt'): string {
+  const element = findField(name);
+  if (!element) return '';
+  if (element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement) return element.value;
+  return element.textContent ?? '';
+}
+
+function readForm(): { style: string; lyrics: string; title: string; exclude: string } {
+  return {
+    style: readField('style') || readField('simplePrompt'),
+    lyrics: readField('lyrics'),
+    title: readField('title'),
+    exclude: readField('exclude'),
+  };
+}
+
+/** Read the current page as a capture. Uses the same parser as the batch job. */
+function capturePage() {
+  const html = document.documentElement.outerHTML;
+  return buildCapture(extractSongFromHtml(html, location.href));
+}
+
 function mount(): void {
   if (document.getElementById(BUTTON_ID)) return;
   const button = document.createElement('button');
@@ -52,8 +78,9 @@ function mount(): void {
     cursor: 'pointer',
     boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
   } satisfies Partial<CSSStyleDeclaration>);
+
   button.addEventListener('click', () => {
-    const captured = capture();
+    const form = readForm();
     const now = Date.now();
     // Persist through the background worker: it is the single storage writer.
     chrome.runtime.sendMessage(
@@ -61,14 +88,13 @@ function mount(): void {
         type: 'library:save',
         record: {
           id: `capture-${now}`,
-          title: captured.title || captured.style.slice(0, 40) || 'Captured from Suno',
-          style: captured.style,
-          lyrics: captured.lyrics,
+          title: form.title || form.style.slice(0, 40) || 'Captured from Suno',
+          style: form.style,
+          lyrics: form.lyrics,
+          exclude: form.exclude,
           tags: [],
           model: 'v5.5',
-          createdAt: now,
-          updatedAt: now,
-          schemaVersion: 1,
+          notes: 'captured from the create page',
         },
       },
       () => {
@@ -80,16 +106,6 @@ function mount(): void {
     );
   });
   document.body.appendChild(button);
-}
-
-function capture(): { style: string; lyrics: string; title: string } {
-  const read = (name: 'style' | 'lyrics' | 'title' | 'exclude' | 'simplePrompt'): string => {
-    const element = findField(name) as HTMLTextAreaElement | HTMLInputElement | null;
-    if (!element) return '';
-    return 'value' in element ? element.value : (element.textContent ?? '');
-  };
-  const style = read('style') || read('simplePrompt');
-  return { style, lyrics: read('lyrics'), title: read('title') };
 }
 
 function registerMessageHandler(): void {
@@ -105,7 +121,7 @@ function registerMessageHandler(): void {
       return false;
     }
     if (request.type === 'page:fill') {
-      const record = (request as { record?: { style?: string; lyrics?: string; title?: string } }).record ?? {};
+      const record = request.record;
       const results = {
         style: record.style ? setFieldValue(findField('style') ?? document.body, record.style) : false,
         lyrics: record.lyrics ? setFieldValue(findField('lyrics') ?? document.body, record.lyrics) : false,
@@ -115,7 +131,9 @@ function registerMessageHandler(): void {
       return false;
     }
     if (request.type === 'page:capture') {
-      sendResponse({ ok: true, data: capture() });
+      const capture = capturePage();
+      emit({ type: 'capture:page', capture });
+      sendResponse({ ok: true, data: { style: readForm().style, lyrics: readForm().lyrics, title: readForm().title } });
       return false;
     }
     return false;

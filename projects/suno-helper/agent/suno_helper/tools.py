@@ -302,8 +302,16 @@ class ToolBox:
         installed = (ext / "node_modules").exists()
         want_tests = self.run_checks if run_tests is None else run_tests
         if not installed:
-            required = [ext / "src" / "lib", ext / "src" / "popup", ext / "wxt.config.ts"]
+            # The scaffold check names the parts a buildable extension must have.
+            # It used to require `src/popup`, which is only one of the layouts
+            # WXT accepts — when the popup moved to `entrypoints/popup` the check
+            # failed even though the extension built fine. Require the capability,
+            # not the path: shared code, a manifest, and at least one entrypoint.
+            required = [ext / "src" / "lib", ext / "wxt.config.ts", ext / "package.json"]
+            entrypoints = ext / "entrypoints"
             missing = [str(p.relative_to(ext)) for p in required if not p.exists()]
+            if not entrypoints.exists() or not any(entrypoints.glob("*/")):
+                missing.append("entrypoints/<one entry point>")
             return ToolResult(
                 ok=not missing,
                 summary=(

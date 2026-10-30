@@ -1,6 +1,6 @@
 # Research corpus
 
-_16 sources · updated 2026-10-29T22:32:24Z_
+_16 sources · updated 2026-10-30T20:03:04Z_
 
 | id | source | kind | trust | retrieved |
 |----|--------|------|-------|-----------|
@@ -20,3 +20,12 @@ _16 sources · updated 2026-10-29T22:32:24Z_
 | `awesome-suno` | [Zizwar/Awesome-Suno](https://github.com/Zizwar/Awesome-Suno) | repo | 0.50 | 2026-10-29 |
 | `reddit-god-mode-manual` | [Updated my master prompting doc (r/SunoAI)](https://www.reddit.com/r/SunoAI/comments/1ryouzb/updated_my_master_prompting_doc/) | community | 0.50 | 2026-10-29 |
 | `suno-super-friends` | [Spankie0001/suno-super-friends](https://github.com/Spankie0001/suno-super-friends) | repo | 0.50 | 2026-10-29 |
+
+## Open questions
+
+- [ ] Subgoal 'Docs cite the canonical limits: isolate the failing evidence' failed 3x and cannot be split further: md_audit: 3 markdown issue(s) in 58 files (0 auto-fixed); gate md_audit: fail 3 markdown issue(s) in 58 files (0 auto-fixed) _(subgoal: docs-cite-the-canonical-limits-isolate-the-faili)_
+
+## Answered questions
+
+- **Subgoal 'Docs cite the canonical limits: isolate the failing evidence: isolate the failing evidence' failed 3x and cannot be split further: md_audit: 3 markdown issue(s) in 58 files (0 auto-fixed); gate md_audit: fail 3 markdown issue(s) in 58 files (0 auto-fixed)** → Q: Subgoal 'Docs cite the canonical limits: isolate the failing evidence: isolate the failing evidence' failed 3x and cannot be split further: md_audit: 3 markdown issue(s) in 58 files (0 auto-fixed); gate md_audit: fail 3 markdown issue(s) in 58 files (0 auto-fixed)
+- Manifest V3 — content scripts 
