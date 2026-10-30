@@ -38,6 +38,9 @@ def make_workspace(tmp: Path) -> Path:
     shutil.copy(PROJECT_ROOT / "extension" / "package.json", extension / "package.json")
     shutil.copy(PROJECT_ROOT / "extension" / "wxt.config.ts", extension / "wxt.config.ts")
     shutil.copytree(PROJECT_ROOT / "extension" / "src", extension / "src", dirs_exist_ok=True)
+    # Entry points are part of the scaffold: without them the extension has
+    # shared code and a manifest but nothing to run.
+    shutil.copytree(PROJECT_ROOT / "extension" / "entrypoints", extension / "entrypoints", dirs_exist_ok=True)
     for test_file in extension.glob("src/**/*.test.ts"):
         test_file.unlink()
     shutil.copytree(PROJECT_ROOT / "skills", project / "skills", dirs_exist_ok=True)
@@ -278,19 +281,28 @@ class ConvergenceTests(unittest.TestCase):
         self.assertIn("md_audit", names)
         self.assertIn("capability_docs", names)
 
-    def test_capability_wave_queues_only_ready_capabilities(self) -> None:
+    def test_capability_wave_skips_capabilities_without_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = make_workspace(Path(tmp))
             engine = Engine(root, provider=HeuristicProvider(), run_checks=False)
             engine.bootstrap()
-            # make_workspace deletes the *.test.ts files, so nothing is ready yet.
-            self.assertEqual(engine._capability_wave(1), [])
-            restored = PROJECT_ROOT / "extension" / "src" / "lib" / "buildStyle.test.ts"
+            titles = [sub.title for sub in engine._capability_wave(1)]
+            self.assertTrue(titles, msg="expected at least one ready capability")
+            # make_workspace deletes the *.test.ts files, so anything that
+            # declares tests is not ready and must not be queued.
+            self.assertNotIn("Tool reference: Five-Pillar Prompt Builder", titles)
+
+    def test_capability_wave_includes_it_once_the_test_exists(self) -> None:
+        restored = PROJECT_ROOT / "extension" / "src" / "lib" / "buildStyle.test.ts"
+        self.assertTrue(restored.exists(), msg="fixture source missing")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_workspace(Path(tmp))
             target = root / "projects" / "suno-helper" / "extension" / "src" / "lib" / "buildStyle.test.ts"
             target.write_text(restored.read_text(encoding="utf-8"), encoding="utf-8")
-            added = engine._capability_wave(2)
-            self.assertTrue(added, msg="expected the prompt-builder page to be queued")
-            self.assertTrue(all("prompt-builder" in sub.title or sub.action for sub in added))
+            engine = Engine(root, provider=HeuristicProvider(), run_checks=False)
+            engine.bootstrap()
+            titles = [sub.title for sub in engine._capability_wave(1)]
+            self.assertIn("Tool reference: Five-Pillar Prompt Builder", titles)
 
     def test_escalation_question_is_persisted(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

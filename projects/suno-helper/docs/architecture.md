@@ -18,6 +18,26 @@ They share one artifact: `docs/suno-limits.json`. The extension's typed mirror i
 asserted against it by `limits.test.ts`; the agent audits docs for stale claims
 against the same file. There is no third source of numbers.
 
+### Three layers in the extension
+
+```
+entrypoints/          the only files that touch browser APIs
+  popup/App.tsx       four-tab shell        (builder · batch · library · tools)
+  options/App.tsx     settings, export, capture history
+  background.ts       storage writer + batch queue (the only fetch in the product)
+  content/index.tsx   reads/writes the Suno create form
+
+src/components/       presentational panels — no chrome.* calls, no fetch
+src/state/builder.ts  zustand store for the shared builder state
+src/lib/              pure functions: every transform, every parser, every rule
+src/backend/jobs.ts   pure job state machine (schedule, retry, settle)
+```
+
+The rule is one sentence long: **if it can be pure, it is in `src/lib` or
+`backend/` and it has a test; if it touches the browser, it is in `entrypoints/`
+and it is as small as possible.** That is what lets 246 tests run in node with no
+browser and no network.
+
 ## Decisions
 
 ### D1 — The loop must work with no model
@@ -110,11 +130,12 @@ two skills, not fifteen.
 
 | Layer | Tool | Count | What it protects |
 |-------|------|-------|------------------|
-| Pure text/state functions (TS) | vitest | 168 | every transform edge case, including emoji and CJK tags |
-| Canonical-data mirror | vitest | 2 | drift between `limits.ts` and `docs/suno-limits.json` |
-| Agent state machine | unittest | 83 | selection policy, starvation, thrash guard, ledger integrity |
-| Convergence | unittest | 3 | the loop actually closes subgoals within a turn budget |
-| End-to-end | `npm run build` + `wxt build` | — | the extension still packages |
+| Pure text/state functions (TS) | vitest | 246 | every transform edge case, including emoji, CJK tags, quoted CSV and nested JSON-LD |
+| Canonical-data mirror | vitest | 1 | drift between `limits.ts` and `docs/suno-limits.json` |
+| Batch machine + capture parser | vitest | 47 | retry budgets, concurrency, partial pages, duplicate merging |
+| Agent state machine | unittest | 109 | selection policy, starvation, thrash guard, gate honesty, ledger integrity |
+| Convergence | unittest | 8 | the loop actually closes subgoals within a turn budget |
+| End-to-end | `npm run build` + `wxt build` | — | the extension still packages (267 kB, MV3) |
 
 The suite runs without network, without a browser and without credentials, which
 is what makes it usable as a gate inside the loop itself.
@@ -132,3 +153,8 @@ is what makes it usable as a gate inside the loop itself.
    app.
 5. The loop caps structural changes, so a genuinely mis-specified goal takes
    several turns to correct.
+6. Batch capture reads public pages only. Playlists and profiles need a real tab
+   (their track lists are rendered client-side), so they are marked `manual`
+   rather than half-parsed.
+7. There is no audio handling at all: no download, no transcode, no ID3. The
+   extension records metadata and stops.

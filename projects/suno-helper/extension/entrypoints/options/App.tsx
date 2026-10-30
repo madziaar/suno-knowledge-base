@@ -1,27 +1,46 @@
 import { useEffect, useState } from 'react';
 
+import { captureStats, toCaptureRows, type SongCapture } from '../../src/lib/capture';
 import { exportFilename, parseJsonExport, toCsv, toJsonExport } from '../../src/lib/csv';
-import { PromptStore, chromeStorage, type PromptRecord } from '../../src/lib/storage';
+import { PACE_PRESETS } from '../../src/lib/estimateDuration';
+import { MODEL_LIMITS, type ModelId } from '../../src/lib/limits';
+import { PromptStore, chromeStorage, type PromptRecord, type Settings } from '../../src/lib/storage';
+import { send } from '../../src/messages';
 
 const store = new PromptStore(chromeStorage());
 
+function download(name: string, content: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function Options() {
   const [library, setLibrary] = useState<PromptRecord[]>([]);
+  const [captures, setCaptures] = useState<SongCapture[]>([]);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState('');
   const [payload, setPayload] = useState('');
 
   useEffect(() => {
-    void store.getLibrary().then(setLibrary);
+    void (async () => {
+      setLibrary(await store.getLibrary());
+      setSettings(await store.getSettings());
+      const response = await send<{ ok: true; data: SongCapture[] }>({ type: 'captures:list' }).catch(() => null);
+      if (response?.ok && Array.isArray(response.data)) setCaptures(response.data);
+    })();
   }, []);
 
-  function download(name: string, content: string, type: string) {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  const stats = captureStats(captures);
+
+  async function patch(next: Partial<Settings>) {
+    const saved = await store.saveSettings(next);
+    setSettings(saved);
+    setStatus('Settings saved');
   }
 
   async function exportJson() {
@@ -31,9 +50,8 @@ export default function Options() {
   }
 
   async function exportCsv() {
-    const records = await store.getLibrary();
     const csv = toCsv(
-      records.map((record) => ({
+      library.map((record) => ({
         id: record.id,
         title: record.title,
         style: record.style,
@@ -42,8 +60,24 @@ export default function Options() {
         createdAt: new Date(record.createdAt).toISOString(),
       })),
     );
-    download(exportFilename('suno-helper'), csv, 'text/csv');
-    setStatus(`Exported ${records.length} prompt(s) as CSV`);
+    download(exportFilename('suno-helper-prompts'), csv, 'text/csv');
+    setStatus(`Exported ${library.length} prompt(s) as CSV`);
+  }
+
+  async function exportCaptures() {
+    if (captures.length === 0) {
+      setStatus('No captures to export yet');
+      return;
+    }
+    download(exportFilename('suno-captures'), toCsv(toCaptureRows(captures)), 'text/csv');
+    setStatus(`Exported ${captures.length} capture(s) as CSV`);
+  }
+
+  async function clearCaptures() {
+    if (!window.confirm('Delete every captured song record on this device?')) return;
+    await send({ type: 'captures:clear' }).catch(() => null);
+    setCaptures([]);
+    setStatus('Capture history cleared');
   }
 
   async function importLibrary() {
@@ -68,10 +102,58 @@ export default function Options() {
     <div className="mx-auto max-w-2xl space-y-6 bg-neutral-950 p-8 text-neutral-100">
       <header>
         <h1 className="text-lg font-semibold">Suno Helper — settings</h1>
-        <p className="text-xs text-neutral-500">
-          Everything below happens on this device. No account, no sync, no telemetry.
-        </p>
+        <p className="text-xs text-neutral-500">Everything below happens on this device. No account, no sync, no telemetry.</p>
       </header>
+
+      <section className="space-y-3 rounded-lg border border-neutral-800 p-4">
+        <h2 className="text-sm font-semibold">Defaults</h2>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <label className="space-y-1">
+            <span className="text-neutral-400">Model</span>
+            <select
+              value={settings?.model ?? 'v5.5'}
+              onChange={(event) => void patch({ model: event.target.value as ModelId })}
+              className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1"
+            >
+              {Object.keys(MODEL_LIMITS).map((id) => (
+                <option key={id} value={id}>
+                  {id} — style {MODEL_LIMITS[id as ModelId].styleChars} / lyrics {MODEL_LIMITS[id as ModelId].lyricsChars}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-neutral-400">Pace preset</span>
+            <select
+              value={settings?.pace ?? 'midtempo'}
+              onChange={(event) => void patch({ pace: event.target.value })}
+              className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1"
+            >
+              {PACE_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-neutral-300">
+          <input
+            type="checkbox"
+            checked={settings?.autoClean ?? true}
+            onChange={(event) => void patch({ autoClean: event.target.checked })}
+          />
+          Clean pasted style strings automatically
+        </label>
+        <label className="flex items-center gap-2 text-xs text-neutral-300">
+          <input
+            type="checkbox"
+            checked={settings?.confirmDelete ?? true}
+            onChange={(event) => void patch({ confirmDelete: event.target.checked })}
+          />
+          Ask before deleting a saved prompt
+        </label>
+      </section>
 
       <section className="space-y-2 rounded-lg border border-neutral-800 p-4">
         <h2 className="text-sm font-semibold">Library</h2>
@@ -90,6 +172,26 @@ export default function Options() {
       </section>
 
       <section className="space-y-2 rounded-lg border border-neutral-800 p-4">
+        <h2 className="text-sm font-semibold">Captured songs</h2>
+        <p className="text-xs text-neutral-400">
+          {stats.total} record(s): {stats.ok} complete, {stats.partial} partial, {stats.manual} manual, {stats.failed} failed
+          {stats.averageSeconds !== null ? ` · average ${(stats.averageSeconds / 60).toFixed(1)} min` : ''}.
+        </p>
+        <p className="text-[11px] text-neutral-500">
+          Captures come from the public pages you asked about: title, creator, duration, tags and cover art when the page publishes them.
+          No audio is stored and no cookie is sent.
+        </p>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <button onClick={() => void exportCaptures()} className="rounded bg-neutral-800 px-3 py-1.5">
+            Export captures CSV
+          </button>
+          <button onClick={() => void clearCaptures()} className="rounded bg-rose-600/20 px-3 py-1.5 text-rose-300">
+            Clear captures
+          </button>
+        </div>
+      </section>
+
+      <section className="space-y-2 rounded-lg border border-neutral-800 p-4">
         <h2 className="text-sm font-semibold">Import</h2>
         <p className="text-xs text-neutral-400">
           Paste a JSON export ({toJsonExport([], false).slice(0, 28)}…). Existing ids are updated, not duplicated.
@@ -99,7 +201,7 @@ export default function Options() {
           onChange={(event) => setPayload(event.target.value)}
           rows={6}
           className="w-full rounded border border-neutral-800 bg-neutral-900 p-2 font-mono text-[11px]"
-          placeholder='{"schema":"suno-helper/export@1","library":[…]}'
+          placeholder='{"schema":"suno-helper/library@1","library":[…]}'
         />
         <button onClick={() => void importLibrary()} className="rounded bg-neutral-800 px-3 py-1.5 text-xs">
           Import pasted JSON
@@ -109,8 +211,9 @@ export default function Options() {
       <section className="rounded-lg border border-neutral-800 p-4 text-xs text-neutral-400">
         <h2 className="mb-2 text-sm font-semibold text-neutral-100">Privacy</h2>
         <ul className="list-disc space-y-1 pl-5">
-          <li>No text you type leaves the browser. There is no background upload path.</li>
-          <li>Only <code>storage</code> permission plus access to suno.com.</li>
+          <li>No text you type leaves the browser. The only network calls are the batch captures you start, to public suno.com pages.</li>
+          <li>Those fetches are made with <code>credentials: 'omit'</code>: no cookie, no session, no account.</li>
+          <li>Only <code>storage</code> permission plus host access to suno.com.</li>
           <li>No analytics, no remote config, no remote code.</li>
           <li>Uninstall or “Delete all” removes everything; nothing survives on a server.</li>
         </ul>

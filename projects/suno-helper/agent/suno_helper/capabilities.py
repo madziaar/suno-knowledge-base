@@ -307,6 +307,89 @@ CAPABILITIES: tuple[Capability, ...] = (
         related=("link-parser", "privacy-model"),
     ),
     Capability(
+        id="song-capture",
+        title="Public Page Capture",
+        phase="phase-4",
+        summary=(
+            "Reads a public Suno page into a typed capture record using only what the "
+            "page publishes — Open Graph tags, `<title>` and JSON-LD — and records how "
+            "complete that reading is instead of guessing the gaps."
+        ),
+        sources=("extension/src/lib/htmlMeta.ts", "extension/src/lib/capture.ts"),
+        symbols=("extractSongFromHtml", "parseMetaTags", "buildCapture", "mergeCaptures", "captureStats"),
+        behaviours=(
+            "Parses `<meta>` attributes with single quotes, double quotes and no quotes.",
+            "Prefers JSON-LD `Song`/`MusicRecording` over Open Graph, and falls back to `<title>` with the Suno suffix stripped.",
+            "Converts ISO-8601 (`PT3M12S`) and bare-second durations to seconds.",
+            "Classifies a capture as `ok` (JSON-LD), `partial` (OG only), `manual` (playlist/profile) or `failed` (nothing readable).",
+            "Merges duplicates by (kind, id), keeping the more complete record.",
+        ),
+        edge_cases=(
+            "Malformed JSON-LD is skipped, not fatal — an OG-only page still captures.",
+            "A page with no title yields `found: false` and a reason; nothing is invented.",
+            "A record without an id is keyed by URL so two different songs never collapse.",
+        ),
+        tests=("extension/src/lib/htmlMeta.test.ts", "extension/src/lib/capture.test.ts"),
+        related=("link-parser", "batch-backend"),
+    ),
+    Capability(
+        id="batch-backend",
+        title="Batch Capture Backend",
+        phase="phase-4",
+        summary=(
+            "The service-worker job runner behind the batch panel: a pure state machine "
+            "for scheduling and retries, wrapped by a single-flight queue that persists "
+            "after every item so a killed worker loses nothing."
+        ),
+        sources=("extension/src/backend/jobs.ts", "extension/entrypoints/background.ts"),
+        symbols=("createJob", "nextDispatch", "applyOutcome", "jobStats", "shouldContinue", "class BatchQueue"),
+        behaviours=(
+            "Dispatches at most `concurrency` items, with a gap between batches.",
+            "Retries 408/429/5xx with exponential backoff (500 ms → 8 s); a 404 fails immediately.",
+            "Gives up after `maxAttempts` and records the HTTP status or network error per item.",
+            "Fetches public pages with `credentials: 'omit'` — no cookie, no session, no account.",
+            "Persists the job and the capture list after every item and resumes on worker start.",
+        ),
+        edge_cases=(
+            "Playlist and profile refs are marked `manual` instead of being fetched and half-parsed.",
+            "A second `batch:start` while one is running is refused rather than interleaved.",
+            "Cancelling clears the timer and keeps the captures already collected.",
+        ),
+        tests=("extension/src/backend/jobs.test.ts",),
+        related=("song-capture", "popup-ui"),
+    ),
+    Capability(
+        id="popup-ui",
+        title="Popup and Options UI",
+        phase="ui",
+        summary=(
+            "The four-tab popup (Builder, Batch, Library, Tools) and the options page, "
+            "built on a small zustand store and presentational primitives, with every "
+            "number on screen coming from the same library the tools use."
+        ),
+        sources=(
+            "extension/entrypoints/popup/App.tsx",
+            "extension/src/components/BuilderPanel.tsx",
+            "extension/src/components/BatchPanel.tsx",
+            "extension/src/components/LibraryPanel.tsx",
+            "extension/src/components/ToolsPanel.tsx",
+        ),
+        symbols=("BuilderPanel", "BatchPanel", "LibraryPanel", "ToolsPanel", "useBuilder"),
+        behaviours=(
+            "Builder: five pillars with per-pillar locks, seeded re-roll, raw editor and a live budget meter.",
+            "Batch: paste → parse summary → run → live progress → CSV export, with rejected lines explained.",
+            "Library: search, load into the builder, fill the Suno create form, delete.",
+            "Tools: tag normaliser, lyric diff, duration estimate, exclude builder — each reusing the tested library.",
+        ),
+        edge_cases=(
+            "The UI never truncates text for the user; it shows the overflow instead.",
+            "A closed popup does not stop a batch: the worker owns the job and the panel re-reads it on open.",
+            "No panel makes a network call; only the background worker does.",
+        ),
+        tests=(),
+        related=("batch-backend", "prompt-builder"),
+    ),
+    Capability(
         id="privacy-model",
         title="Zero-Trust Privacy Model",
         phase="core",
