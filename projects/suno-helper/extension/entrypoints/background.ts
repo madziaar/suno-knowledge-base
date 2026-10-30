@@ -17,9 +17,13 @@ import { PromptStore, chromeStorage } from '../src/lib/storage';
 import { buildCapture, failedCapture, mergeCaptures, type SongCapture } from '../src/lib/capture';
 import { extractSongFromHtml } from '../src/lib/htmlMeta';
 import { applyOutcome, createJob, describeJob, jobStats, markRunning, nextDispatch, shouldContinue, type Job } from '../src/backend/jobs';
+import { findMediaTargets } from '../src/lib/mediaTargets';
+import { buildZip, type ZipEntry } from '../src/lib/zip';
+import { SEED_STYLES, removeStyle, upsertStyle, type StyleEntry } from '../src/lib/styleLibrary';
 import { emit, type BatchProgress, type Request, type Response } from '../src/messages';
 
 const JOB_KEY = 'job';
+const STYLES_KEY = 'userStyles';
 const CAPTURES_KEY = 'captures';
 const MAX_CAPTURES = 2000;
 const ITEM_TIMEOUT_MS = 12_000;
@@ -106,8 +110,94 @@ async function handle(
     case 'captures:clear':
       return queue.clear();
 
+    // ── Media ────────────────────────────────────────────────────────────────
+    // One page, one request, on a click. The batch queue deliberately has no
+    // path to these handlers: a hundred downloads is not a feature.
+    case 'media:find': {
+      const page = await fetchPublicPage(request.url);
+      if (!page.ok) return page;
+      const targets = findMediaTargets(page.html, request.url, page.title);
+      return { ok: true, data: { targets, title: page.title } };
+    }
+
+    case 'media:save': {
+      if (!chrome.downloads?.download) return { ok: false, error: 'downloads API unavailable' };
+      const downloadId = await chrome.downloads.download({
+        url: request.url,
+        filename: request.filename.replace(/^[/\\]+/, ''),
+        saveAs: request.saveAs ?? true,
+      });
+      emit({ type: 'media:saved', filename: request.filename, downloadId });
+      return { ok: true, data: { downloadId } };
+    }
+
+    case 'media:save-zip': {
+      if (!chrome.downloads?.download) return { ok: false, error: 'downloads API unavailable' };
+      const encoder = new TextEncoder();
+      const entries: ZipEntry[] = request.entries.map((entry) => ({
+        name: entry.name,
+        data: encoder.encode(entry.text),
+      }));
+      const bytes = buildZip(entries);
+      // Copy into an ArrayBuffer we own: the Blob constructor wants a backing
+      // store that is not shared, and `Uint8Array.buffer` is only `ArrayBufferLike`.
+      const buffer = new ArrayBuffer(bytes.byteLength);
+      new Uint8Array(buffer).set(bytes);
+      const blob = new Blob([buffer], { type: 'application/zip' });
+      const downloadId = await chrome.downloads.download({
+        url: URL.createObjectURL(blob),
+        filename: request.filename.replace(/^[/\\]+/, ''),
+        saveAs: true,
+      });
+      return { ok: true, data: { downloadId, bytes: bytes.length } };
+    }
+
+    case 'styles:list': {
+      const stored = await store.getStyles();
+      return { ok: true, data: { seed: SEED_STYLES, user: stored } };
+    }
+
+    case 'styles:save':
+      return { ok: true, data: await store.saveStyle(request.entry) };
+
+    case 'styles:delete':
+      return { ok: true, data: { deleted: await store.deleteStyle(request.id) } };
+
     default:
       return { ok: false, error: `unknown request: ${(request as { type?: string }).type ?? '?'}` };
+  }
+}
+
+/**
+ * Fetch a public page and return its HTML plus a best-guess title.
+ *
+ * `credentials: 'omit'` is the whole point: this must never be able to act as
+ * the logged-in user. A page that needs a session fails here, which is correct.
+ */
+async function fetchPublicPage(
+  url: string,
+): Promise<{ ok: true; html: string; title: string } | { ok: false; error: string }> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { ok: false, error: 'not a URL' };
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return { ok: false, error: 'only http(s) pages can be read' };
+  }
+  try {
+    const response = await fetch(parsed.toString(), {
+      credentials: 'omit',
+      redirect: 'follow',
+      headers: { Accept: 'text/html' },
+    });
+    if (!response.ok) return { ok: false, error: `page returned ${response.status}` };
+    const html = await response.text();
+    const title = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() ?? '';
+    return { ok: true, html, title };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

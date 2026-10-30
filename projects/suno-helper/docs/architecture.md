@@ -22,7 +22,8 @@ against the same file. There is no third source of numbers.
 
 ```
 entrypoints/          the only files that touch browser APIs
-  popup/App.tsx       four-tab shell        (builder · batch · library · tools)
+  popup/App.tsx       five-tab shell        (builder · batch · library · tools · studio)
+  studio/App.tsx      full-page lyric video (canvas + MediaRecorder)
   options/App.tsx     settings, export, capture history
   background.ts       storage writer + batch queue (the only fetch in the product)
   content/index.tsx   reads/writes the Suno create form
@@ -35,7 +36,7 @@ src/backend/jobs.ts   pure job state machine (schedule, retry, settle)
 
 The rule is one sentence long: **if it can be pure, it is in `src/lib` or
 `backend/` and it has a test; if it touches the browser, it is in `entrypoints/`
-and it is as small as possible.** That is what lets 246 tests run in node with no
+and it is as small as possible.** That is what lets 354 tests run in node with no
 browser and no network.
 
 ## Decisions
@@ -130,7 +131,7 @@ two skills, not fifteen.
 
 | Layer | Tool | Count | What it protects |
 |-------|------|-------|------------------|
-| Pure text/state functions (TS) | vitest | 246 | every transform edge case, including emoji, CJK tags, quoted CSV and nested JSON-LD |
+| Pure text/state functions (TS) | vitest | 354 | every transform edge case, including emoji, CJK tags, quoted CSV and nested JSON-LD |
 | Canonical-data mirror | vitest | 1 | drift between `limits.ts` and `docs/suno-limits.json` |
 | Batch machine + capture parser | vitest | 47 | retry budgets, concurrency, partial pages, duplicate merging |
 | Agent state machine | unittest | 109 | selection policy, starvation, thrash guard, gate honesty, ledger integrity |

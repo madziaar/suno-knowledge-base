@@ -390,6 +390,207 @@ CAPABILITIES: tuple[Capability, ...] = (
         related=("batch-backend", "prompt-builder"),
     ),
     Capability(
+        id="lyrics-timestamps",
+        title="Lyrics Timestamps (LRC / SRT / WebVTT)",
+        phase="phase-5",
+        summary=(
+            "Turns plain lyrics into a timed subtitle file. Cues are distributed by "
+            "syllable weight between the real duration the user supplies — an estimate, "
+            "labelled as one — or taken from taps and imported LRC files, which are real "
+            "timings and say so."
+        ),
+        sources=("extension/src/lib/timestamps.ts", "extension/src/components/StudioPanel.tsx"),
+        symbols=("distributeCues", "toLrc", "toSrt", "toVtt", "parseLrc", "cuesFromTaps"),
+        behaviours=(
+            "Distributes lines in proportion to estimated syllables, with a minimum cue floor that gives way rather than overflowing the track.",
+            "Writes LRC (`[mm:ss.xx]`), SRT (`HH:MM:SS,mmm`) and WebVTT (`HH:MM:SS.mmm`), each with the numbering or header their format requires.",
+            "Embeds an `[re:…]` comment in generated LRCs stating the timings are estimated, not transcribed.",
+            "Imports an existing `.lrc` and can shift or rescale it onto a different audio duration.",
+            "Converts taps recorded in the popup into cues marked `estimated: false`.",
+        ),
+        edge_cases=(
+            "Section tags, blank lines and CRLF endings are dropped before timing; nothing is invented for an empty lyric.",
+            "A duration the parser cannot read blocks export instead of producing a file with zero-length cues.",
+            "If the minimum-cue floor cannot fit, the floor shrinks — a short cue beats a timestamp past the end of the song.",
+        ),
+        tests=("extension/src/lib/timestamps.test.ts",),
+        related=("duration-estimator", "lyric-video"),
+    ),
+    Capability(
+        id="random-style",
+        title="Random Style Generator with Locks",
+        phase="phase-5",
+        summary=(
+            "Deterministic style rolls: a seed produces the same five pillars every time, "
+            "and any pillar can be pinned so a re-roll moves only what the user wants moved."
+        ),
+        sources=("extension/src/lib/randomStyle.ts",),
+        symbols=("SEED_POOL", "generateStyle", "mulberry32", "nextSeed", "shuffle"),
+        behaviours=(
+            "Uses a small seeded PRNG (mulberry32) so a roll is reproducible across browsers and sessions.",
+            "Locks are used verbatim and reported in `lockedKeys`; unlocked pillars are drawn from the pool.",
+            "User extras are appended to a pool rather than replacing it.",
+            "Skips a pillar whose pool is empty instead of emitting an empty comma-separated slot.",
+        ),
+        edge_cases=(
+            "Deleting every value for a pillar still yields a usable style string.",
+            "The same seed with different locks is a different style — the lock set, not the seed alone, defines the roll.",
+        ),
+        tests=("extension/src/lib/randomStyle.test.ts",),
+        related=("prompt-builder", "style-library"),
+    ),
+    Capability(
+        id="structure-tags",
+        title="Structure Tag Helper",
+        phase="phase-5",
+        summary=(
+            "Places `[Verse]` / `[Chorus]` headings into an untagged lyric using a named "
+            "song shape, weighting verses above choruses, and reports what it left empty "
+            "instead of pretending every section was filled."
+        ),
+        sources=("extension/src/lib/structure.ts",),
+        symbols=("TEMPLATES", "applyTemplate", "detectSections", "suggestTemplate"),
+        behaviours=(
+            "Six templates (pop, rock, ballad, EDM, hip hop, folk) with per-section line weights.",
+            "Repeated sections get their own chunk — every chorus receives its own lines.",
+            "Instrumental sections (Intro, Drop, Solo, Outro) are emitted as empty headings on purpose.",
+            "Refuses to touch a lyric that already has tags and says so.",
+        ),
+        edge_cases=(
+            "Fewer lines than lyric sections produces empty sections plus an explicit warning.",
+            "CJK and parenthesised tags are detected as existing structure, not as lyrics.",
+        ),
+        tests=("extension/src/lib/structure.test.ts",),
+        related=("tag-normalizer", "lyrics-timestamps"),
+    ),
+    Capability(
+        id="style-library",
+        title="Searchable Style Library",
+        phase="phase-5",
+        summary=(
+            "A local, searchable library of style prompts: twelve seed entries in the "
+            "bundle plus the user's own, scored by name, tag and style text."
+        ),
+        sources=("extension/src/lib/styleLibrary.ts", "extension/src/lib/storage.ts"),
+        symbols=("SEED_STYLES", "searchStyles", "upsertStyle", "removeStyle", "userStyleId"),
+        behaviours=(
+            "Scores a query against name (3), tags (2) and style text (1), then sorts by score.",
+            "An empty query returns everything so the panel is browsable, not blank.",
+            "User entries are stored under `userStyles` in `chrome.storage.local`; seeds ship in the bundle.",
+            "Saving the same name replaces the entry rather than duplicating it.",
+        ),
+        edge_cases=(
+            "One-character terms are ignored so a stray keypress does not filter the list to nothing.",
+            "A corrupt stored entry is skipped instead of breaking the panel.",
+        ),
+        tests=("extension/src/lib/styleLibrary.test.ts",),
+        related=("random-style", "prompt-storage"),
+    ),
+    Capability(
+        id="media-save",
+        title="Public Media Save",
+        phase="phase-5",
+        summary=(
+            "Saves the audio, video or cover art that a public song page already publishes. "
+            "One click, one file: the URL comes from the page's own Open Graph / JSON-LD "
+            "tags and is handed to `chrome.downloads`."
+        ),
+        sources=(
+            "extension/src/lib/mediaTargets.ts",
+            "extension/src/lib/download.ts",
+            "extension/entrypoints/content/index.tsx",
+        ),
+        symbols=("findMediaTargets", "safeFilename", "downloadText", "bestTarget"),
+        behaviours=(
+            "Collects candidates from `og:audio`, `og:video`, `og:image`, JSON-LD `contentUrl` and `<audio>/<video>` sources.",
+            "Rejects every non-http(s) scheme — `data:` and `blob:` are never passed to the downloader.",
+            "De-duplicates by origin + path so the same file linked twice does not download twice.",
+            "Ranks known Suno/CDN hosts above unknown ones and Open Graph above guesswork.",
+            "Sanitises filenames for the OS and falls back by media kind when the URL has no extension.",
+        ),
+        edge_cases=(
+            "Playlist and profile pages render client-side, so the UI explains that instead of returning an empty list.",
+            "The batch queue has no route to the download handlers: there is no bulk download path by design.",
+            "A page that requires a session simply yields no targets — the fetcher sends `credentials: 'omit'`.",
+        ),
+        tests=("extension/src/lib/mediaTargets.test.ts",),
+        related=("song-capture", "privacy-model"),
+    ),
+    Capability(
+        id="lyric-video",
+        title="Lyric Video Studio",
+        phase="phase-5",
+        summary=(
+            "A full-page canvas renderer that turns cues into a video file through "
+            "`MediaRecorder`. It lives on its own page because a popup closes mid-recording, "
+            "and it records only what this device draws."
+        ),
+        sources=("extension/src/lib/videoPlan.ts", "extension/entrypoints/studio/App.tsx"),
+        symbols=("planLyricVideo", "wrapLine", "activeCue", "THEMES", "clock"),
+        behaviours=(
+            "Plans keyframes plus cue changes, capped at 30,000 frames, and warns when the cap bites.",
+            "Wraps lyric text to the canvas width rather than clipping it.",
+            "Four themes and four canvas sizes (720p, 1080p, vertical, square).",
+            "Optionally muxes a **local** audio file the user selects into the recording.",
+            "Warns that estimated timings will drift against the real vocal.",
+        ),
+        edge_cases=(
+            "No cues produces an empty plan with an explicit warning, not a crash.",
+            "A browser without MediaRecorder video support reports that instead of rendering an empty file.",
+            "Audio is never fetched from Suno: without a user-supplied file the export is silent video.",
+        ),
+        tests=("extension/src/lib/videoPlan.test.ts",),
+        related=("lyrics-timestamps", "popup-ui"),
+    ),
+    Capability(
+        id="library-analytics",
+        title="Capture Analytics",
+        phase="phase-5",
+        summary=(
+            "Summarises the captures already on disk: duration distribution, median and "
+            "range, tag frequency, creator counts and duplicate titles — computed locally "
+            "with no upload and a small-sample warning."
+        ),
+        sources=("extension/src/lib/analytics.ts", "extension/entrypoints/options/App.tsx"),
+        symbols=("analyzeSongs", "durationBuckets", "tally", "formatDuration"),
+        behaviours=(
+            "Splits comma-separated style strings into individual tags before counting.",
+            "Bins durations into six buckets with an open top bucket.",
+            "Counts missing durations separately instead of treating them as zero.",
+            "Flags samples under five songs as thin rather than presenting them as a pattern.",
+        ),
+        edge_cases=(
+            "An empty library returns zeros, not a division by zero.",
+            "Duplicate detection is case- and whitespace-insensitive.",
+        ),
+        tests=("extension/src/lib/analytics.test.ts",),
+        related=("song-capture", "csv-export"),
+    ),
+    Capability(
+        id="zip-export",
+        title="ZIP Export",
+        phase="phase-5",
+        summary=(
+            "A store-only ZIP writer, about 120 lines, used to bundle a playlist's subtitle "
+            "files or a style library into one download without adding a compression "
+            "dependency to a 300 kB extension."
+        ),
+        sources=("extension/src/lib/zip.ts", "extension/entrypoints/background.ts"),
+        symbols=("buildZip", "crc32", "readZipDirectory", "isSafeEntryName"),
+        behaviours=(
+            "Writes local headers, a central directory and an end-of-central-directory record per APPNOTE.TXT.",
+            "Computes real CRC-32 values (verified against the `123456789` check vector).",
+            "Refuses entry names that escape the archive root.",
+            "Produces byte-identical output for a fixed timestamp, so exports are reproducible.",
+        ),
+        edge_cases=(
+            "An empty entry list produces a valid, empty archive.",
+            "Directory traversal, absolute paths and Windows drive prefixes are rejected before writing.",
+        ),
+        tests=("extension/src/lib/zip.test.ts",),
+        related=("csv-export", "media-save"),
+    ),
+    Capability(
         id="privacy-model",
         title="Zero-Trust Privacy Model",
         phase="core",

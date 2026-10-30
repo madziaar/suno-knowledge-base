@@ -11,15 +11,18 @@ import { defineContentScript } from 'wxt/sandbox';
 import { extractSongFromHtml } from '../../src/lib/htmlMeta';
 import { buildCapture } from '../../src/lib/capture';
 import { findField, isCreatePage, setFieldValue } from '../../src/selectors';
-import { emit, type Request } from '../../src/messages';
+import { emit, send, type Request, type Response } from '../../src/messages';
+import { bestTarget, explainMissingTracks, findMediaTargets, type MediaTarget } from '../../src/lib/mediaTargets';
 
 const BUTTON_ID = 'suno-helper-capture';
+const MEDIA_BUTTON_ID = 'suno-helper-media';
 
 export default defineContentScript({
   matches: ['https://suno.com/*', 'https://www.suno.com/*'],
   runAt: 'document_idle',
   main() {
     registerMessageHandler();
+    mountMediaButton();
     if (!isCreatePage()) {
       // The page is a SPA: wait for the create form instead of giving up.
       const observer = new MutationObserver(() => {
@@ -138,4 +141,84 @@ function registerMessageHandler(): void {
     }
     return false;
   });
+}
+
+/**
+ * "Save" on a song page.
+ *
+ * Reads the page the user is already looking at — no extra request — and hands
+ * the URL the page itself published to `chrome.downloads`. One click, one file.
+ * Playlists and profiles render client-side, so there we explain rather than
+ * pretend.
+ */
+function mountMediaButton(): void {
+  const path = location.pathname;
+  const isSong = /^\/song\//.test(path);
+  const isPlaylist = /^\/playlist\//.test(path);
+  const isProfile = /^\/@/.test(path);
+  if (!isSong && !isPlaylist && !isProfile) return;
+  if (document.getElementById(MEDIA_BUTTON_ID)) return;
+
+  const button = document.createElement('button');
+  button.id = MEDIA_BUTTON_ID;
+  button.type = 'button';
+  button.textContent = isSong ? '⬇ Save audio' : isPlaylist ? '⬇ Playlist' : '⬇ Profile';
+  Object.assign(button.style, {
+    position: 'fixed',
+    right: '16px',
+    bottom: '140px',
+    zIndex: '2147483000',
+    padding: '8px 12px',
+    borderRadius: '9999px',
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: 'rgba(17,17,19,0.92)',
+    color: '#f5f5f4',
+    font: '600 12px/1.2 system-ui, sans-serif',
+    cursor: 'pointer',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+  } satisfies Partial<CSSStyleDeclaration>);
+
+  let busy = false;
+  button.addEventListener('click', () => {
+    if (busy) return;
+    if (isPlaylist || isProfile) {
+      button.textContent = 'client-rendered';
+      button.title = explainMissingTracks(isPlaylist ? 'playlist' : 'profile');
+      window.setTimeout(() => {
+        button.textContent = isPlaylist ? '⬇ Playlist' : '⬇ Profile';
+      }, 2600);
+      return;
+    }
+
+    busy = true;
+    button.textContent = 'reading…';
+    const targets = findMediaTargets(document.documentElement.outerHTML, location.href, document.title);
+    const audio = bestTarget(targets, 'audio');
+    if (!audio) {
+      busy = false;
+      button.textContent = 'no audio on page';
+      window.setTimeout(() => {
+        button.textContent = '⬇ Save audio';
+      }, 2600);
+      return;
+    }
+    saveTarget(audio, button);
+  });
+
+  document.body.appendChild(button);
+}
+
+function saveTarget(target: MediaTarget, button: HTMLButtonElement): void {
+  void send<Response>({ type: 'media:save', url: target.url, filename: target.filename })
+    .then((response) => {
+      button.textContent = response.ok ? '✓ saving' : '✗ failed';
+    })
+    .catch(() => {
+      button.textContent = '✗ failed';
+    })
+    .finally(() => {
+      window.setTimeout(() => {
+        button.textContent = '⬇ Save audio';
+      }, 2000);
+    });
 }

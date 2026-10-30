@@ -3,9 +3,14 @@ import { defineConfig } from 'wxt';
 /**
  * Manifest V3 configuration.
  *
- * Permission budget: `storage` (+ `activeTab`, requested at runtime by the
- * content action) and host access limited to the exact hosts the companion
- * touches. No `tabs`, no `cookies`, no `<all_urls>`.
+ * Permission budget: `storage`, `downloads`, and host access limited to the
+ * exact hosts the companion touches. No `tabs`, no `cookies`, no `<all_urls>`.
+ *
+ * `downloads` justification: the media tools save a file the user explicitly
+ * clicked. `chrome.downloads` is what puts that in the browser's own download
+ * UI with its own consent affordance; the alternative (`<a download>` on a
+ * cross-origin URL) silently fails on most CDNs. One click, one file — the
+ * batch queue has no route to it.
  *
  * `options_ui` is intentionally absent: WXT derives it from
  * `entrypoints/options/`, so declaring it here would duplicate the entry.
@@ -24,7 +29,7 @@ export default defineConfig({
     description:
       'Build, clean, normalise and diff Suno prompts and lyrics entirely on your device. No account, no upload, no telemetry.',
     version: '0.1.0',
-    permissions: ['storage'],
+    permissions: ['storage', 'downloads'],
     host_permissions: ['https://suno.com/*', 'https://www.suno.com/*'],
     action: {
       default_title: 'Suno Helper',

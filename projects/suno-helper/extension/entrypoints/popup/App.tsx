@@ -7,16 +7,18 @@ import { BatchPanel } from '../../src/components/BatchPanel';
 import { BuilderPanel } from '../../src/components/BuilderPanel';
 import { LibraryPanel } from '../../src/components/LibraryPanel';
 import { ToolsPanel } from '../../src/components/ToolsPanel';
+import { StudioPanel } from '../../src/components/StudioPanel';
 
 const store = new PromptStore(chromeStorage());
 
-type Tab = 'builder' | 'batch' | 'library' | 'tools';
+type Tab = 'builder' | 'batch' | 'library' | 'tools' | 'studio';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'builder', label: 'Builder' },
   { id: 'batch', label: 'Batch' },
   { id: 'library', label: 'Library' },
   { id: 'tools', label: 'Tools' },
+  { id: 'studio', label: 'Studio' },
 ];
 
 export default function App() {
@@ -117,6 +119,7 @@ export default function App() {
         {tab === 'batch' ? <BatchPanel /> : null}
         {tab === 'library' ? <LibraryPanel records={library} onChanged={refresh} /> : null}
         {tab === 'tools' ? <ToolsPanel /> : null}
+        {tab === 'studio' ? <StudioPanel /> : null}
       </main>
 
       {toast ? (

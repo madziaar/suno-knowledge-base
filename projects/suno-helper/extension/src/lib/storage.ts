@@ -8,6 +8,8 @@
 
 import type { ModelId } from './limits';
 
+import { removeStyle, upsertStyle, type StyleEntry } from './styleLibrary';
+
 export const SCHEMA_VERSION = 1;
 
 export interface PromptRecord {
@@ -39,6 +41,8 @@ export const DEFAULT_SETTINGS: Settings = {
   confirmDelete: true,
   sort: 'recent',
 };
+
+const STYLES_KEY = 'userStyles';
 
 export interface StorageLike {
   get(keys: string | string[] | null): Promise<Record<string, unknown>>;
@@ -173,6 +177,45 @@ export class PromptStore {
       const next = { ...(await this.getSettings()), ...patch };
       await this.storage.set({ [SETTINGS_KEY]: next });
       return next;
+    });
+  }
+
+  /** The user's own style entries. Seed entries live in the bundle, not here. */
+  async getStyles(): Promise<StyleEntry[]> {
+    const raw = await this.storage.get(STYLES_KEY);
+    const rows = Array.isArray(raw[STYLES_KEY]) ? (raw[STYLES_KEY] as unknown[]) : [];
+    const entries: StyleEntry[] = [];
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') continue;
+      const value = row as Partial<StyleEntry>;
+      if (typeof value.id !== 'string' || typeof value.style !== 'string') continue;
+      entries.push({
+        id: value.id,
+        name: typeof value.name === 'string' && value.name.trim() ? value.name : value.id,
+        style: value.style,
+        tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+        source: 'user',
+      });
+    }
+    return entries;
+  }
+
+  async saveStyle(entry: StyleEntry): Promise<StyleEntry> {
+    return this.enqueue(async () => {
+      const current = await this.getStyles();
+      const next = upsertStyle(current, { ...entry, source: 'user' });
+      await this.storage.set({ [STYLES_KEY]: next });
+      return entry;
+    });
+  }
+
+  async deleteStyle(id: string): Promise<boolean> {
+    return this.enqueue(async () => {
+      const current = await this.getStyles();
+      const next = removeStyle(current, id);
+      if (next.length === current.length) return false;
+      await this.storage.set({ [STYLES_KEY]: next });
+      return true;
     });
   }
 
