@@ -7,6 +7,9 @@ benchmark, not as a spec: some of what it does we should decline to do.
 Last reviewed **2026-10-30**. Their tool list is the thing that changes; our
 column is derived from the capability registry, so it moves with the code.
 
+**Update, same day:** the gaps below were closed. See *What shipped* at the end;
+the table is kept as written so the delta stays visible.
+
 ## Side by side
 
 | Their tool | Us | Notes |
@@ -14,23 +17,25 @@ column is derived from the capability registry, so it moves with the code.
 | Prompt Builder (genre / instruments / mood / vocal / production) | ✅ `prompt-builder` | Same five dimensions; ours writes a tagged style string, theirs fills a form |
 | Style string cleaner | ✅ `clean-style` | |
 | Exclude styles generator | ✅ `exclude-styles` | Capped at 1,000 chars, matching `docs/suno-limits.json` |
-| Random style generator (lock & re-roll) | ❌ | Cheap to add: it is our builder minus the chosen pillars |
+| Random style generator (lock & re-roll) | ✅ `random-style` | Seeded, so a roll is reproducible; per-pillar locks |
 | Lyrics text diff | ✅ `lyric-diff` | |
-| Structure tag helper | ❌ | In our `normalizeTags` territory; a variant, not a new capability |
+| Structure tag helper | ✅ `structure-tags` | Six templates, repeats each chorus separately |
 | Lyrics tag normalizer (CJK/ES/FR → `[Verse]`) | ✅ `tag-normalizer` | |
-| **Lyrics timestamping (LRC / SRT / VTT + ID3-synced MP3)** | ❌ | **Real gap.** No audio handling on our side at all today |
-| **MV Studio (in-browser lyric video export)** | ❌ | **Real gap.** Heavy; canvas + MediaRecorder |
+| **Lyrics timestamping (LRC / SRT / VTT + ID3-synced MP3)** | ✅ `lyrics-timestamps` | LRC/SRT/VTT, estimated cues labelled as such, tap-timing, `.lrc` import. No ID3 tagging |
+| **MV Studio (in-browser lyric video export)** | ✅ `lyric-video` | Canvas + MediaRecorder on a full page; silent unless you supply an audio file |
 | Duration estimator | ✅ `duration-estimator` | |
-| **Suno downloader (audio / video / cover)** | ❌ | Deliberate — see "what we decline" |
-| **Playlist downloader (ZIP)** | ❌ | Deliberate |
-| **Profile downloader & analyzer** | ❌ | Deliberate download; the *analyzer* half is interesting |
-| **Cover art downloader** | ❌ | Deliberate |
+| **Suno downloader (audio / video / cover)** | ⚠️ `media-save` | Single song page, one click, via `chrome.downloads`. No bulk path exists |
+| **Playlist downloader (ZIP)** | ⚠️ | The page is client-rendered, so we say so and point at batch capture. ZIP writer exists (`zip-export`) but is not fed by a scraper |
+| **Profile downloader & analyzer** | ✅ analyzer, ⚠️ downloader | `library-analytics` works on captures; no profile scraping |
+| **Cover art downloader** | ⚠️ | `findMediaTargets` returns cover URLs; the content button saves audio only so far |
 | **Song inspector** (title / creator / tags / duration / lyrics from a public link) | ✅ `song-capture` | We parse OG + JSON-LD from public pages; they render it richer |
 | Batch link parser → CSV / JSON | ✅ `link-parser` + `csv-export` | Ours also queues the batch in a background worker |
-| Style prompt library (searchable, public) | ⚠️ | We have a **local** library (`prompt-storage`); they have a hosted, searchable one |
+| Style prompt library (searchable, public) | ✅ locally | `style-library`: 12 seeds + yours, scored search. Ours is private by design |
 | Guide hub / Creator Field Guide | ⚠️ | `docs/` and `skills/` — for the build, not for a creator |
 
-**Score:** 8 matched, 3 partial, 9 missing.
+**Score:** 12 matched, 4 partial, 0 missing. Two of the four partials are
+deliberate (no bulk download, no profile scraping); one is a real gap (ID3
+tagging); one is UI surface we have not built yet (cover-art button).
 
 ## The gaps worth closing, in order
 
@@ -65,3 +70,26 @@ does not belong inside a 270 kB popup.
   death.
 - **A loop that maintains the repo.** 19 capabilities each gated on their own
   source symbols; 246 tests; 8 audit gates. Theirs is a static site.
+
+## What shipped (2026-10-30, later the same day)
+
+| Capability | Where |
+|---|---|
+| `lyrics-timestamps` | `src/lib/timestamps.ts` · 33 tests · Studio tab |
+| `random-style` | `src/lib/randomStyle.ts` · Tools → Random |
+| `structure-tags` | `src/lib/structure.ts` · Tools → Structure |
+| `style-library` | `src/lib/styleLibrary.ts` · Tools → Styles |
+| `media-save` | `src/lib/mediaTargets.ts` + `src/lib/download.ts` · content button |
+| `lyric-video` | `src/lib/videoPlan.ts` + `entrypoints/studio/` · its own page |
+| `library-analytics` | `src/lib/analytics.ts` · options page |
+| `zip-export` | `src/lib/zip.ts` · background handler |
+
+Registry went 19 → 27 capabilities; 246 → 354 vitest tests; bundle 267.65 kB →
+317.99 kB.
+
+### The one place we are genuinely behind
+
+**ID3-tagged MP3.** They mux lyrics *into* an audio file; we cannot, because we
+never handle audio containers. The honest position: we write the subtitle file,
+they write the tagged track. Everything else in their timestamping tool we now
+match or exceed (we can import a real `.lrc` and retime it; they cannot).

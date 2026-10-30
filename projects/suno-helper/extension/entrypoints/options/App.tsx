@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { analyzeSongs, formatDuration } from '../../src/lib/analytics';
 import { captureStats, toCaptureRows, type SongCapture } from '../../src/lib/capture';
 import { exportFilename, parseJsonExport, toCsv, toJsonExport } from '../../src/lib/csv';
 import { PACE_PRESETS } from '../../src/lib/estimateDuration';
@@ -36,6 +37,15 @@ export default function Options() {
   }, []);
 
   const stats = captureStats(captures);
+  const analytics = analyzeSongs(
+    captures.map((capture) => ({
+      title: capture.title,
+      creator: capture.creator,
+      durationSeconds: capture.durationSeconds,
+      tags: capture.tags,
+      url: capture.url,
+    })),
+  );
 
   async function patch(next: Partial<Settings>) {
     const saved = await store.saveSettings(next);
@@ -181,6 +191,40 @@ export default function Options() {
           Captures come from the public pages you asked about: title, creator, duration, tags and cover art when the page publishes them.
           No audio is stored and no cookie is sent.
         </p>
+        {analytics.count > 0 ? (
+          <div className="space-y-1 rounded border border-neutral-800 p-2">
+            <p className="text-[11px] text-neutral-300">
+              median {formatDuration(analytics.medianSeconds)} · shortest {formatDuration(analytics.minSeconds)} ·
+              longest {formatDuration(analytics.maxSeconds)}
+              {analytics.missingDuration > 0 ? ` · ${analytics.missingDuration} without a duration` : ''}
+              {analytics.thin ? ' · small sample, treat with care' : ''}
+            </p>
+            <div className="flex gap-0.5" aria-label="duration distribution">
+              {analytics.buckets.map((bucket) => {
+                const peak = Math.max(1, ...analytics.buckets.map((entry) => entry.count));
+                return (
+                  <div key={bucket.label} className="flex-1 text-center" title={`${bucket.label}: ${bucket.count}`}>
+                    <div
+                      className="mx-auto rounded-t bg-emerald-600/60"
+                      style={{ height: `${Math.round((bucket.count / peak) * 28) + 2}px`, width: '70%' }}
+                    />
+                    <span className="block text-[9px] text-neutral-600">{bucket.label.replace('–00', '')}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {analytics.tags.length > 0 ? (
+              <p className="truncate text-[10px] text-neutral-500">
+                top styles: {analytics.tags.slice(0, 6).map((tag) => `${tag.name} (${tag.count})`).join(', ')}
+              </p>
+            ) : null}
+            {analytics.duplicates.length > 0 ? (
+              <p className="truncate text-[10px] text-amber-400/80">
+                duplicate titles: {analytics.duplicates.slice(0, 4).map((entry) => entry.name).join(', ')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2 text-xs">
           <button onClick={() => void exportCaptures()} className="rounded bg-neutral-800 px-3 py-1.5">
             Export captures CSV

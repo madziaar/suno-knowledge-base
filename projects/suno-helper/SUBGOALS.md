@@ -1,6 +1,6 @@
 # /subgoals
 
-_turn 530 · 19 subgoals_
+_turn 570 · 19 subgoals_
 
 ## `canonical-suno-limits-table` — Canonical Suno limits table
 

@@ -36,6 +36,14 @@ PYTHONPATH=agent python3 -m suno_helper tool capability_docs only=clean-style
 | Research Desk | ops | [`research-desk.md`](research-desk.md) |
 | Self-Improvement Loop | ops | [`self-improvement.md`](self-improvement.md) |
 | Popup and Options UI | ui | [`popup-ui.md`](popup-ui.md) |
+| Lyrics Timestamps (LRC / SRT / WebVTT) | 5 | [`lyrics-timestamps.md`](lyrics-timestamps.md) |
+| Random Style Generator with Locks | 5 | [`random-style.md`](random-style.md) |
+| Structure Tag Helper | 5 | [`structure-tags.md`](structure-tags.md) |
+| Searchable Style Library | 5 | [`style-library.md`](style-library.md) |
+| Public Media Save | 5 | [`media-save.md`](media-save.md) |
+| Lyric Video Studio | 5 | [`lyric-video.md`](lyric-video.md) |
+| Capture Analytics | 5 | [`library-analytics.md`](library-analytics.md) |
+| ZIP Export | 5 | [`zip-export.md`](zip-export.md) |
 
 The registry that drives all of this is
 [`agent/suno_helper/capabilities.py`](../../agent/suno_helper/capabilities.py);

@@ -1,6 +1,6 @@
 # Research corpus
 
-_16 sources · updated 2026-10-30T20:03:04Z_
+_16 sources · updated 2026-10-30T20:17:59Z_
 
 | id | source | kind | trust | retrieved |
 |----|--------|------|-------|-----------|

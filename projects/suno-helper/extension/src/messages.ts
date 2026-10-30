@@ -8,6 +8,7 @@
 import type { SongCapture } from './lib/capture';
 import type { PromptRecord, Settings } from './lib/storage';
 import type { SongRef } from './lib/parseLinks';
+import type { StyleEntry } from './lib/styleLibrary';
 
 export interface BatchProgress {
   readonly jobId: string;
@@ -35,13 +36,21 @@ export type Request =
   | { type: 'batch:status' }
   | { type: 'batch:cancel' }
   | { type: 'captures:list' }
-  | { type: 'captures:clear' };
+  | { type: 'captures:clear' }
+  // Media: user-initiated saves of what a public page already publishes.
+  | { type: 'media:find'; url: string }
+  | { type: 'media:save'; url: string; filename: string; saveAs?: boolean }
+  | { type: 'media:save-zip'; filename: string; entries: readonly { name: string; text: string }[] }
+  | { type: 'styles:list' }
+  | { type: 'styles:save'; entry: StyleEntry }
+  | { type: 'styles:delete'; id: string };
 
 /** Pushed from the background worker to any open popup/options page. */
 export type Event =
   | { type: 'batch:progress'; progress: BatchProgress }
   | { type: 'batch:done'; progress: BatchProgress }
-  | { type: 'capture:page'; capture: SongCapture };
+  | { type: 'capture:page'; capture: SongCapture }
+  | { type: 'media:saved'; filename: string; downloadId: number };
 
 export type Response =
   | { ok: true; data?: unknown }
